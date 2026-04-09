@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'openqa-enqueue-asset-cleanup.service' 'openqa-enqueue-asset-cleanup.timer' 'openqa-enqueue-audit-event-cleanup.service' 'openqa-enqueue-audit-event-cleanup.timer' 'openqa-enqueue-bug-cleanup.service' 'openqa-enqueue-bug-cleanup.timer' 'openqa-enqueue-git-auto-update.service' 'openqa-enqueue-git-auto-update.timer' 'openqa-enqueue-result-cleanup.service' 'openqa-enqueue-result-cleanup.timer' 'openqa-gru.service' 'openqa-livehandler.service' 'openqa-minion-restart.path' 'openqa-minion-restart.service' 'openqa-scheduler.service' 'openqa-setup-db.service' 'openqa-websockets.service' 'openqa-webui.service' >/dev/null || true
+fi
+# End automatically added section

@@ -1,0 +1,41 @@
+# Copyright (C) 2023 Pädagogisches Landesinstitut Rheinland-Pfalz
+# Copyright (C) 2023 Daniel Teichmann <daniel.teichmann@das-netzwerkteam.de>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+#
+# Each configured internal network gets a config file for Dnsmasq.
+# Then there are systemd services using this template running Dnsmasq with the
+# specific config file. There is a master systemd target (dnsmasq_d-e-r) which
+# is used to orchestrate all dnsmasq-sub-services at once.
+#
+
+[Unit]
+Description=dnsmasq - (managed by Debian-Edu-Router '%i')
+Requires=network.target
+After=network.target dnsmasq_d-e-r.target dnsmasq.service
+BindsTo=dnsmasq_d-e-r.target
+Conflicts=dnsmasq.service
+
+[Service]
+Type=forking
+PIDFile=/run/dnsmasq/dnsmasq.%i.pid
+
+ExecStart=/usr/sbin/dnsmasq -x /run/dnsmasq/dnsmasq.%i.pid -u dnsmasq --local-service -C /etc/debian-edu-router/dnsmasq.d/%i.d-e-r
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=dnsmasq_d-e-r.target multi-user.target

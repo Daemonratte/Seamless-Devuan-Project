@@ -1,0 +1,112 @@
+#! /bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          policyd-weight
+# Required-Start:    $local_fs $network $remote_fs $syslog
+# Required-Stop:     $local_fs $network $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and stop the policyd-weight daemon
+# Description:       Perl policy daemon for the Postfix MTA
+### END INIT INFO
+#
+set -e
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/policyd-weight
+NAME=policyd-weight
+DESC="policyd-weight"
+
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Gracefully exit if the package has been removed.
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+# Read config file if it is present.
+if [ -r /etc/default/$NAME ]
+then
+        . /etc/default/$NAME
+fi
+
+ret=0
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting $DESC" "$NAME"
+        if start-stop-daemon --start --oknodo --quiet \
+                --pidfile $PIDFILE --name $NAME \
+                --exec $DAEMON start -- $DAEMON_OPTS
+        then
+            log_end_msg 0
+        else
+            ret=$?
+            log_end_msg 1
+        fi
+        ;;
+  stop)
+	log_daemon_msg "Stopping $DESC (incl. cache)" "$NAME"
+	if $DAEMON -k && start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE && rm -f $PIDFILE
+	then
+		log_end_msg 0
+	else
+		ret=$?
+		log_end_msg 1
+	fi
+	;;
+  dstop)
+	log_daemon_msg "Stopping $DESC (without cache)" "$NAME"
+	if start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE && rm -f $PIDFILE
+	then
+		log_end_msg 0
+	else	
+		ret=$?
+		log_end_msg 1
+	fi
+	;;
+  reload|force-reload)
+        log_daemon_msg "Reloading $DESC configuration files" "$NAME"
+        if $DAEMON $DAEMON_OPTS reload > /dev/null 2>&1
+        then
+                log_end_msg 0
+        else
+                log_end_msg 1
+                ret=$?
+        fi
+        ;;
+restart)
+	log_daemon_msg "Restarting $DESC configuration (incl. cache)" "$NAME"
+	if $DAEMON -k && start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE \
+		&& rm -f $PIDFILE \
+		&& start-stop-daemon --start --oknodo --quiet \
+		--pidfile $PIDFILE --name $NAME \
+                --exec $DAEMON start -- $DAEMON_OPTS
+	then	
+		log_end_msg 0
+        else
+        	ret=$?
+        	log_end_msg 1
+        fi
+	;;
+	drestart)
+        log_daemon_msg "Restarting $DESC configuration (without cache)" "$NAME"
+        if $DAEMON $DAEMON_OPTS restart > /dev/null 2>&1
+        then
+                log_end_msg 0
+        else
+                ret=$?
+                log_end_msg 1
+        fi
+        ;;
+ status)
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|dstop|reload|force-reload|restart|drestart}" >&2
+	exit 1
+	;;
+esac
+
+exit $ret

@@ -1,0 +1,23 @@
+[Unit]
+Description=real time blackhole list server
+Documentation=man:rbldns.8
+After=network.target
+
+[Service]
+WorkingDirectory=/etc/sv/rbldns
+ExecStart=/usr/bin/chpst -e conf /bin/sh run
+SyslogIdentifier=rbldns
+
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectSystem=strict
+PrivateDevices=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Radium daemon
+Documentation=man:radium(8)
+After=network.target
+
+[Service]
+ExecStart=/usr/sbin/radium
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,11 @@
+[Unit]
+Description=RFC 1413 compliant per-connection ident daemon
+Documentation=man:oidentd(8) man:oidentd.conf(5) man:oidentd_masq.conf(5)
+
+[Service]
+Environment=OIDENT_USER=nobody OIDENT_GROUP=nogroup
+EnvironmentFile=-/etc/default/oidentd
+ExecStart=/bin/sh -c "exec /usr/sbin/oidentd -I ${OIDENT_OPTIONS} -u \"${OIDENT_USER}\" -g \"${OIDENT_GROUP}\" \
+ `[ \"${OIDENT_BEHIND_PROXY}\" = \"yes\" ] && ip route show to exact 0/0 | awk '{print \"-P \" $3}'`"
+PrivateDevices=true
+StandardInput=socket

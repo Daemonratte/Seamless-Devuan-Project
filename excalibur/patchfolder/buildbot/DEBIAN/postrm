@@ -1,0 +1,28 @@
+#! /bin/sh
+# ex: et sw=4 ts=4 sts=4
+
+set -e
+
+if [ "$1" = remove ]; then
+    if which deb-systemd-helper >/dev/null 2>&1; then
+        deb-systemd-helper mask buildbot@*.service >/dev/null || true
+    fi
+fi
+
+if [ "$1" = purge ]; then
+    if which deb-systemd-helper >/dev/null 2>&1; then
+        deb-systemd-helper purge buildbot@*.service >/dev/null || true
+        deb-systemd-helper unmask buildbot@*.service >/dev/null || true
+    fi
+    update-rc.d buildbot remove >/dev/null || true
+fi
+
+# Automatically added by dh_installdebconf/13.23
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+exit 0

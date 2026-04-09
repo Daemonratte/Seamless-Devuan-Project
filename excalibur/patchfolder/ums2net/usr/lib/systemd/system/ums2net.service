@@ -1,0 +1,14 @@
+[Unit]
+Description=UMS to network proxy
+Documentation=man:ums2net(8)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=-/etc/default/ums2net
+ExecStart=/usr/sbin/ums2net -c $CONFFILE -P /run/ums2net.pid
+Type=exec
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

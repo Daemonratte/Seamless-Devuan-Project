@@ -1,0 +1,45 @@
+#!/bin/sh
+# preinst script for powerman
+#
+# see: dh_installdeb(1)
+
+set -e
+
+case "$1" in
+
+  install)
+    # add a powerman system user
+    if [ -z "`getent passwd powerman`" ]; then
+      adduser --quiet --system --home /run/powerman --no-create-home powerman
+    fi
+    # create the runtime directory
+    if [ ! -d /run/powerman ]; then
+      mkdir -p /run/powerman
+    fi
+    # ensure the permissions are right
+    chown powerman:root /run/powerman
+  ;;
+
+  upgrade|abort-upgrade)
+    # do nothing
+  ;;
+
+  *)
+    echo "$0: incorrect arguments: $*" >&2
+    exit 1
+  ;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/powerman" ] ; then
+	chmod +x "/etc/init.d/powerman" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'powerman.service' >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

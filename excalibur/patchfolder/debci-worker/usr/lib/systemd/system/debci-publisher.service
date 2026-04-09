@@ -1,0 +1,17 @@
+# systemd service for publishing test results back to the central server
+
+[Unit]
+Description=debci publisher daemon
+Documentation=https://ci.debian.net/doc/
+After=network-online.target
+
+[Service]
+User=debci
+Group=debci
+WorkingDirectory=/usr/share/debci
+ExecStart=/usr/share/debci/bin/debci publisher
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

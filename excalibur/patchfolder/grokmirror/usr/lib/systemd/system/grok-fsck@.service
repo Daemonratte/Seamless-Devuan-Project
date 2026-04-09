@@ -1,0 +1,18 @@
+[Unit]
+Description=Grok-fsck service for %I
+Documentation=https://github.com/mricon/grokmirror
+
+[Service]
+Type=oneshot
+Environment="EXTRA_FSCK_OPTS="
+EnvironmentFile=-/etc/default/grokmirror
+EnvironmentFile=-/etc/default/grokmirror.%i
+ExecStart=/usr/bin/grok-fsck -c /etc/grokmirror/%i.conf $EXTRA_FSCK_OPTS
+CPUSchedulingPolicy=batch
+# To override these users, create a drop-in systemd conf file in
+# /etc/systemd/system/grok-fsck@[foo].service.d/10-usergroup.conf:
+# [Service]
+# User=yourpreference
+# Group=yourpreference
+User=gitdaemon
+Group=gitdaemon

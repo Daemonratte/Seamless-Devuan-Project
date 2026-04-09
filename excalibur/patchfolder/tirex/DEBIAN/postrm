@@ -1,0 +1,47 @@
+#!/bin/sh
+
+set -e
+
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'tirex-backend-manager.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'tirex-master.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_apache2/UNDECLARED
+if [ "$1" = "purge" ] ; then
+	if true; then
+		if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
+			. /usr/share/apache2/apache2-maintscript-helper
+
+			for conf in tirex  ; do
+				apache2_invoke disconf $conf  || exit 1
+			done
+		fi
+	fi
+fi
+# End automatically added section
+
+
+if [ "$1" = "purge" ] ; then
+    deluser --quiet --system _tirex > /dev/null || true
+    delgroup --quiet --system _tirex > /dev/null || true
+fi

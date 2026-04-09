@@ -1,0 +1,87 @@
+#! /bin/sh
+#/etc/init.d/rbootd
+#
+# Skeleton written by Miquel van Smoorenburg <miquels@drinkel.ow.org>.
+# Modified for Debian GNU/Linux by Alan Bain <afrb2@cam.ac.uk>.
+# Modified for Debian GNU/Linux by Ian Murdock <imurdock@gnu.ai.mit.edu>.
+# Additions by Helge Deller <deller@gmx.de>.
+
+### BEGIN INIT INFO
+# Provides:          rbootd
+# Required-Start:    $remote_fs $syslog $network
+# Required-Stop:     $remote_fs $syslog $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: rbootd HP remote boot daemon
+# Description:       rbootd is a daemon to provide boot images to HP machines
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/rbootd
+NAME=rbootd
+DESC="remote boot daemon"
+
+. /lib/lsb/init-functions
+
+test -f $DAEMON || exit 0
+
+test ! -r /etc/default/rbootd || . /etc/default/rbootd
+
+if [ -n "$IFACE" ]
+then
+  ARGS="-- -i $IFACE"
+fi
+
+set -e
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC: "
+	start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
+		--exec $DAEMON $ARGS
+	echo "$NAME."
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+	start-stop-daemon --stop --quiet --oknodo --pidfile /var/run/$NAME.pid \
+		--exec $DAEMON
+	echo "$NAME."
+	;;
+  reload|force-reload)
+	#
+	#	If the daemon can reload its config files on the fly
+	#	for example by sending it SIGHUP, do it here.
+	#
+	#	If the daemon responds to changes in its config file
+	#	directly anyway, make this a do-nothing entry.
+	#
+	echo "Reloading $DESC configuration files."
+	start-stop-daemon --stop --oknodo --signal 1 --quiet --pidfile \
+		/var/run/$NAME.pid --exec $DAEMON
+	;;
+  restart)
+	#
+	#	If the "reload" option is implemented, move the "force-reload"
+	#	option to the "reload" entry above. If not, "force-reload" is
+	#	just the same as "restart".
+	#
+	echo -n "Restarting $DESC: "
+	start-stop-daemon --stop --oknodo --quiet --pidfile \
+		/var/run/$NAME.pid --exec $DAEMON
+	sleep 1
+	start-stop-daemon --start --quiet --pidfile \
+		/var/run/$NAME.pid --exec $DAEMON $ARGS
+	echo "$NAME."
+	;;
+  status)
+	status_of_proc -p $PIDFILE $DAEMON rbootd && exit 0 || exit $?
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	# echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+	echo "Usage: $N {start|stop|restart|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

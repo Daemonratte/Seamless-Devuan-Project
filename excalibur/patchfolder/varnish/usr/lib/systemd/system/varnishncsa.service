@@ -1,0 +1,21 @@
+[Unit]
+Description=Varnish HTTP accelerator log daemon
+Documentation=https://www.varnish-cache.org/docs/ man:varnishncsa
+After=varnish.service
+
+[Service]
+Type=exec
+User=varnishlog
+Group=varnish
+ExecStart=/usr/bin/varnishncsa -a -w /var/log/varnish/varnishncsa.log
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+LogsDirectory=varnish
+LogsDirectoryMode=0750
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

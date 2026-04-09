@@ -1,0 +1,102 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/swift-object" ] ; then
+	chmod -x "/etc/init.d/swift-object" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d swift-object remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/swift-object-updater" ] ; then
+	chmod -x "/etc/init.d/swift-object-updater" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d swift-object-updater remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/swift-object-replicator" ] ; then
+	chmod -x "/etc/init.d/swift-object-replicator" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d swift-object-replicator remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/swift-object-reconstructor" ] ; then
+	chmod -x "/etc/init.d/swift-object-reconstructor" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d swift-object-reconstructor remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/swift-object-auditor" ] ; then
+	chmod -x "/etc/init.d/swift-object-auditor" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d swift-object-auditor remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'swift-object.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'swift-object-updater.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'swift-object-replicator.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'swift-object-reconstructor.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'swift-object-auditor.service' >/dev/null || true
+	fi
+fi
+# End automatically added section

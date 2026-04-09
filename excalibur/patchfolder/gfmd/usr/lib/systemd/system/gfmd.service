@@ -1,0 +1,17 @@
+[Unit]
+Description=Gfarm filesystem metaserver
+Documentation=man:gfmd
+Requires=gfarm-pgsql.service
+After=gfarm-pgsql.service
+
+[Service]
+Type=forking
+PIDFile=/var/run/gfmd.pid
+User=root
+Group=root
+ExecStart=/usr/sbin/gfmd -v -P /var/run/gfmd.pid -f /etc/gfmd.conf
+OOMScoreAdjust=-1000
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target

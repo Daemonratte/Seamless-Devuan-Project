@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_runit/2.10.3
+# Unfortunately, we can not assume, that bin:runit-helper package
+# is installed at postrm stage.
+#
+# The only other option is embed whole runit-helper script here,
+# into postrm script of -run package, but it would be like static
+# linking, requiring rebuild of all reverse dependencies on every
+# change of dh-runit.
+if [ -x /lib/runit-helper/runit-helper ] ; then
+   NAME='mini-httpd' ENABLE='yes' ONUPGRADE='restart' /lib/runit-helper/runit-helper postrm "$@"
+fi
+# End automatically added section

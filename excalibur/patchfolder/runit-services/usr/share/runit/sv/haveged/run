@@ -1,0 +1,7 @@
+#!/usr/bin/env /lib/runit/invoke-run
+#Copyright: 2022 Lorenzo Puliti <plorenzo@disroot.org>
+#License: CC0-1.0
+
+exec 2>&1
+
+exec /usr/sbin/haveged  -F $DAEMON_ARGS

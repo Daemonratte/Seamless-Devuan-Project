@@ -1,0 +1,16 @@
+[Unit]
+Description=Teeworlds multiplayer server
+Documentation=man:teeworlds-server(6)
+After=network.target
+
+[Service]
+Restart=on-failure
+User=_teeworlds
+ExecStart=/bin/sh -c "/usr/games/teeworlds-server -f /etc/teeworlds/server.cfg | /usr/share/games/teeworlds/teeworlds_datetime.sh"
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=teeworlds
+
+[Install]
+WantedBy=multi-user.target
+

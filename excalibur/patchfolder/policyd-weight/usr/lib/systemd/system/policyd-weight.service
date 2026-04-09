@@ -1,0 +1,13 @@
+[Unit]
+Description=Perl policy daemon for the Postfix MTA
+Documentation=man:policyd-weight(8)
+
+[Service]
+EnvironmentFile=/etc/default/policyd-weight
+PIDFile=/var/run/policyd-weight.pid
+ExecStart=/usr/sbin/policyd-weight -D $DAEMON_OPTS
+ExecReload=/usr/sbin/policyd-weight -D $DAEMON_OPTS reload
+ExecStopPost=/bin/rm -f /var/run/policyd-weight.pid
+
+[Install]
+WantedBy=multi-user.target

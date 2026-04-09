@@ -1,0 +1,12 @@
+[Unit]
+Description=X2Go TCE Display Manager
+Documentation=man:x2gothinclientd(8)
+
+[Service]
+Type=forking
+ExecStartPre=/bin/sh -c '[ "$(cat /etc/X11/default-display-manager 2>/dev/null)" = "/usr/sbin/x2gothinclientd" ]'
+ExecStart=/usr/sbin/x2gothinclientd
+PIDFile=/run/x2gothinclient.pid
+
+[Install]
+WantedBy=multi-user.target

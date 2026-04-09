@@ -1,0 +1,11 @@
+[Unit]
+Description=openQA VDE Slirp interface
+PartOf=openqa-worker.target
+
+[Service]
+Type=simple
+ExecStart=/usr/share/openqa/script/openqa-slirpvde
+User=_openqa-worker
+
+[Install]
+WantedBy=multi-user.target

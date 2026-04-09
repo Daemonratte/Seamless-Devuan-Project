@@ -1,0 +1,26 @@
+[Unit]
+Description=arpwatch service on interface %I
+Documentation=man:arpwatch(8)
+PartOf=arpwatch.service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+PrivateTmp=true
+Type=forking
+Environment="RUNAS=root"
+EnvironmentFile=/etc/default/arpwatch
+EnvironmentFile=-/etc/arpwatch/%i.iface
+ExecStartPre=/usr/bin/touch -a %i.dat
+ExecStartPre=/bin/chown $RUNAS %i.dat
+ExecStart=/usr/sbin/arpwatch -u $RUNAS -i %i -f %i.dat $ARGS $IFACE_ARGS -F ${PCAP_FILTER}
+Restart=on-failure
+ProtectSystem=yes
+# CAP_NET_ADMIN, CAP_NET_RAW: grab the arp packages using libpcap
+# CAP_SETGID, CAP_SETUID: allow arpwatch to drop privs
+# CAP_CHOWN, CAP_DAC_OVERRIDE, CAP_FOWNER: needed for creating the .dat file
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE CAP_FOWNER CAP_NET_ADMIN CAP_NET_RAW CAP_SETGID CAP_SETUID
+WorkingDirectory=/var/lib/arpwatch
+
+[Install]
+WantedBy=multi-user.target

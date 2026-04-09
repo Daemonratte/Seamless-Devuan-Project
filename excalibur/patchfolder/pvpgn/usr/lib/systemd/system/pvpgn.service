@@ -1,0 +1,48 @@
+[Unit]
+Description=Bnetd daemon (pvpgn)
+Documentation=man:bnetd
+After=local-fs.target
+Wants=local-fs.target
+After=network.target
+After=network-online.target
+Wants=network-online.target
+After=time-sync.target
+
+ConditionPathExists=/var/lib/pvpgn/files/ad000001.smk
+ConditionPathExists=/var/lib/pvpgn/files/ad000002.mng
+ConditionPathExists=/var/lib/pvpgn/files/ad000002.smk
+ConditionPathExists=/var/lib/pvpgn/files/icons.bni
+ConditionPathExists=/var/lib/pvpgn/files/icons_STAR.bni
+ConditionPathExists=/var/lib/pvpgn/files/icons-WAR3.bni
+ConditionPathExists=/var/lib/pvpgn/files/IX86ExtraWork.mpq
+ConditionPathExists=/var/lib/pvpgn/files/IX86ver1.mpq
+ConditionPathExists=/var/lib/pvpgn/files/newbie.save
+ConditionPathExists=/var/lib/pvpgn/files/PMACver1.mpq
+ConditionPathExists=/var/lib/pvpgn/files/ver-IX86-1.mpq
+ConditionPathExists=/var/lib/pvpgn/files/XMACver1.mpq
+
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/bnetd --foreground
+Restart=on-abnormal
+
+CapabilityBoundingSet=~CAP_BLOCK_SUSPEND CAP_SYS_BOOT CAP_SYS_RAWIO CAP_AUDIT_* CAP_SYS_PTRACE
+InaccessiblePaths=/home
+LockPersonality=true
+NoNewPrivileges=true
+PrivateMounts=true
+PrivateTmp=true
+ProtectClock=true
+ProtectHome=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectProc=noaccess
+ProtectSystem=full
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallFilter=~@swap @reboot @module @raw-io @debug @clock
+
+
+[Install]
+WantedBy=multi-user.target

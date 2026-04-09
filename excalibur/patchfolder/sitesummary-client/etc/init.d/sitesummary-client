@@ -1,0 +1,45 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          sitesummary-client
+# Required-Start:    $network $remote_fs
+# Required-Stop:
+# Should-Start:      $syslog $named
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: Report status to sitesummary server after boot
+# Description:       Report to sitesummary server 5 minutes
+#                    after the machine boots normally (not in single user)
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+CLIENT=/usr/sbin/sitesummary-client
+REPORTDELAY=300
+
+# Use proxy setting if present
+if [ -f /etc/environment ] ; then
+    . /etc/environment
+    export http_proxy
+fi
+
+[ -f /etc/default/sitesummary-client ] && . /etc/default/sitesummary-client
+
+test -x $CLIENT || exit 0
+
+case "$1" in
+  start)
+    ( sleep $REPORTDELAY ; nice $CLIENT ) < /dev/null > /dev/null 2>&1 &
+    ;;
+  stop|reload|force-reload|restart)
+    ;;
+  status)
+    exit 3 # Not really a service, so it is not running
+    ;;
+  *)
+    echo "Usage: /etc/init.d/sitesummary-client {start|stop|restart|force-reload|reload|status}"
+    exit 1
+    ;;
+esac
+
+exit 0

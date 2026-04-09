@@ -1,0 +1,24 @@
+#!/lib/init/init-d-script
+### BEGIN INIT INFO
+# Provides:          blockdomains
+# Required-Start:    mountkernfs $local_fs
+# X-Start-Before:    $network
+# Required-Stop:     mountkernfs $local_fs
+# Default-Start:     S
+# Default-Stop:      0 6
+# Short-Description: Block selected HTTP and HTTPS connections
+# Description:       Firewall agent that blocks outbound connections
+#                    for selected domains
+### END INIT INFO
+DAEMON=/usr/sbin/blockdomains
+DAEMON_ARGS="$(ls /etc/blockdomains/blocked/*.acl 2>/dev/null)"
+START_ARGS="-b -O /var/log/blockdomains.log"
+PIDFILE=none
+
+do_start_prepare() {
+    iptables -I OUTPUT -p tcp -j NFQUEUE --queue-num 99
+}
+
+do_stop_prepare() {
+    iptables -D OUTPUT -p tcp -j NFQUEUE --queue-num 99
+}

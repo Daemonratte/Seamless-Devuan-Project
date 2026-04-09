@@ -1,0 +1,21 @@
+[Unit]
+Description=Openstack Neutron OVN Agent (neutron-ovn-agent)
+After=mysql.service postgresql.service rabbitmq-server.service keystone.service network-online.target local-fs.target remote-fs.target openvswitch-switch.service 
+Wants=mysql.service postgresql.service rabbitmq-server.service keystone.service network-online.target openvswitch-switch.service 
+
+Documentation=man:neutron-ovn-agent(1)
+
+[Service]
+User=neutron
+Group=neutron
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=neutron lock/neutron
+CacheDirectory=neutron
+ExecStart=/etc/init.d/neutron-ovn-agent systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

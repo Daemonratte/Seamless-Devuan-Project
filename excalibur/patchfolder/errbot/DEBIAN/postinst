@@ -1,0 +1,46 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+	configure)
+		if ! id errbot >/dev/null 2>&1; then
+			adduser --system --group --gecos "Errbot Chat Bot" \
+				--no-create-home --home /var/lib/errbot errbot > /dev/null
+		fi
+
+		chmod 0750 /var/lib/errbot
+		chown errbot /var/lib/errbot
+		chown errbot /var/lib/errbot/data
+		chown errbot /var/lib/errbot/plugins
+
+	;;
+
+	abort-upgrade|abort-remove|abort-deconfigure)
+		exit 0
+	;;
+
+	*)
+		echo "postinst called with unknown argument $1"
+		exit 1
+	;;
+esac
+
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p errbot 
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p errbot  || true
+fi
+
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "/etc/init.d/errbot" ]; then
+		update-rc.d errbot defaults >/dev/null || exit 1
+	fi
+fi
+# End automatically added section
+

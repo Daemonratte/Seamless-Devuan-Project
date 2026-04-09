@@ -1,0 +1,23 @@
+[Unit]
+Description=OsmoGGSN
+After=network-online.target
+Wants=network-online.target
+Documentation=https://projects.osmocom.org/projects/openggsn
+
+[Service]
+Type=simple
+Restart=always
+StateDirectory=osmocom
+WorkingDirectory=%S/osmocom
+ExecStart=/usr/bin/osmo-ggsn -c /etc/osmocom/osmo-ggsn.cfg
+RestartSec=2
+RestartPreventExitStatus=1
+User=osmocom
+Group=osmocom
+# For setting up the gtp0/tun0 devices
+AmbientCapabilities=CAP_NET_ADMIN
+PrivateTmp=true
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

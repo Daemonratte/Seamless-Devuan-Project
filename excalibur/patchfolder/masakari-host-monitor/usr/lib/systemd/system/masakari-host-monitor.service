@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Masakari Host Monitor (masakari-host-monitor)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service chrony.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service chrony.service network-online.target 
+
+Documentation=man:masakari-host-monitor(1)
+
+[Service]
+User=masakari
+Group=masakari
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=masakari lock/masakari
+CacheDirectory=masakari
+ExecStart=/etc/init.d/masakari-host-monitor systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

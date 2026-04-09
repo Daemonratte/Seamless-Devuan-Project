@@ -1,0 +1,10 @@
+[Unit]
+Description=Start Argus daemon
+Documentation=man:argus(8)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/sbin/argus
+
+[Install]
+WantedBy=multi-user.target

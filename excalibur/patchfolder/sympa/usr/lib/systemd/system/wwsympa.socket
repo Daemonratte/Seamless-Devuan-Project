@@ -1,0 +1,12 @@
+[Unit]
+Description=Sympa Web Interface Socket
+
+[Socket]
+SocketUser=www-data
+SocketGroup=www-data
+SocketMode=0660
+
+ListenStream=/run/sympa/wwsympa.socket
+
+[Install]
+WantedBy=sockets.target

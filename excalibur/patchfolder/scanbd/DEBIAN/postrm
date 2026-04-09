@@ -1,0 +1,45 @@
+#! /bin/sh
+# postrm script for scanbd
+
+set -e
+
+case "$1" in
+    purge)
+      find /etc/scanbd -maxdepth 1 -type l -name *.conf -delete
+      rm -f /etc/scanbd/dll.conf
+      if which update-inetd >/dev/null; then
+        update-inetd --remove 'sane-port'
+      fi
+    ;;
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installinit/13.11.9
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/scanbd" ] ; then
+	chmod -x "/etc/init.d/scanbd" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d scanbd remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.11.9
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.11.9
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'scanbd.service' 'scanbm.socket' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

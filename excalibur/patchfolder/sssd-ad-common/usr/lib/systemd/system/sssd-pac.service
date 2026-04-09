@@ -1,0 +1,20 @@
+[Unit]
+Description=SSSD PAC Service responder
+Documentation=man:sssd.conf(5)
+After=sssd.service
+BindsTo=sssd.service
+RefuseManualStart=true
+
+[Install]
+Also=sssd-pac.socket
+
+[Service]
+Environment=DEBUG_LOGGER=--logger=files
+EnvironmentFile=-/etc/default/sssd
+ExecStart=/usr/libexec/sssd/sssd_pac ${DEBUG_LOGGER} --socket-activated
+# No capabilities:
+CapabilityBoundingSet=
+Restart=on-failure
+User=root
+Group=root
+# Note: SSSD package was built without support of running as non-privileged user

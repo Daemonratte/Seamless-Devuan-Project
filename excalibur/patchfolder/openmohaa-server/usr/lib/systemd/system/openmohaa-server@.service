@@ -1,0 +1,23 @@
+[Unit]
+Description=OpenMoHAA game server (instance: "%i")
+After=network.target
+Documentation=man:mohaa-server(6)
+
+[Service]
+Type=simple
+User=_openmohaa-server
+Environment=DAEMON_OPTS=
+EnvironmentFile=-/etc/default/openmohaa-server@%i
+ExecStart=/usr/games/mohaa-server +set com_homepath %i.openmohaa $DAEMON_OPTS +exec etc/openmohaa-server/%i.cfg
+Restart=on-failure
+RestartPreventExitStatus=72
+# hardening
+CapabilityBoundingSet=
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

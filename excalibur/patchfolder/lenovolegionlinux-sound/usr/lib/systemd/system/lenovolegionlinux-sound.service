@@ -1,0 +1,13 @@
+[Unit]
+Description=Set i2c bus for Legion sound
+DefaultDependencies=no
+After=console-screen.service kbd.service local-fs.target
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/lenovolegionlinux-speaker-init
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

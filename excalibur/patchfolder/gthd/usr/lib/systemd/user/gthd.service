@@ -1,0 +1,12 @@
+[Unit]
+Description=Gthd Service
+Documentation=https://source.puri.sm/Librem5/gtherm
+
+[Service]
+Type=dbus
+ExecStart=/usr/bin/gthd
+Restart=on-failure
+BusName=org.sigxcpu.Thermal
+
+[Install]
+WantedBy=default.target

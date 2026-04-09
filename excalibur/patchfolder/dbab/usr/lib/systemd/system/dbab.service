@@ -1,0 +1,14 @@
+# systemd configuration for dbab.  -*- conf -*-
+
+[Unit]
+Description=Dnsmasq-Based Ad-Blocker
+After=network.target
+Documentation=man:dbab-svr(8)
+Documentation=https://github.com/suntong/dbab/blob/master/dbab.md
+
+[Service]
+ExecStart=/usr/sbin/dbab-svr
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

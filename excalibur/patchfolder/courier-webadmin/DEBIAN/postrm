@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Exit immediately if a command produces an error.
+set -e
+
+del_override() {
+    if dpkg-statoverride --list $1 >/dev/null; then
+	dpkg-statoverride --remove $1
+    fi
+}
+
+if [ "$1" = "purge" ]; then
+    del_override /etc/courier/webadmin
+    del_override /etc/courier/webadmin/added
+    del_override /etc/courier/webadmin/password
+    del_override /etc/courier/webadmin/removed
+
+    # Remove remains of web administration
+    rm -rf /etc/courier/webadmin
+
+    # Remove the webadmin socket from /var/lib/courier, which is sometimes left behind by the service.
+    rm -f /var/lib/courier/webadmin
+fi
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/courier-webadmin" ] ; then
+	chmod -x "/etc/init.d/courier-webadmin" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d courier-webadmin remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'courier-webadmin.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+exit 0

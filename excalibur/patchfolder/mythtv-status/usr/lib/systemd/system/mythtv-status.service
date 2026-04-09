@@ -1,0 +1,15 @@
+[Unit]
+Description=MythTV Status
+After=network.target mythtv-backend.service
+Wants=mythtv-backend.service
+Documentation=man:mythtv-status
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/bin/sh -c "rm -f /var/lib/mythtv-status/motd_update_disabled"
+ExecStart=/usr/sbin/mythtv-update-motd
+ExecStop=/bin/sh -c "touch /var/lib/mythtv-status/motd_update_disabled; rm -f /run/motd.mythtv-status";
+
+[Install]
+WantedBy=multi-user.target

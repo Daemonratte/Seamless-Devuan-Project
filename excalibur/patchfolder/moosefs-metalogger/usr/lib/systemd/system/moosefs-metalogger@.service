@@ -1,0 +1,26 @@
+[Unit]
+Description=MooseFS Metalogger server
+Documentation=man:mfsmetalogger
+After=local-fs.target
+Wants=local-fs.target
+After=network.target
+Wants=network-online.target
+After=network-online.target
+After=nss-lookup.target
+After=time-sync.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/mfsmetalogger -c /etc/mfs-%i/mfsmetalogger.cfg -f start
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=11
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectKernelTunables=true
+
+[Install]
+WantedBy=multi-user.target

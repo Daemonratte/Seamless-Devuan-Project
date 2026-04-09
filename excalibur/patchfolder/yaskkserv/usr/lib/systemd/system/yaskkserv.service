@@ -1,0 +1,11 @@
+[Unit]
+Description=Yet Another SKK server
+After=yaskkserv.socket
+Requires=yaskkserv.socket
+
+[Service]
+User=nobody
+ExecStart=/bin/sh -c ". /etc/default/yaskkserv; exec /usr/sbin/$YASKKSERV_BIN --no-daemonize $DAEMON_OPTS $DIC_LIST"
+
+[Install]
+WantedBy=multi-user.target

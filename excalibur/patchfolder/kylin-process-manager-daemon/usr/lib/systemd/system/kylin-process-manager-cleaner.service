@@ -1,0 +1,13 @@
+[Unit]
+Description=Thaw all processes before shutdown
+DefaultDependencies=no
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/kylin-process-manager-daemon -t
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

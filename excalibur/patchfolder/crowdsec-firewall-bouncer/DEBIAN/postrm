@@ -1,0 +1,37 @@
+#!/bin/sh
+set -e
+
+CONFIG=/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
+
+## Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'crowdsec-firewall-bouncer.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+#
+
+if [ "$1" = purge ]; then
+  # If the bouncer ID was stored and wasn't deleted, try and unregister it from
+  # the API, without failing if that doesn't work for some reason:
+  if [ -f "$CONFIG.id" ]; then
+    id=$(cat "$CONFIG.id")
+    cscli -oraw bouncers delete "$id" 2>/dev/null || true
+    rm -f "$CONFIG.id"
+  fi
+  # In any case, purge was requested so remove both upstream file and the local
+  # override:
+  rm -f "$CONFIG" "$CONFIG.local"
+
+  # Logs:
+  #  - main log and possible logrotate-generated logs (obsolete starting
+  #    with 0.0.25-2 but files might have been created before);
+  #  - internal rotation (lumberjack.Logger).
+  find /var/log -name 'crowdsec-firewall-bouncer*.log*' -type f -delete
+fi

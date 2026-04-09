@@ -1,0 +1,20 @@
+[Unit]
+Description=RTP/media Proxy Daemon
+Documentation=man:rtpengine(8)
+After=network-online.target
+After=remote-fs.target
+Requires=network-online.target
+
+[Service]
+Type=notify
+EnvironmentFile=/etc/default/rtpengine-daemon
+RuntimeDirectory=rtpengine
+PIDFile=/run/rtpengine/rtpengine-daemon.pid
+User=rtpengine
+Group=rtpengine
+AmbientCapabilities=CAP_NET_ADMIN CAP_SYS_NICE
+LimitNOFILE=150000
+ExecStart=/usr/bin/rtpengine -f -E --no-log-timestamps --pidfile /run/rtpengine/rtpengine-daemon.pid --config-file /etc/rtpengine/rtpengine.conf
+
+[Install]
+WantedBy=multi-user.target

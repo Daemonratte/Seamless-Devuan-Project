@@ -1,0 +1,72 @@
+#!/bin/sh
+# postinst script for motion
+# Made by Angel Carpintero
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+add_group_if_missing() {
+    if ! getent group motion >/dev/null; then
+        addgroup --system --force-badname motion || true
+    fi
+}
+
+add_user_if_missing() {
+    if ! id -u motion > /dev/null 2>&1; then
+        mkdir -m 02750 -p /var/lib/motion
+        adduser --system --home /var/lib/motion \
+          --disabled-password \
+          --force-badname motion \
+          --ingroup motion
+        adduser motion video
+        chown motion:adm /var/lib/motion
+    fi
+}
+
+add_log_if_missing() {
+    if ! [ -d /var/log/motion ]; then
+         mkdir -m 02750 /var/log/motion
+         chown motion:adm /var/log/motion
+    fi
+}
+
+add_group_if_missing
+add_user_if_missing
+add_log_if_missing
+
+db_stop
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'motion.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'motion.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'motion.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'motion.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'motion.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

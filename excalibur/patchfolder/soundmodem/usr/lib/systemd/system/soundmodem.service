@@ -1,0 +1,12 @@
+[Unit]
+Description=Soundmodem systemD service file to fix device permissions
+After=sound.target network.target multi-user.target
+ConditionPathExists=/etc/ax25/soundmodem.conf
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/soundmodem --daemonize -s
+Group=tty
+
+[Install]
+WantedBy=multi-user.target

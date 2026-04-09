@@ -1,0 +1,93 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          gld
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# X-Start-Before:    postfix mysql
+# X-Stop-After:      postfix mysql
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+
+set -e
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/gld
+NAME=gld
+DESC="GreyListing Daemon"
+
+test -x $DAEMON || exit 0
+
+ENABLED=0
+
+if [ -f /etc/default/gld ]; then
+  . /etc/default/gld
+fi
+
+if [ "$ENABLED" = "0" ]; then
+  exit 0
+fi
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+        echo -n "Starting $DESC: $NAME"
+        # start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
+        #        --exec $DAEMON
+        $DAEMON
+        echo "."
+        ;;
+  stop)
+        # start-stop-daemon --stop --quiet --pidfile /var/run/$NAME.pid \
+        #       --exec $DAEMON
+        pid=`ps ax | awk '$5 == "/usr/sbin/gld" { print $1 }'`
+        if [ "$pid" ]; then
+          echo -n "Stopping $DESC: $NAME"
+          kill $pid
+          echo "."
+        else
+          echo "No gld daemon found"
+        fi
+        ;;
+  force-reload|reload)
+        # start-stop-daemon --stop --signal 1 --quiet --pidfile \
+        #        /var/run/$NAME.pid --exec $DAEMON
+        pid=`ps ax | awk '$5 == "/usr/sbin/gld" { print $1 }'`
+        if [ "$pid" ]; then
+          echo -n "Reloading $DESC configuration..."
+          kill -HUP $pid
+          echo "done."
+        else
+          echo "No gld daemon found"
+        fi
+        ;;
+  status)
+        pid=`ps ax | awk '$5 == "/usr/sbin/gld" { print $1 }'`
+        if [ "$pid" ]; then
+          log_begin_msg "Checking $DESC: $NAME ... "
+          kill -0 $pid && exit 0
+        fi
+        exit 3
+        ;;
+  restart)
+        # start-stop-daemon --stop --quiet --pidfile \
+        #        /var/run/$NAME.pid --exec $DAEMON
+        $0 stop
+        sleep 1
+        # start-stop-daemon --start --quiet --pidfile \
+        #        /var/run/$NAME.pid --exec $DAEMON
+        $0 start
+        ;;
+  *)
+        N=/etc/init.d/$NAME
+        echo "Usage: $N {start|stop|status|restart|reload|force-reload}" >&2
+        exit 1
+        ;;
+esac

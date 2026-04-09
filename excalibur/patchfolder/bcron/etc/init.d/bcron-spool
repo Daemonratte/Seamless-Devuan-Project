@@ -1,0 +1,34 @@
+#!/usr/bin/env /lib/init/init-d-script
+### BEGIN INIT INFO
+# Provides:          bcron-spool
+# Should-Start:      $syslog
+# Required-Start:    $time $local_fs
+# Required-Stop:     $time $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: manage user crontab submission
+### END INIT INFO
+NAME='bcron-spool'
+DESC='manage user crontab submission'
+DAEMON=/usr/sbin/bcron-spool
+
+daemon_ () { /usr/bin/daemon --noconfig --name "${NAME}" "$@"; }
+if ! test -x '/usr/bin/daemon' ; then
+	log_failure_msg "install \`daemon' package to use ${NAME} script"
+	exit 1
+fi
+
+do_start_cmd_override () {
+	cron_uid=$(getent passwd cron | cut -d: -f3)
+	cron_gid=$(getent passwd cron | cut -d: -f4)
+	daemon_ -- unixserver -u${cron_uid} -g${cron_gid} \
+	    /var/run/bcron-spool bcron-spool
+}
+
+do_stop_cmd_override () {
+	if daemon_ --running ; then
+		daemon_ --stop
+	fi
+}
+
+# vim: ft=sh

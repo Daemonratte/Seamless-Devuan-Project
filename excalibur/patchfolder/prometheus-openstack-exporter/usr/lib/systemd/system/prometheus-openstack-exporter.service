@@ -1,0 +1,10 @@
+[Unit]
+Description=Prometheus Openstack exporter
+
+[Service]
+Restart=always
+User=prometheus
+ExecStart=/bin/sh -c ". /usr/local/bin/observerenv.sh && /usr/bin/prometheus-openstack-exporter /etc/prometheus-openstack-exporter.yaml"
+
+[Install]
+WantedBy=multi-user.target

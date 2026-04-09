@@ -1,0 +1,33 @@
+#!/bin/sh
+
+set -e
+
+NAME=inadyn
+RUNDIR=/run/$NAME
+LOGDIR=/var/log/$NAME
+CACHEDIR=/var/cache/$NAME
+CONF=/etc/$NAME.conf
+
+if [ "$1" = "purge" ]
+then
+	if [ -d $RUNDIR ]; then
+	    rm -rf $RUNDIR
+	fi
+	rm -rf $LOGDIR $CACHEDIR
+	for i in $LOGDIR $CONF $CACHEDIR
+	do
+		dpkg-statoverride --remove $i 2>/dev/null || true
+	done
+fi
+
+# Automatically added by dh_installinit/13.14.1
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/inadyn" ] ; then
+	chmod -x "/etc/init.d/inadyn" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d inadyn remove >/dev/null
+fi
+# End automatically added section
+
+
+exit 0

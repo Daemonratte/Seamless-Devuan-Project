@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -euo pipefail
+
+deb-systemd-invoke enable log2ram.service
+deb-systemd-invoke enable log2ram-daily.timer
+
+
+rm -f /etc/cron.daily/log2ram
+rm -f /etc/cron.hourly/log2ram
+
+if [ "$1" == "configure" ]; then
+	echo "#####         Reboot to activate log2ram         #####"
+	echo "##### edit /etc/log2ram.conf to configure options ####"
+fi
+
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'log2ram-daily.timer' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'log2ram-daily.timer'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'log2ram-daily.timer' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'log2ram-daily.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'log2ram.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'log2ram.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'log2ram.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'log2ram.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,26 @@
+#!/bin/sh
+
+basedir='/var/log/runit/socklog'
+facilities='main auth authpriv cron daemon kern lpr mail news syslog user uucp local0 local1 local2 local3 local4 local5 local6 local7'
+faclogdirs="$(for facility in $facilities; do echo "$basedir/$facility"; done)"
+
+for facility in $facilities; do
+    logdir="$basedir/$facility"
+    [ -d "$logdir" ] || mkdir -p "$logdir"
+    [ -e "$logdir/config" ] || \
+	case "$logdir" in
+	    */main)
+		;;
+	    *)
+		cat <<-EOF
+			-*
+			+$facility.*
+			EOF
+		;;
+	esac > "$logdir/config"
+done
+
+chown -R _runit-log:adm "$basedir"
+chmod 750 "$basedir" $faclogdirs
+chmod u+rw,g+r,o-rwx "$basedir" $faclogdirs
+exec chpst -u _runit-log svlogd -tt $faclogdirs

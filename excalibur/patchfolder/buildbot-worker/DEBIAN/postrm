@@ -1,0 +1,22 @@
+#! /bin/sh
+# ex: et sw=4 ts=4 sts=4
+
+set -e
+
+if [ "$1" = remove ]; then
+    if which deb-systemd-helper >/dev/null 2>&1; then
+        deb-systemd-helper mask buildbot-worker@*.service >/dev/null || true
+    fi
+fi
+
+if [ "$1" = purge ]; then
+    if which deb-systemd-helper >/dev/null 2>&1; then
+        deb-systemd-helper purge buildbot-worker@*.service >/dev/null || true
+        deb-systemd-helper unmask buildbot-worker@*.service >/dev/null || true
+    fi
+    update-rc.d buildbot-worker remove >/dev/null || true
+fi
+
+
+
+exit 0

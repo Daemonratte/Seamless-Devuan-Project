@@ -1,0 +1,16 @@
+[Unit]
+Description=SRCP Server Daemon
+Documentation=man:srcpd(8)
+Wants=network-online.target
+After=network-online.target nss-lookup.target local-fs.target remote-fs.target
+
+[Service]
+Type=forking
+Environment=OPTIONS= CONFIG_FILE=/etc/srcpd.conf
+ExecStart=/usr/sbin/srcpd -f $CONFIG_FILE
+ExecStop=/bin/kill $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
+PIDFile=/run/srcpd.pid
+
+[Install]
+WantedBy=multi-user.target

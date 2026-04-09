@@ -1,0 +1,19 @@
+[Unit]
+Description=USB Relay MQTT service
+Documentation=man:usbrelayd(8)
+After=network.target
+StartLimitIntervalSec=10
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=usbrelay
+DynamicUser=yes
+SupplementaryGroups=plugdev
+ExecStart=/usr/bin/python3 /usr/sbin/usbrelayd
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

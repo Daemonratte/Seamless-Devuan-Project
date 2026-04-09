@@ -1,0 +1,21 @@
+[Unit]
+Description=Davmail Exchange gateway
+Documentation=man:davmail
+Documentation=http://davmail.sourceforge.net/serversetup.html
+Documentation=http://davmail.sourceforge.net/advanced.html
+Documentation=http://davmail.sourceforge.net/sslsetup.html
+After=network.target
+
+[Service]
+Type=notify
+User=_davmail
+PermissionsStartOnly=true
+ExecStartPre=/usr/share/davmail/service-prepare
+ExecStart=/usr/bin/davmail-server /etc/davmail/davmail.properties
+SuccessExitStatus=143
+DynamicUser=yes
+LogsDirectory=davmail
+StateDirectory=davmail
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=Linux Console Pointer Interface
+Documentation=man:consolation(8)
+
+[Service]
+EnvironmentFile=/etc/default/consolation
+ExecStart=consolation --no-daemon $DAEMON_OPTS
+
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

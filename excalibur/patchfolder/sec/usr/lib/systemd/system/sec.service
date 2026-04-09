@@ -1,0 +1,13 @@
+[Unit]
+Description=simple event correlator
+Documentation=man:sec(1) https://simple-evcorr.github.io/
+
+[Service]
+Type=forking
+PIDFile=/run/sec.pid
+EnvironmentFile=-/etc/default/sec
+EnvironmentFile=-/etc/default/sec.d/*
+ExecStart=/usr/bin/sec $DAEMON_ARGS
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,81 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          pyro5-ns
+# Required-Start:    $time $local_fs $remote_fs $network
+# Required-Stop:     $time $local_fs $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Pyro5 name server daemon
+# Description:       Debian init script for pyro5-nsd (Pyro5 name server daemon)
+### END INIT INFO
+
+# -------------------------------------------------------------------------
+#    <Pyro5 NameServer Daemon Script>
+#    Copyright (C) <2011>  <Pierre PACORY> - ppacory@gmail.com
+# Licensed under the "MIT Software License" for inclusion in Pyro5.
+# Improvements for Debian by Laszlo Boszormenyi
+# -------------------------------------------------------------------------
+
+
+LISTEN_ADDRESS=0.0.0.0
+LISTEN_PORT=9090
+MESSAGEDIR=/var/log/Pyro5
+MESSAGELOG=/var/log/Pyro5/NameServer.log
+PID=/var/run/Pyro5-NameServer.pid
+
+# Add Pyro Config
+# here you can add others ...
+export PYRO_LOGFILE="$MESSAGELOG"
+export PYRO_LOGLEVEL=DEBUG
+
+. /lib/lsb/init-functions
+
+# Check the script is being run by root user
+if [ "$(id -u)" != "0" ]; then
+  echo 1>&2 "ERROR: The $0 script must be run as root"
+  exit 1
+fi
+
+# Create the PID File
+touch $PID
+
+# Detect if Python 2.x or Python 3.y is installed
+PYTHON=python3
+[ -d /usr/lib/python3/dist-packages/Pyro5 ] || PYTHON=python
+
+case "$1" in
+  start)
+    # create the log directory if not exist
+    [ ! -d "$MESSAGEDIR" ] && mkdir -p "$MESSAGEDIR"
+
+    echo "Starting Pyro5 Name Server" $PYTHON
+    # test if not already running
+    if [ ! -f "/proc/$(cat $PID)/exe" ]; then
+      $PYTHON -m Pyro5.nameserver -n "$LISTEN_ADDRESS" -p "$LISTEN_PORT" >/dev/null 2>&1 &
+      echo $!>"$PID"
+    else
+      echo "Pyro5 Name Server already running"
+    fi
+    ;;
+  stop)
+    echo "Stopping Pyro5 Name Server"
+    # test if running
+    if [ -f "/proc/$(cat $PID)/exe" ]; then
+      kill -9 "$(cat $PID)"
+      rm -rf "$PID"
+    else
+      echo "Pyro5 Name Server already stopped"
+    fi
+    ;;
+  restart)
+    $0 stop
+    $0 start
+    ;;
+  force-reload)
+    $0 stop
+    $0 start
+    ;;
+  *)
+    echo "usage: $0 {start|stop|restart|force-reload}"
+esac
+exit 0

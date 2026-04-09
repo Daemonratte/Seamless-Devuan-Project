@@ -1,0 +1,13 @@
+[Unit]
+Description=Prometheus exporter for the BIRD routing daemon
+Documentation=https://github.com/czerwonk/bird_exporter man:prometheus-bird-exporter(1)
+After=network.target
+
+[Service]
+User=bird
+EnvironmentFile=/etc/default/prometheus-bird-exporter
+ExecStart=/usr/bin/prometheus-bird-exporter $ARGS
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

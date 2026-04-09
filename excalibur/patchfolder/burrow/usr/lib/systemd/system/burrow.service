@@ -1,0 +1,12 @@
+[Unit]
+Description=Burrow - Kafka Consumer Offset Monitor
+Documentation=man:burrow(8)
+
+[Service]
+User=burrow
+Group=burrow
+ExecStart=/usr/bin/Burrow -config-dir /etc/burrow/
+RuntimeDirectory=burrow
+
+[Install]
+WantedBy=multi-user.target

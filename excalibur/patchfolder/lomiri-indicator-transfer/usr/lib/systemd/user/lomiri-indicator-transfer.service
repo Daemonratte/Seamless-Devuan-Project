@@ -1,0 +1,11 @@
+[Unit]
+Description=Lomiri Indicator Transfer Backend
+PartOf=graphical-session.target
+PartOf=lomiri-indicators.target
+
+[Service]
+ExecStart=/usr/libexec/lomiri-indicator-transfer/lomiri-indicator-transfer-service
+Restart=on-failure
+
+[Install]
+WantedBy=lomiri-indicators.target

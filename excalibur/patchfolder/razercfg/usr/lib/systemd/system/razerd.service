@@ -1,0 +1,10 @@
+[Unit]
+Description=Razer device state daemon
+Requires=local-fs.target
+After=local-fs.target
+
+[Service]
+ExecStart=/usr/bin/razerd -f
+
+[Install]
+WantedBy=multi-user.target

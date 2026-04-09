@@ -1,0 +1,9 @@
+[Unit]
+Description=Weekly painintheapt
+Documentation=man:painintheapt(8)
+ConditionACPower=true
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/painintheapt --force
+TimeoutStartSec=2048

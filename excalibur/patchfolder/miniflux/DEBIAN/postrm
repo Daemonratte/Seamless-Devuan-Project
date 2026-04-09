@@ -1,0 +1,59 @@
+#!/bin/sh
+
+set -e
+
+if [ -f /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+fi
+if [ -f /usr/share/dbconfig-common/dpkg/postrm.pgsql  ]; then
+	. /usr/share/dbconfig-common/dpkg/postrm.pgsql 
+	dbc_go miniflux "$@"
+fi
+
+if [ "$1" = "purge" ]; then
+  MINIFLUX_USER="miniflux"
+  MINIFLUX_GROUP="$MINIFLUX_USER"
+
+  if getent passwd | grep -q "^$MINIFLUX_USER:" ; then
+    deluser --quiet --system "$MINIFLUX_USER" 2>/dev/null || true
+  fi
+  if getent group | grep -q "^$MINIFLUX_GROUP:" ; then
+    delgroup --quiet --system "$MINIFLUX_GROUP" 2>/dev/null || true
+  fi
+
+	if command -v ucf >/dev/null; then
+		ucf --purge /etc/miniflux/miniflux.conf
+		ucf --purge /etc/miniflux/database
+		ucfr --purge miniflux /etc/miniflux/miniflux.conf
+		ucfr --purge miniflux /etc/miniflux/database
+	fi
+	rm -rf /etc/miniflux/
+fi
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/miniflux" ] ; then
+	chmod -x "/etc/init.d/miniflux" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d miniflux remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'miniflux.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+

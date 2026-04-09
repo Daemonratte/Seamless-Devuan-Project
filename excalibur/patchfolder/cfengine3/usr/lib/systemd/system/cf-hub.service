@@ -1,0 +1,19 @@
+[Unit]
+Description=CFEngine Enterprise Hub Report Collector
+PartOf=cfengine3.service
+ConditionPathExists=/usr/bin/cf-hub
+ConditionPathExists=/var/lib/cfengine3/inputs/promises.cf
+After=syslog.target
+After=network.target
+
+Wants=cf-postgres.service
+After=cf-postgres.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cf-hub  --no-fork
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

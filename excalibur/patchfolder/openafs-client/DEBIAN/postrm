@@ -1,0 +1,42 @@
+#! /bin/sh
+
+set -e
+
+# Remove configuration files and the /afs mount point that are created by the
+# normal postinst action.
+if [ "$1" = 'purge' ] ; then
+    rmdir /afs 2>/dev/null || true
+    for file in cacheinfo CellServDB ThisCell afs.conf.client ; do
+        rm -f "/etc/openafs/$file"
+    done
+    rm -f /var/cache/openafs-client/openafs-client.env
+    rm -f /var/cache/openafs-client/openafs-client.shutdown.env
+fi
+
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/openafs-client" ] ; then
+	chmod -x "/etc/init.d/openafs-client" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d openafs-client remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'openafs-client.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.1
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+

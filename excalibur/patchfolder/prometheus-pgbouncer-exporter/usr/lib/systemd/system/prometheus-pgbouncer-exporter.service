@@ -1,0 +1,13 @@
+[Unit]
+Description=Prometheus exporter for PgBouncer
+Documentation=https://github.com/prometheus-community/pgbouncer_exporter
+Requires=pgbouncer.service
+After=pgbouncer.service
+
+[Service]
+User=postgres
+EnvironmentFile=/etc/default/prometheus-pgbouncer-exporter
+ExecStart=/usr/bin/prometheus-pgbouncer-exporter $ARGS
+
+[Install]
+WantedBy=pgbouncer.service

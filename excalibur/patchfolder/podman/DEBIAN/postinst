@@ -1,0 +1,259 @@
+#!/bin/sh
+
+set -e
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <postinst> `abort-remove'
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see https://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+case "$1" in
+    configure)
+        # Podman 3.0 dropped the varlink interface, so we need to cleanup
+        # the related systemd service, cf. #981708
+        if dpkg --compare-versions "$2" le-nl '3.0.0~rc2+dfsg1-3'; then
+            deb-systemd-helper purge  io.podman.service io.podman.socket >/dev/null || true
+            deb-systemd-helper unmask io.podman.service io.podman.socket >/dev/null || true
+        fi
+
+        # podman 5.2.2+ds1-2 moved files to podman-docker, cf. #1083242
+        if [ -z "$(dpkg-query -f '${Version}' -W podman-docker 2> /dev/null)" ]; then
+            dpkg-maintscript-helper rm_conffile /etc/profile.d/podman-docker.csh 5.2.2+ds1-2 -- "$@"
+            dpkg-maintscript-helper rm_conffile /etc/profile.d/podman-docker.sh 5.2.2+ds1-2 -- "$@"
+        fi
+    ;;
+    *)
+    ;;
+esac
+
+# Automatically added by dh_installtmpfiles/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create podman.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemduser/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ]; then
+		if deb-systemd-helper --user debian-installed 'podman-auto-update.service' ; then
+			# The following line should be removed in trixie or trixie+1
+			deb-systemd-helper --user unmask 'podman-auto-update.service' >/dev/null || true
+
+			if deb-systemd-helper --quiet --user was-enabled 'podman-auto-update.service' ; then
+				# Create new symlinks, if any.
+				deb-systemd-helper --user enable 'podman-auto-update.service' >/dev/null || true
+			fi
+		fi
+
+		# Update the statefile to add new symlinks (if any), which need to be cleaned
+		# up on purge. Also remove old symlinks.
+		deb-systemd-helper --user update-state 'podman-auto-update.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemduser/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ]; then
+		if deb-systemd-helper --user debian-installed 'podman-auto-update.timer' ; then
+			# The following line should be removed in trixie or trixie+1
+			deb-systemd-helper --user unmask 'podman-auto-update.timer' >/dev/null || true
+
+			if deb-systemd-helper --quiet --user was-enabled 'podman-auto-update.timer' ; then
+				# Create new symlinks, if any.
+				deb-systemd-helper --user enable 'podman-auto-update.timer' >/dev/null || true
+			fi
+		fi
+
+		# Update the statefile to add new symlinks (if any), which need to be cleaned
+		# up on purge. Also remove old symlinks.
+		deb-systemd-helper --user update-state 'podman-auto-update.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemduser/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ]; then
+		if deb-systemd-helper --user debian-installed 'podman-clean-transient.service' ; then
+			# The following line should be removed in trixie or trixie+1
+			deb-systemd-helper --user unmask 'podman-clean-transient.service' >/dev/null || true
+
+			if deb-systemd-helper --quiet --user was-enabled 'podman-clean-transient.service' ; then
+				# Create new symlinks, if any.
+				deb-systemd-helper --user enable 'podman-clean-transient.service' >/dev/null || true
+			fi
+		fi
+
+		# Update the statefile to add new symlinks (if any), which need to be cleaned
+		# up on purge. Also remove old symlinks.
+		deb-systemd-helper --user update-state 'podman-clean-transient.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemduser/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ]; then
+		if deb-systemd-helper --user debian-installed 'podman-restart.service' ; then
+			# The following line should be removed in trixie or trixie+1
+			deb-systemd-helper --user unmask 'podman-restart.service' >/dev/null || true
+
+			if deb-systemd-helper --quiet --user was-enabled 'podman-restart.service' ; then
+				# Create new symlinks, if any.
+				deb-systemd-helper --user enable 'podman-restart.service' >/dev/null || true
+			fi
+		fi
+
+		# Update the statefile to add new symlinks (if any), which need to be cleaned
+		# up on purge. Also remove old symlinks.
+		deb-systemd-helper --user update-state 'podman-restart.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemduser/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ]; then
+		if deb-systemd-helper --user debian-installed 'podman.service' ; then
+			# The following line should be removed in trixie or trixie+1
+			deb-systemd-helper --user unmask 'podman.service' >/dev/null || true
+
+			if deb-systemd-helper --quiet --user was-enabled 'podman.service' ; then
+				# Create new symlinks, if any.
+				deb-systemd-helper --user enable 'podman.service' >/dev/null || true
+			fi
+		fi
+
+		# Update the statefile to add new symlinks (if any), which need to be cleaned
+		# up on purge. Also remove old symlinks.
+		deb-systemd-helper --user update-state 'podman.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemduser/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ]; then
+		if deb-systemd-helper --user debian-installed 'podman.socket' ; then
+			# The following line should be removed in trixie or trixie+1
+			deb-systemd-helper --user unmask 'podman.socket' >/dev/null || true
+
+			if deb-systemd-helper --quiet --user was-enabled 'podman.socket' ; then
+				# Create new symlinks, if any.
+				deb-systemd-helper --user enable 'podman.socket' >/dev/null || true
+			fi
+		fi
+
+		# Update the statefile to add new symlinks (if any), which need to be cleaned
+		# up on purge. Also remove old symlinks.
+		deb-systemd-helper --user update-state 'podman.socket' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'podman-auto-update.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'podman-auto-update.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'podman-auto-update.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'podman-auto-update.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'podman-auto-update.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'podman-auto-update.timer'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'podman-auto-update.timer' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'podman-auto-update.timer'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'podman-auto-update.timer' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'podman-auto-update.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'podman-clean-transient.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'podman-clean-transient.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'podman-clean-transient.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'podman-clean-transient.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'podman-clean-transient.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'podman-restart.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'podman-restart.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'podman-restart.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'podman-restart.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'podman-restart.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'podman.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'podman.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'podman.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'podman.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'podman.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'podman.socket'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'podman.socket' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'podman.socket'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'podman.socket' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'podman.socket' >/dev/null || true
+fi
+# End automatically added section
+

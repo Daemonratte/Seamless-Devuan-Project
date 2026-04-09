@@ -1,0 +1,4 @@
+#!/bin/sh
+exec 2>&1
+exec </proc/kmsg
+exec chpst -u _socklog-klog socklog ucspi

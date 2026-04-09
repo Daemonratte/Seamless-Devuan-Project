@@ -1,0 +1,11 @@
+[Unit]
+Description=Security audit and vulnerability scanner
+Documentation=https://cisofy.com/docs/
+
+[Service]
+Nice=19
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+Type=simple
+ExecStart=/usr/sbin/lynis audit system --cronjob
+

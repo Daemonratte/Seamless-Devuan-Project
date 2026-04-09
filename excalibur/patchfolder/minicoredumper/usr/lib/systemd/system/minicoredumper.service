@@ -1,0 +1,16 @@
+[Unit]
+Description=Minicoredumper core pattern registration
+Documentation=man:minicoredumper(1)
+AssertPathIsReadWrite=/proc/sys
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/lib/systemd/systemd-sysctl /etc/minicoredumper/sysctl-start.conf
+# Restore kernel default core dumping configurations.
+ExecStop=/usr/lib/systemd/systemd-sysctl /etc/minicoredumper/sysctl-stop.conf
+# Restore any custom core dumping configurations.
+ExecStop=/usr/lib/systemd/systemd-sysctl --prefix=kernel.core_pattern --prefix=kernel.core_pipe_limit
+
+[Install]
+WantedBy=multi-user.target

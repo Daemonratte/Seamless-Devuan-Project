@@ -1,0 +1,14 @@
+[Unit]
+Description=custom Debian build daemon
+Documentation=man:mini-buildd(8)
+After=remote-fs.target
+
+[Service]
+Environment=MINI_BUILDD_OPTIONS=""
+Environment=PYTHONWARNINGS="ignore"
+EnvironmentFile=-/etc/default/mini-buildd
+User=mini-buildd
+ExecStart=/usr/sbin/mini-buildd $MINI_BUILDD_OPTIONS
+
+[Install]
+WantedBy=multi-user.target

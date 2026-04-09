@@ -1,0 +1,17 @@
+[Unit]
+Description=Reconfigure local DNSSEC resolver on connectivity changes
+After=NetworkManager.service unbound.service dnssec-triggerd-keygen.service
+Requires=unbound.service
+Wants=dnssec-triggerd-keygen.service
+
+[Service]
+PIDFile=/run/dnssec-triggerd.pid
+Type=simple
+Restart=always
+ExecStart=/usr/sbin/dnssec-triggerd -d
+ExecStartPre=-/usr/lib/dnssec-trigger/dnssec-trigger-script --prepare
+ExecStartPost=-/usr/lib/dnssec-trigger/dnssec-trigger-script --update_all
+ExecStopPost=-/usr/lib/dnssec-trigger/dnssec-trigger-script --cleanup
+
+[Install]
+WantedBy=multi-user.target

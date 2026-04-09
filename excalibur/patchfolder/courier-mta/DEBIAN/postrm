@@ -1,0 +1,164 @@
+#!/bin/sh
+
+# Exit immediately if a command produces an error.
+set -e
+
+del_override() {
+    if dpkg-statoverride --list $1 >/dev/null; then
+	dpkg-statoverride --remove $1
+    fi
+}
+
+if [ "$1" = "purge" ]; then
+    # Removes possibly automatically produced files
+    for f in aliases.dat defaultdomain dsnfrom esmtpacceptmailfor.dat hosteddomains.dat locals smtpaccess.dat; do
+	for ext in "" "~"; do
+	    rm -f /etc/courier/$f$ext
+	done
+    done
+
+    # Remove configuration directories if empty
+    for dir in aliasdir aliases esmtpacceptmailfor.dir hosteddomains smtpaccess; do
+	[ -d /etc/courier/$dir ] && rmdir --ignore-fail-on-non-empty /etc/courier/$dir
+    done
+
+    # Remove message queues
+    rm -rf /var/lib/courier/msgq
+    rm -rf /var/lib/courier/msgs
+
+    # Remove generated TLS certificate
+    rm -f /etc/courier/esmtpd.pem
+
+    # Remove generated random file
+    rm -f /etc/courier/esmtpd.rand
+    rm -f /usr/lib/courier/esmtpd.rand
+
+    # Delete Courier SMTP overrides
+    del_override /usr/sbin/rmail
+    del_override /usr/bin/mailq
+    del_override /usr/bin/cancelmsg
+    del_override /usr/sbin/sendmail
+    del_override /usr/lib/courier/courier/submitmkdir
+
+    for dir in allfilters filters msgq msgs track; do
+	del_override /var/lib/courier/$dir
+    done
+    del_override /var/lib/courier/tmp
+
+    del_override /etc/courier/aliasdir
+    del_override /etc/courier/aliases
+    del_override /etc/courier/aliases/system
+    del_override /etc/courier/esmtpauthclient
+    del_override /etc/courier/filters
+    del_override /etc/courier/filters/active
+fi
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/courier-msa" ] ; then
+	chmod -x "/etc/init.d/courier-msa" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d courier-msa remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/courier-mta-ssl" ] ; then
+	chmod -x "/etc/init.d/courier-mta-ssl" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d courier-mta-ssl remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/courier-mta" ] ; then
+	chmod -x "/etc/init.d/courier-mta" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d courier-mta remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/courierfilter" ] ; then
+	chmod -x "/etc/init.d/courierfilter" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d courierfilter remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/courier" ] ; then
+	chmod -x "/etc/init.d/courier" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d courier remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'courier-msa.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'courier-mta-ssl.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'courier-mta.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'courierfilter.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'courier.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,19 @@
+[Unit]
+Description=cvs pserver chroot wrapper
+Documentation=man:cvsd(8)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/sbin/cvsd --nofork -f /etc/cvsd/cvsd.conf
+Restart=on-abnormal
+PrivateTmp=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=game server for board games like GtkAtlantic
+Documentation=man:monopd(6)
+
+[Service]
+Type=notify
+ExecStart=/usr/sbin/monopd
+DynamicUser=yes
+
+[Install]
+WantedBy=multi-user.target

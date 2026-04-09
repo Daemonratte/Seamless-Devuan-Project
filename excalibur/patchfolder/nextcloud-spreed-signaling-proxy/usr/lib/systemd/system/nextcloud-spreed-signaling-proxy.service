@@ -1,0 +1,43 @@
+[Unit]
+Description=Signaling server proxy for Nextcloud Talk
+After=network.target
+Documentation=file:/usr/share/doc/nextcloud-spreed-signaling/README.md.gz
+
+[Service]
+ExecStart=/usr/bin/nextcloud-spreed-signaling-proxy -config /etc/nextcloud-spreed-signaling/proxy.conf
+ExecReload=/bin/kill -HUP $MAINPID
+User=_signaling
+Group=_signaling
+Restart=on-failure
+
+# Hardening - see systemd.exec(5)
+CapabilityBoundingSet=
+ExecPaths=/usr/bin/nextcloud-spreed-signaling-proxy /usr/lib
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoExecPaths=/
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+PrivateUsers=yes
+ProcSubset=pid
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectProc=invisible
+ProtectSystem=strict
+RemoveIPC=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~ @privileged
+
+[Install]
+WantedBy=multi-user.target

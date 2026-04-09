@@ -1,0 +1,75 @@
+#!/bin/sh
+set -e
+
+# From apache2:
+# check if we're installing or updating to
+# prevent recopying default index.html on update.
+
+is_fresh_install()
+{
+	if [ -z "$2" ] ; then
+		return 0
+	fi
+	return 1
+}
+if is_fresh_install $@ ; then
+	mkdir -p /var/www/html
+	do_copy="true"
+	for file in index.html index.htm index.xhtml index.xht Default.htm index.cgi index.php index.mini-httpd.html ; do
+		if [ -e "/var/www/html/$file" ] ; then
+			do_copy="false"
+			break
+		fi
+	done
+	if [ "$do_copy" = "true" ]; then
+		if [ -r /usr/share/doc/mini-httpd/examples/index.html ]; then
+			cp /usr/share/doc/mini-httpd/examples/index.html /var/www/html/index.html
+		fi
+	fi
+fi
+
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/mini-httpd" ]; then
+		update-rc.d mini-httpd defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native mini-httpd $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'mini-httpd.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'mini-httpd.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'mini-httpd.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'mini-httpd.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'mini-httpd.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

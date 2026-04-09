@@ -1,0 +1,87 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          mbmon
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: mbmon Service
+# Description: Motherboard sensor monitoring daemon
+### END INIT INFO
+#
+# 2005/06/17 Dustin Laurence (based on the Debian initscript for ntop)
+#
+# Run mbmon in daemon mode at startup for the benefit of e.g. gkrellm
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+. /lib/lsb/init-functions || exit 0
+
+NAME="mbmon"
+DAEMON=/usr/bin/mbmon
+PIDFILE=/var/run/mbmon.pid
+CFG="/etc/default/$NAME"
+DESC="Motherboard sensor monitoring daemon"
+
+test -x $DAEMON || exit 0
+
+if test -f $CFG ; then
+    . $CFG
+else
+    # better change this in the /etc/default/mbmon file and leave this alone
+    MBMONPORT="411" # This port seems appropriate and unused
+    START_MBMON=0 # default is not to start the daemon
+fi
+
+test -n "$MBMONPORT" || exit 0
+
+# Edit /etc/default/mbmon if you want it to start automatically
+[ "$START_MBMON" -eq 1 ] || exit 0
+
+case "$1" in
+start)
+    echo -n "Starting $DESC: "
+    start-stop-daemon --start --quiet --name $NAME --exec $DAEMON -- \
+        -r -P $MBMONPORT
+    if ps xa | grep -v grep | grep $DAEMON > /dev/null ; then
+        echo $NAME
+    else
+        echo "$NAME not started."
+    fi
+    ;;
+stop)
+    echo -n "Stopping $DESC: "
+    start-stop-daemon --stop --oknodo --name $NAME --exec $DAEMON --retry 9
+    if ps xa | grep -v grep | grep $DAEMON > /dev/null ; then
+        echo "$NAME not stopped. Need to kill manually."
+    else
+        echo $NAME
+    fi
+    ;;
+status)
+    status_of_proc "$DAEMON" "$NAME"
+    exit $?
+    ;;
+restart)
+    $0 stop
+    sleep 2
+    $0 start
+    ;;
+force-reload)
+    if ps aux | grep -v grep | grep -q '$DAEMON' ; then
+        $0 stop
+        sleep 2
+        $0 start
+    fi
+    ;;
+status)
+    status_of_proc $DAEMON "Mbmon server"
+    ;;
+*)
+echo "Usage: $0 {start|stop|restart|force-reload|status}"
+exit 2
+;;
+
+esac
+
+exit 0

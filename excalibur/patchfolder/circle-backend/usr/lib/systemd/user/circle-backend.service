@@ -1,0 +1,7 @@
+[Unit]
+Description=Backend for the Circle IRC client
+Documentation=man:Circle(3pm)
+
+[Service]
+ExecStart=/usr/bin/circle-be --socket %t/circle/socket
+RuntimeDirectory=circle

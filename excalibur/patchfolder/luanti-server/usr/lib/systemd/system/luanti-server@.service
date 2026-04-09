@@ -1,0 +1,20 @@
+[Unit]
+Description=Luanti multiplayer server (%i config)
+Documentation=man:luantiserver(6)
+After=network.target
+
+[Service]
+Restart=on-failure
+DynamicUser=yes
+ExecStart=/usr/libexec/luanti/luantiserver --config /etc/luanti/%i.conf --logfile /var/log/luanti/%i/server.log --gameid $LUANTI_GAMEID
+Environment=MINETEST_USER_PATH=/var/lib/luanti/%i
+Environment=MINETEST_MOD_PATH=/usr/share/games/minetest/mods
+Environment=LUANTI_GAMEID=minetest_game
+EnvironmentFile=-/etc/luanti/%i.env
+StateDirectory=luanti/%i
+LogsDirectory=luanti/%i
+
+[Install]
+WantedBy=multi-user.target
+DefaultInstance=default
+

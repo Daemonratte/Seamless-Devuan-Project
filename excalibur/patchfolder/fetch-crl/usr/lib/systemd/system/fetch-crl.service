@@ -1,0 +1,13 @@
+# This unit has no install section by design
+# Enable timer instead
+# systemctl enable fetch-crl.timer
+# systemctl start fetch-crl.timer
+
+[Unit]
+Description=Run fetch-crl once
+After=network.target network-online.target
+
+[Service]
+EnvironmentFile=-/etc/default/fetch-crl
+ExecStart=/usr/sbin/fetch-crl -q $FETCHCRL_OPTIONS $FETCHCRL_BOOT_OPTIONS
+TimeoutSec=10m

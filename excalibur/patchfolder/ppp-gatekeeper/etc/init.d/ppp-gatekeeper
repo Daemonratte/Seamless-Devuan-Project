@@ -1,0 +1,107 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:		ppp-gatekeeper
+# Required-Start:	$remote_fs $syslog $network
+# Required-Stop:	$remote_fs $syslog $network
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+# Short-Description:	PPP Gatekeeper
+# Description:		PPP Gatekeeper is a daemon that manages PPPOE connections supporting
+#	various levels of redundancy and failover
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+. /lib/lsb/init-functions
+
+set -e
+
+DAEMON="/usr/sbin/ppp-gatekeeper"
+NAME="ppp-gatekeeper"
+PATH="/sbin:/bin:/usr/sbin:/usr/bin"
+LOGFILE1="/var/log/ppp-gatekeeper/stdout.log"
+LOGFILE2="/var/log/ppp-gatekeeper/stderr.log"
+RUNDIR="/var/run/ppp-gatekeeper"
+
+test -x "${DAEMON}" || exit 0
+
+if [ ! -e "${LOGFILE1}" ]
+then
+	touch "${LOGFILE1}"
+	chmod 0640 "${LOGFILE1}"
+fi
+if [ ! -e "${LOGFILE2}" ]
+then
+	touch "${LOGFILE2}"
+	chmod 0640 "${LOGFILE2}"
+fi
+
+if [ ! -d "${RUNDIR}" ]
+then
+	mkdir -p --mode=0750 "${RUNDIR}"
+fi
+
+case "${1}" in
+	start)
+		echo -n "Starting ppp-gatekeeper: "
+
+		start-stop-daemon --start --oknodo --pidfile ${RUNDIR}/ppp-gatekeeper.pid --exec ${DAEMON}
+
+		echo "${NAME}."
+		;;
+
+	stop)
+		echo -n "Stopping ppp-gatekeeper: "
+
+		start-stop-daemon --stop --retry=TERM/120/KILL/5 --pidfile ${RUNDIR}/ppp-gatekeeper.pid --oknodo
+		rm -f ${RUNDIR}/ppp-gatekeeper.pid
+
+		echo "${NAME}."
+
+		;;
+
+	restart)
+		echo -n "Stopping ppp-gatekeeper: "
+
+		start-stop-daemon --stop --retry=TERM/120/KILL/5 --pidfile ${RUNDIR}/ppp-gatekeeper.pid --oknodo 
+		rm -f ${RUNDIR}/ppp-gatekeeper.pid
+
+		echo "${NAME}."
+
+		echo -n "Starting ppp-gatekeeper: "
+
+		start-stop-daemon --start --oknodo --pidfile ${RUNDIR}/ppp-gatekeeper.pid --exec ${DAEMON}
+
+		echo "${NAME}."
+		;;
+
+	reload|force-reload)
+		;;
+
+	status)
+		PID="$(cat ${RUNDIR}/ppp-gatekeeper.pid 2>/dev/null)" || true
+
+		if [ ! -f ${RUNDIR}/ppp-gatekeeper.pid ] || [ -z "${PID}" ]
+		then
+			echo "${NAME} is not running"
+			exit 3
+		fi
+
+		if ps "${PID}" >/dev/null 2>&1
+		then
+			echo "${NAME} is running"
+			exit 0
+		else
+			echo "${NAME} is not running"
+			exit 1
+		fi
+		;;
+
+	*)
+		echo "Usage: /etc/init.d/${NAME} {start|stop|restart|reload|status}"
+		exit 1
+		;;
+esac
+
+exit 0

@@ -1,0 +1,12 @@
+[Unit]
+Description=Prometheus exporter for PHP-FPM
+Documentation=https://github.com/Lusitaniae/phpfpm_exporter/
+
+[Service]
+Restart=on-failure
+User=prometheus
+EnvironmentFile=/etc/default/prometheus-phpfpm-exporter
+ExecStart=/usr/bin/prometheus-phpfpm-exporter $ARGS
+
+[Install]
+WantedBy=multi-user.target

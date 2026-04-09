@@ -1,0 +1,11 @@
+[Unit]
+Description="Run Box Backup Client"
+ConditionPathExists=/etc/boxbackup/bbackupd.conf
+Wants=network.target
+After=network.target
+
+[Service]
+Unit=boxbackup-client.service
+
+[Install]
+WantedBy=timers.target

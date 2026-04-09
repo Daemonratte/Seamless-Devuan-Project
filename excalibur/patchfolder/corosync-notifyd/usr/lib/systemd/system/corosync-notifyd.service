@@ -1,0 +1,15 @@
+[Unit]
+Description=Corosync Dbus and snmp notifier
+Documentation=man:corosync-notifyd
+Requires=corosync.service
+After=corosync.service
+
+[Service]
+EnvironmentFile=-/etc/default/corosync-notifyd
+ExecStart=/usr/sbin/corosync-notifyd -f $OPTIONS
+Type=notify
+Restart=on-failure
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

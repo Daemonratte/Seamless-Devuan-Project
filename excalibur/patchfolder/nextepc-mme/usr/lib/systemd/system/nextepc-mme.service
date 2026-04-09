@@ -1,0 +1,11 @@
+[Unit]
+Description=Mobile Management Entity (EPC / LTE)
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/nextepc-mmed -f /etc/nextepc/mme.conf
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

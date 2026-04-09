@@ -1,0 +1,12 @@
+[Unit]
+Description=Prometheus exporter for Apache
+Documentation=https://github.com/Lusitaniae/apache_exporter/
+
+[Service]
+Restart=on-failure
+User=prometheus
+EnvironmentFile=/etc/default/prometheus-apache-exporter
+ExecStart=/usr/bin/prometheus-apache-exporter $ARGS
+
+[Install]
+WantedBy=multi-user.target

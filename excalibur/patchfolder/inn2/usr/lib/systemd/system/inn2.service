@@ -1,0 +1,46 @@
+[Unit]
+Description=InterNetNews
+Documentation=man:innd(8)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+Restart=on-abort
+ExecStart=/usr/lib/news/bin/rc.news
+ExecStop=/usr/lib/news/bin/rc.news stop
+ExecReload=/usr/sbin/ctlinnd -t 20 reload all 'by systemd'
+User=news
+Group=news
+ConfigurationDirectory=news
+LogsDirectory=news
+LogsDirectoryMode=775
+RuntimeDirectory=news
+StateDirectory=news
+StateDirectoryMode=775
+ReadWritePaths=/var/spool/news/
+ProtectSystem=full
+ProtectControlGroups=yes
+ProtectHome=yes
+# These directives are not compatible with innbind (or postdrop from Postfix)
+# because they automatically enable NoNewPrivileges:
+# PrivateDevices=yes
+# ProtectClock=yes
+# ProtectHostname=yes
+# ProtectKernelLogs=yes
+# ProtectKernelModules=yes
+# ProtectKernelTunables=yes
+# RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# RestrictNamespaces=yes
+# RestrictRealtime=yes
+# RestrictSUIDSGID=yes
+# LockPersonality=yes
+# MemoryDenyWriteExecute=yes
+# SystemCallArchitectures=native
+# SystemCallErrorNumber=EPERM
+# SystemCallFilter=@system-service
+LimitNOFILE=infinity
+
+[Install]
+WantedBy=multi-user.target
+

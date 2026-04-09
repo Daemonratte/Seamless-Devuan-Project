@@ -1,0 +1,106 @@
+#!/bin/sh
+
+set -e
+
+upgrade_cleanup() {
+  dpkg --compare-versions "$2" lt "7.5.0~" || return 0
+
+  if dpkg-statoverride --list /var/log/varnish > /dev/null; then
+    dpkg-statoverride --remove /var/log/varnish > /dev/null 2>&1 || true
+  fi
+
+  return
+}
+
+case "$1" in
+  configure)
+    upgrade_cleanup "$@"
+    ;;
+esac
+
+# Automatically added by dh_installsysusers/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+   systemd-sysusers ${DPKG_ROOT:+--root="$DPKG_ROOT"} varnish.conf
+fi
+# End automatically added section
+# Automatically added by dh_installsysusers/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+   systemd-sysusers ${DPKG_ROOT:+--root="$DPKG_ROOT"} varnish.conf varnish2.conf
+fi
+# End automatically added section
+# Automatically added by dh_installtmpfiles/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create varnish.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/default/varnish 7.1.1-1.2\~ varnish -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/default/varnishncsa 7.1.1-1.2\~ varnish -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/varnish 7.1.1-1.2\~ varnish -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/varnishncsa 7.1.1-1.2\~ varnish -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'varnish.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'varnish.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'varnish.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'varnish.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'varnish.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'varnishncsa.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'varnishncsa.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'varnishncsa.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'varnishncsa.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'varnishncsa.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'varnishncsa.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

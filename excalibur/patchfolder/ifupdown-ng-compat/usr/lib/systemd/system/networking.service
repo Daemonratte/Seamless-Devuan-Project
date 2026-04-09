@@ -1,0 +1,19 @@
+[Unit]
+Description=ifupdown-ng networking initialization
+Documentation=man:interfaces(5) man:ifup(8) man:ifdown(8)
+DefaultDependencies=no
+Wants=network.target ifupdown-pre.service
+After=local-fs.target network-pre.target apparmor.service systemd-sysctl.service systemd-modules-load.service ifupdown-pre.service
+Before=network.target shutdown.target network-online.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+SyslogIdentifier=networking
+TimeoutStopSec=30s
+ExecStart=/usr/share/ifupdown-ng/sbin/networking start
+ExecStop=/usr/share/ifupdown-ng/sbin/networking stop
+
+[Install]
+WantedBy=multi-user.target network-online.target

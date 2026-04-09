@@ -1,0 +1,17 @@
+[Unit]
+Description=CFEngine Enterprise file server
+After=syslog.target
+After=network-online.target
+ConditionPathExists=/usr/bin/cf-serverd
+ConditionPathExists=/var/lib/cfengine3/policy_server.dat
+ConditionPathExists=/var/lib/cfengine3/inputs/promises.cf
+PartOf=cfengine3.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cf-serverd --no-fork
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=network-online.target

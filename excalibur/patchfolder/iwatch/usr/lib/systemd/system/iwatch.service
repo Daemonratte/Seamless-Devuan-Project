@@ -1,0 +1,15 @@
+[Unit]
+Description=realtime filesystem monitoring program using inotify
+Documentation=man:iwatch
+After=network.target remote-fs.target
+
+[Service]
+EnvironmentFile=/etc/default/iwatch
+ExecStart=/usr/bin/iwatch -f $CONFIG_FILE -p /run/iwatch.pid -d
+ExecReload=/bin/kill -HUP $MAINPID
+Type=forking
+PIDFile=/run/iwatch.pid
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

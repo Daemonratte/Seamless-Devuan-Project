@@ -1,0 +1,13 @@
+[Unit]
+Description=CoreDHCP server
+After=network.target
+
+[Service]
+Type=simple
+StandardOutput=journal
+StandardError=journal
+ExecStart=/usr/bin/coredhcp
+PIDFile=/var/run/coredhcp.pid
+
+[Install]
+WantedBy=multi-user.target

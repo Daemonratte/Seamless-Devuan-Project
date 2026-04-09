@@ -1,0 +1,20 @@
+[Unit]
+Description=simple WHIP service
+After=network.target
+
+[Service]
+Environment=NODE_ENV=production
+#Environment=DEBUG=whip:*,-whip:debug,janus:*,-janus:debug,-janus:vdebug
+WorkingDirectory=/usr/share/simple-whip-server
+
+Type=simple
+User=www-data
+Group=www-data
+ExecStart=/usr/bin/node src/server.js
+Restart=on-failure
+RestartSec=500ms
+
+SyslogIdentifier=WHIP
+
+[Install]
+WantedBy=multi-user.target

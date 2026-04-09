@@ -1,0 +1,44 @@
+# Copyright (c) 2021, Dell Inc. or its subsidiaries.  All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# See the LICENSE file for details.
+#
+# This file is part of NVMe STorage Appliance Services (nvme-stas).
+#
+
+# Note that stafd can run w/o the avahi-daemon. However, if the avahi-daemon
+# is present, stafd should start after it for proper process sequencing.
+[Unit]
+Description=STorage Appliance Finder (STAF)
+Documentation=man:stafd.service(8) man:stafd(8)
+Wants=modprobe@nvme_fabrics.service modprobe@nvme_tcp.service network.target stas-config.target
+After=modprobe@nvme_fabrics.service modprobe@nvme_tcp.service network.target stas-config.target avahi-daemon.service
+
+# Check that the nvme-tcp kernel module was previously
+# loaded by checking for the presence of /dev/nvme-fabrics.
+AssertPathExists=/dev/nvme-fabrics
+
+[Service]
+Type=dbus
+BusName=org.nvmexpress.staf
+SyslogIdentifier=stafd
+
+ExecStart=/usr/bin/python3 -u /usr/sbin/stafd --syslog
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Run-time directory: /run/stafd
+# Cache directory: /var/cache/stafd
+RuntimeDirectory=stafd
+CacheDirectory=stafd
+RuntimeDirectoryPreserve=yes
+
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+RestrictRealtime=true
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+
+[Install]
+WantedBy=multi-user.target

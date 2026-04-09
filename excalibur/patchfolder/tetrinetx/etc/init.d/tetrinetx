@@ -1,0 +1,86 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          tetrinetx
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Init script for tetrinetx
+### END INIT INFO
+
+SCRIPT=$0
+ACTION=$1
+
+NAME="tetrinetx"
+DESC="Tetrinet Server"
+RUNDIR="/var/run/tetrinetx"
+PIDF="${RUNDIR}/game.pid"
+LOGF="/var/log/tetrinetx/game.log"
+CONF="/etc/tetrinetx/game.conf"
+BINX="/usr/games/tetrinetx"
+
+test -x $BINX || exit 0
+
+if [ "`echo $ACTION | cut -d- -f2`" != "now" ]; then
+  test -f /etc/default/tetrinetx || exit 0
+  # handle guys wo do not want to run tetrinetx through init.d
+  [ -r /etc/default/tetrinetx ] & . /etc/default/tetrinetx
+  RUNIT=`echo $RUN_AT_STARTUP | tr '[a-z]' '[A-Z]'`
+  if [ "$RUNIT" = "NO" ]; then
+    exit 0
+  fi
+fi
+
+if [ ! -d ${RUNDIR} ] ; then
+	mkdir -p ${RUNDIR} || true
+	if [ -d ${RUNDIR} ] ; then
+		chown -R games:games ${RUNDIR}
+	fi
+fi
+
+case "$ACTION" in
+	start|start-now)
+	  echo -n "Starting ${DESC}: "
+	  start-stop-daemon --start -q --pidfile $PIDF \
+		-c games:games --exec $BINX 2>&1 >> $LOGF
+          if [ "$?" -eq "1" ]; then
+            echo "${NAME} already running, not started."
+	    exit 0
+          else
+	    echo "${NAME}."
+	  fi
+	  ;;
+	stop|stop-now)
+	  echo -n "Stopping ${DESC}: "
+	  start-stop-daemon --stop -q  --pidfile $PIDF \
+		--retry 10 --exec $BINX 2>&1 >> $LOGF
+          if [ "$?" -eq "1" ]; then
+            echo "${NAME} not running, not stopped."
+	    exit 0
+          else
+	    echo "${NAME}."
+	  fi
+	  ;;
+	restart|force-reload)
+	  echo -n "Restarting ${DESC}: "
+	  start-stop-daemon --stop -q  --pidfile $PIDF \
+		--retry 10 --exec $BINX 2>&1 >> $LOGF
+          if [ "$?" -eq "1" ]; then
+            echo "${NAME} not running, not stopped."
+          fi
+	  start-stop-daemon --start -q --pidfile $PIDF \
+		-c games:games --exec $BINX 2>&1 >> $LOGF
+          if [ "$?" -eq "1" ]; then
+            echo "${NAME} already running, not started."
+	    exit 0
+          else
+	    echo "${NAME}."
+	  fi
+	  ;;
+	*)
+	  echo "Usage: $SCRIPT {start[-now]|stop[-now]|restart|force-reload}"
+	  exit 1
+	  ;;
+esac
+
+exit 0

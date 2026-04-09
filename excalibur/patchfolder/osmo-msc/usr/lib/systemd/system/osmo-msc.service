@@ -1,0 +1,24 @@
+[Unit]
+Description=Osmocom Mobile Switching Center (MSC)
+Wants=osmo-hlr.service
+Wants=osmo-mgw.service
+After=osmo-hlr.service
+After=osmo-hnbgw.service
+After=network-online.target
+Wants=network-online.target
+Documentation=https://osmocom.org/projects/osmomsc
+
+[Service]
+Type=simple
+Restart=always
+StateDirectory=osmocom
+WorkingDirectory=%S/osmocom
+User=osmocom
+Group=osmocom
+ExecStart=/usr/bin/osmo-msc -c /etc/osmocom/osmo-msc.cfg
+RestartSec=2
+PrivateTmp=true
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

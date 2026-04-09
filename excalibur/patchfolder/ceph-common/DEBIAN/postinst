@@ -1,0 +1,133 @@
+#!/bin/sh
+
+set -e
+
+[ -f "/etc/default/ceph" ] && . /etc/default/ceph
+
+[ -z "$SERVER_HOME" ] && SERVER_HOME=/var/lib/ceph
+[ -z "$SERVER_USER" ] && SERVER_USER=ceph
+[ -z "$SERVER_NAME" ] && SERVER_NAME="Ceph storage service"
+[ -z "$SERVER_GROUP" ] && SERVER_GROUP=ceph
+[ -z "$SERVER_UID" ] && SERVER_UID=64045  # alloc by Debian base-passwd maintainer
+[ -z "$SERVER_GID" ] && SERVER_GID=$SERVER_UID
+
+
+[ -z "$SERVER_ADDGROUP" ] && SERVER_ADDGROUP=
+
+# Custom dpkg-maintscript-helper type function to deal with
+# nested /etc/default/ceph/ceph
+finish_mv_ceph_defaults() {
+    rm -rf "/etc/default/ceph.dpkg-backup/ceph.dpkg-remove"
+
+    [ -e "/etc/default/ceph.dpkg-backup/ceph" ] || return 0
+
+    echo "Preserving user changes to /etc/default/ceph (renamed from /etc/default/ceph/ceph)..."
+    if [ -f "/etc/default/ceph" ]; then
+        mv -f "/etc/default/ceph" "/etc/default/ceph.dpkg-new"
+    fi
+    mv -f "/etc/default/ceph.dpkg-backup/ceph" "/etc/default/ceph"
+}
+
+if [ "${1}" = "configure" ] || [ "${1}" = "reconfigure" ] ; then
+	if ! getent group | grep -q "^$SERVER_GROUP:" ; then
+		addgroup --quiet \
+			--system \
+			--gid $SERVER_GID \
+			$SERVER_GROUP 2>/dev/null ||true
+	fi
+	if ! getent passwd | grep -q "^$SERVER_USER:"; then
+		adduser --quiet \
+			--system \
+			--no-create-home \
+			--disabled-password \
+			--uid $SERVER_UID \
+			--gid $SERVER_GID \
+			--home $SERVER_HOME \
+			$SERVER_USER 2>/dev/null || true
+	fi
+
+	usermod -c "$SERVER_NAME" \
+		-d $SERVER_HOME   \
+		-g $SERVER_GROUP  \
+		$SERVER_USER
+
+	# Unlock $SERVER_USER in case it is locked from an uninstall
+	if [ -f /etc/shadow ]; then
+		usermod -U -e '' $SERVER_USER
+	else
+		usermod -U $SERVER_USER
+	fi
+
+	# adjust file and directory permissions
+	if ! dpkg-statoverride --list $SERVER_HOME >/dev/null ; then
+		chown $SERVER_USER:$SERVER_GROUP $SERVER_HOME
+		chmod u=rwx,g=rx,o= $SERVER_HOME
+	fi
+	if ! dpkg-statoverride --list /var/log/ceph >/dev/null ; then
+		chown -R $SERVER_USER:$SERVER_GROUP /var/log/ceph
+		# members of group ceph can log here, but cannot remove
+		# others' files.  non-members cannot read any logs.
+		chmod u=rwx,g=rwxs,o=t /var/log/ceph
+	fi
+
+	# fix /var/run/ceph
+	if [ -d /var/run/ceph ]; then
+		chown $SERVER_USER:$SERVER_GROUP /var/run/ceph
+	fi
+
+	# create /run/ceph.  fail softly if systemd isn't present or something.
+	[ -x $(command -v systemd-tmpfiles)"" ] && systemd-tmpfiles --create || true
+fi
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create ceph.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'ceph.target' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'ceph.target'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'ceph.target' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'ceph.target' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'rbdmap.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'rbdmap.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'rbdmap.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'rbdmap.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		deb-systemd-invoke start 'ceph.target' 'rbdmap.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

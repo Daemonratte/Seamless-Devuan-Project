@@ -1,0 +1,104 @@
+#! /bin/sh
+# postrm script for postgrey
+
+set -e
+
+case "$1" in
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+
+    purge)
+        if [ -d /var/lib/postgrey ]; then
+            rm -f /var/lib/postgrey/__db.*  \
+                /var/lib/postgrey/log.*     \
+                /var/lib/postgrey/postgrey*
+            rmdir /var/lib/postgrey || true
+        fi
+
+        if which ucf >/dev/null; then
+            ucf --purge /etc/postgrey/whitelist_clients
+            ucf --purge /etc/postgrey/whitelist_recipients
+            ucf --purge /etc/default/postgrey
+        fi
+
+        if [ -d /etc/postgrey ];then
+            rm -f /etc/postgrey/*~ \
+                /etc/postgrey/*.dpkg-* \
+                /etc/postgrey/whitelist_clients \
+                /etc/postgrey/whitelist_recipients
+            rmdir /etc/postgrey || true
+        fi
+        rm -f /etc/default/postgrey /etc/default/postgrey.dpkg-*
+    ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+
+esac
+
+# Automatically added by dh_installinit/13.15.3
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/postgrey" ] ; then
+	chmod -x "/etc/init.d/postgrey" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d postgrey remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_ucf/13.15.3
+if [ "$1" = "purge" ]; then
+	for ext in .ucf-new .ucf-old .ucf-dist ""; do
+		rm -f "/etc/postgrey/whitelist_recipients$ext"
+	done
+	
+	if [ -x "`command -v ucf`" ]; then
+		ucf --purge "/etc/postgrey/whitelist_recipients"
+	fi
+	if [ -x "`command -v ucfr`" ]; then
+		ucfr --purge postgrey "/etc/postgrey/whitelist_recipients"
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_ucf/13.15.3
+if [ "$1" = "purge" ]; then
+	for ext in .ucf-new .ucf-old .ucf-dist ""; do
+		rm -f "/etc/postgrey/whitelist_clients$ext"
+	done
+	
+	if [ -x "`command -v ucf`" ]; then
+		ucf --purge "/etc/postgrey/whitelist_clients"
+	fi
+	if [ -x "`command -v ucfr`" ]; then
+		ucfr --purge postgrey "/etc/postgrey/whitelist_clients"
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_ucf/13.15.3
+if [ "$1" = "purge" ]; then
+	for ext in .ucf-new .ucf-old .ucf-dist ""; do
+		rm -f "/etc/default/postgrey$ext"
+	done
+	
+	if [ -x "`command -v ucf`" ]; then
+		ucf --purge "/etc/default/postgrey"
+	fi
+	if [ -x "`command -v ucfr`" ]; then
+		ucfr --purge postgrey "/etc/default/postgrey"
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'postgrey.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

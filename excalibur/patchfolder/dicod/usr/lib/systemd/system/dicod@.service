@@ -1,0 +1,9 @@
+[Unit]
+Description=Dicod dictionary server per-connection daemon
+After=auditd.service
+Documentation=man:dicod(8)
+
+[Service]
+EnvironmentFile=-/etc/default/dicod
+ExecStart=-/usr/bin/dicod --inetd $DAEMON_OPTS
+StandardInput=socket

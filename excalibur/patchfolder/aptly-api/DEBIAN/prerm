@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'aptly-api.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /etc/aptly-api.conf /etc/aptly.conf 1.6\~ -- "$@"
+# End automatically added section

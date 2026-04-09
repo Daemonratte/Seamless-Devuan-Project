@@ -1,0 +1,114 @@
+#!/bin/sh
+# /etc/init.d/arpalert: v1 2006/10/12 jan Wagner <waja@cyconet.org>
+# Based on /etc/init.d/arpwatch: v9 2004/08/14 KELEMEN Peter <fuji@debian.org>
+# Based on /etc/init.d/skeleton (1.8  03-Mar-1998  miquels@cistron.nl)
+# 2001/10/26	fuji@debian.org		Support multiple instances.
+# 2001/11/24	fuji@debian.org		Use POSIX-style functions.
+# 2001/12/17	fuji@debian.org		Use --pidfile on startup, fix restart.
+# 2004/08/10	fuji@debian.org		Source /etc/default/arwpatch .
+#					Create datafile if it doesn't exist.
+#					Run daemon only if executable.
+
+### BEGIN INIT INFO
+# Provides: arpalert
+# Required-Start: $local_fs $network $remote_fs $syslog
+# Required-Stop: $local_fs $network $remote_fs $syslog
+# Default-Start:  2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: start and stop the arpalert daemon
+# Description:  It listens on a network interface (without using 'promiscuous'
+#		mode) and catches all conversations of MAC address to IP
+#		request. It then compares the mac addresses it detected with a
+#		pre-configured list of authorized MAC addresses.
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+NAME=arpalert
+DAEMON=/usr/sbin/$NAME
+DESC="Ethernet station monitor daemon"
+DATADIR=/var/lib/$NAME
+test -x $DAEMON || exit 0
+. /lib/lsb/init-functions
+### You shouldn't touch anything below unless you know what you are doing.
+
+not_configured () {
+        echo "#### WARNING ####"
+        echo "arpalert won't be started/stopped unless it is configured."
+        echo "If you want to start arpalert as daemon, see /etc/default/arpalert."
+        echo "#################"
+        exit 0
+}
+
+# check if arpalert is configured or not
+if [ -f "/etc/default/$NAME" ]
+then
+        . /etc/default/$NAME
+        if [ "$STARTUP" != "1" ]
+        then
+                not_configured
+        fi
+else
+        not_configured
+fi
+
+# Check whether we have to drop privileges.
+if [ -n "$RUNAS" ]; then
+	if ! getent passwd "$RUNAS" >/dev/null; then
+		RUNAS=""
+	fi
+fi
+
+case "$1" in
+  start)
+        echo -n "Starting $DESC: "
+        if [ ! $DATAFILE ]; then
+                DATAFILE=$DATADIR/arpalert.leases
+        fi
+        if [ ! -f $DATAFILE ]; then
+                echo -n "(creating $DATAFILE) "
+                :> $DATAFILE
+        fi
+        if [ -n "$RUNAS" ]; then
+                echo -n "(chown $RUNAS $DATAFILE) "
+                chown $RUNAS $DATAFILE
+        fi
+        start-stop-daemon --start --quiet \
+                --name ${RUNAS} \
+                --exec $DAEMON -- -d -f $CONF $ARGS
+        echo "$NAME."
+	;;
+  stop)
+  	echo -n "Stopping $DESC: "
+        start-stop-daemon --stop --quiet --oknodo \
+                --exec $DAEMON
+        echo "$NAME."
+        rm -f /var/run/$NAME.pid
+	;;
+  reload)
+  	echo "Reload operation not supported -- use restart."
+	exit 1
+	;;
+  restart|force-reload)
+        $0 stop
+	sleep 1
+        $0 start
+	;;
+  status)
+	RUN=''
+	start-stop-daemon -T --exec $DAEMON && RUN=1
+	if [ -n "$RUN" ] ; then
+		log_success_msg "arpalert daemon is running"
+	exit 0
+	else
+		log_warning_msg "Could not find a running arpalert daemon."
+	exit 1
+	fi
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|force-reload|status}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

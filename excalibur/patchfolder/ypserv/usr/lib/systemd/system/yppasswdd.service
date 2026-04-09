@@ -1,0 +1,16 @@
+[Unit]
+Description=NIS Users Passwords Change Server
+Requires=rpcbind.service
+Wants=network-online.target
+After=network-online.target rpcbind.service
+
+[Service]
+Type=forking
+PIDFile=/run/yppasswdd.pid
+Environment=YPPASSWDDARGS= YPCHANGEOK=chsh YPPWDDIR=/etc
+EnvironmentFile=-/etc/default/nis
+ExecStartPre=/bin/domainname -F /etc/defaultdomain
+ExecStart=/usr/sbin/rpc.yppasswdd -D $YPPWDDIR -e $YPCHANGEOK $YPPASSWDDARGS
+
+[Install]
+WantedBy=multi-user.target

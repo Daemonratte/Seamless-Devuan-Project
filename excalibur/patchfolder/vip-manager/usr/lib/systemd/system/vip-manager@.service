@@ -1,0 +1,20 @@
+# systemd service template for vip-manager instances. The actual instances will
+# be called "vip-manger@version-cluster", e.g. "vip-manager@10-main". The
+# variable %i expands to "version-cluster", %I expands to "version/cluster".
+# (%I breaks for cluster names containing dashes.)
+[Unit]
+Description=Manages Virtual IP for Patroni
+Before=patroni.service
+
+[Service]
+Type=simple
+
+# this file is created by pg_createconfig_patroni when the --vip option has
+# been used
+EnvironmentFile=-/etc/patroni/%i.vip
+
+ExecStart=/usr/bin/vip-manager
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

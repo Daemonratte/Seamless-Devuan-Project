@@ -1,0 +1,10 @@
+[Unit]
+Description=key remapping daemon
+Documentation=man:keyd.rvaiya(1)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/keyd.rvaiya
+
+[Install]
+WantedBy=multi-user.target

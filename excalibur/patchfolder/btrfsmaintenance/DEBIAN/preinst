@@ -1,0 +1,32 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installsystemd/13.16
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'btrfs-balance.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.16
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'btrfs-defrag.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.16
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'btrfs-scrub.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.16
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'btrfs-trim.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.16
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'btrfsmaintenance-refresh.path' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.16
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'btrfsmaintenance-refresh.service' >/dev/null || true
+fi
+# End automatically added section

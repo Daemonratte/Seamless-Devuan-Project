@@ -1,0 +1,9 @@
+[Unit]
+Description=josm-installer
+Documentation=man:josm-installer(1)
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/default/josm-installer
+ExecStart=/usr/bin/josm-installer $SCRIPT_OPTS
+PrivateTmp=true

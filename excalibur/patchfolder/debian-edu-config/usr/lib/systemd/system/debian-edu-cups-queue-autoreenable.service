@@ -1,0 +1,6 @@
+[Unit]
+Description=Auto-reenable CUPS queues on hosts configured via the cups-queue-autoreenable-hosts netgroup.
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/debian-edu-config/debian-edu-cups-queue-autoreenable-for-netgroup-hosts

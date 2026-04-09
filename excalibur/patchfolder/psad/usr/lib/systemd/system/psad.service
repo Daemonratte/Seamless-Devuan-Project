@@ -1,0 +1,18 @@
+[Unit]
+Description=Port Scan Attack Detector (psad)
+Documentation=man:psad
+After=network.target
+ConditionPathExists=/etc/psad/psad.conf
+Wants=netfilter-persistent.service
+
+[Service]
+Type=forking
+PIDFile=/run/psad/psad.pid
+#Environment=DAEMON_ARGS=
+EnvironmentFile=-/etc/default/psad
+RuntimeDirectory=psad
+ExecStart=/usr/sbin/psad $DAEMON_ARGS
+# TODO: security hardening
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,48 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          xringd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+
+set -e
+
+DESC="Phone line monitor: "
+DAEMON="/usr/sbin/xringd"
+NAME="xringd"
+test -f $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+    echo -n "Starting $DESC"
+    start-stop-daemon --quiet --start --background --exec $DAEMON
+    echo "$NAME."
+    ;;
+  stop)
+    echo -n "Stopping $DESC"
+    start-stop-daemon --quiet --oknodo --stop --exec $DAEMON
+    echo "$NAME."
+    ;;
+  restart|reload|force-reload)
+    echo -n "Restarting $DESC"
+    start-stop-daemon --quiet --oknodo --stop --exec $DAEMON
+    start-stop-daemon --quiet --start --background --exec $DAEMON
+    echo "$NAME."
+    ;;
+  parse)
+	$0 stop
+	$DAEMON -n
+	if [ $? -eq 0 ]; then
+		$0 start
+	fi
+  	;;
+  *)
+    echo "Usage: /etc/init.d/xringd {start|stop|restart|reload|force-reload|parse}"
+    exit 1
+esac
+
+exit 0

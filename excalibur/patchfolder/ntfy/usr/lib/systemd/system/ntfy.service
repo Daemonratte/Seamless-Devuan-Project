@@ -1,0 +1,19 @@
+[Unit]
+Description=ntfy server
+After=network.target
+Documentation=man:ntfy(1)
+
+[Service]
+User=_ntfy
+Group=_ntfy
+ExecStart=/usr/bin/ntfy serve --no-log-dates
+ExecReload=/bin/kill --signal HUP $MAINPID
+Restart=on-failure
+# AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+LimitNOFILE=10000
+InaccessibleDirectories=/home
+
+
+[Install]
+WantedBy=multi-user.target

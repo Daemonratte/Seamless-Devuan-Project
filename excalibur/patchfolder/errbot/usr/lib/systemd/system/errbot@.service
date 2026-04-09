@@ -1,0 +1,18 @@
+[Unit]
+Description=Start errbot-%i chatbot
+Documentation=http://errbot.io/en/latest/
+After=network.service
+
+[Service]
+ExecStartPre=mkdir -p /var/lib/errbot-%i/plugins /var/lib/errbot-%i/data
+ExecStart=/usr/bin/errbot --config /etc/errbot/%i-config.py
+WorkingDirectory=/var/lib/errbot-%i/
+Restart=on-failure
+KillSignal=SIGINT
+PrivateDevices=yes
+NoNewPrivileges=yes
+DynamicUser=yes
+StateDirectory=errbot-%i
+
+[Install]
+WantedBy=multi-user.target

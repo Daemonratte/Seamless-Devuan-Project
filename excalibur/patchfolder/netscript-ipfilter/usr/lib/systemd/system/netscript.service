@@ -1,0 +1,12 @@
+[Unit]
+Description=IP tables for system
+Before=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/netscript start
+ExecStop=/usr/sbin/netscript stop
+
+[Install]
+WantedBy=basic.target

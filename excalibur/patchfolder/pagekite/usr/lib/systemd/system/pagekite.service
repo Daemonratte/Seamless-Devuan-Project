@@ -1,0 +1,35 @@
+# PageKite systemd target
+
+[Unit]
+Description=PageKite
+Documentation=man:pagekite
+Documentation=file:///usr/share/doc/pagekite/README.md.gz
+Documentation=https://pagekite.net/
+After=network.target
+ConditionPathExists=/etc/pagekite.d/10_account.rc
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/pagekite --clean --runas=daemon:daemon --optdir=/etc/pagekite.d
+TimeoutStopSec=5
+KillMode=mixed
+
+PermissionsStartOnly=true
+Restart=on-abnormal
+RestartSec=2s
+LimitNOFILE=65536
+WorkingDirectory=/tmp
+
+# Hardening
+CapabilityBoundingSet=CAP_SETUID CAP_SETGID
+SystemCallFilter=~@clock @debug @cpu-emulation @debug @keyring @module @mount @obsolete @raw-io @reboot @swap
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+
+[Install]
+WantedBy=multi-user.target

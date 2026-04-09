@@ -1,0 +1,11 @@
+[Unit]
+Description=ARC HED service
+After=local-fs.target remote-fs.target
+
+[Service]
+Type=forking
+PIDFile=/run/arched.pid
+ExecStart=/usr/share/arc/arched-start
+
+[Install]
+WantedBy=multi-user.target

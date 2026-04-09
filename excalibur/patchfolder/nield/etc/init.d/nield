@@ -1,0 +1,58 @@
+#!/bin/sh -e
+### BEGIN INIT INFO
+# Provides:          nield
+# Required-Start:    $syslog $remote_fs
+# Required-Stop:     $syslog $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start daemon at boot time.
+# Description: Enable service provided by nield.
+### END INIT INFO
+
+NIELDCMD="/usr/sbin/nield"
+PIDFILE="/var/run/nield.pid"
+
+. /lib/lsb/init-functions || exit 0
+
+test -x $CMD  || exit 0
+
+
+if [ -f /etc/default/nield ]; then
+    . /etc/default/nield
+else
+    exit 0
+fi
+
+case "$1" in
+	start)
+		echo "Starting Network Interface Events Logging Daemon"
+		$NIELDCMD $OPTIONS -p $PIDFILE -l $LOGFILE
+		;;
+	stop)
+		echo "Stopping Network Interface Events Logging Daemon"
+		if [ -f $PIDFILE ]
+		then
+			kill `cat $PIDFILE`
+		else
+			echo "$PIDFILE not found"
+		fi
+		rm -f $PIDFILE
+	;;
+	restart)
+		echo "Restarting Network Interface Events Logging Daemon"
+		$0 stop
+		$0 start
+		log_end_msg 0
+		;;
+	reload|force-reload)
+		echo "Reloading Network Interface Events Logging Daemon"
+		start-stop-daemon --stop --signal 1 --exec $NIELDCMD
+		log_end_msg 0
+		;;
+	status)
+		status_of_proc -p $PIDFILE $NIELDCMD nield
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload|status}"
+		exit 1
+esac

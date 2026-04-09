@@ -1,0 +1,47 @@
+#!/bin/sh
+# Silently delete /etc/GNUstep/gdomap_probes if it's not modified to
+# avoid a dpkg prompt when upgrading to a version where it's a
+# conffile.  See #1094636.  Should be removed in forky.
+
+set -e
+
+FILE=/etc/GNUstep/gdomap_probes
+
+# 1.30.0-10 is the vesion where $FILE became a conffile.
+if [ "$1" = "upgrade" ] && dpkg --compare-versions "$2" lt 1.30.0-10~; then
+    if [ -f $FILE ]; then
+        # Replicate what the old postinst did and create a temporary
+        # file, comparing its hash with the file on the system.
+        # Delete it if the hashes match; idea by Michael Biebl.
+        TEMPL=$(mktemp)
+        cat > $TEMPL <<EOF
+# Addresses to probe for GNUstep name service.
+# If this file does not contain any valid addresses, the local networks
+# are probed.
+EOF
+        for ip in `hostname -i`; do
+            echo $ip >> $TEMPL
+        done
+
+        SUM1=$(md5sum $TEMPL | awk '{ print $1 }')
+        SUM2=$(md5sum $FILE | awk '{ print $1 }')
+        rm $TEMPL
+        if [ "$SUM1" = "$SUM2" ]; then
+            rm $FILE
+        fi
+    fi
+fi
+
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/gdomap" ] ; then
+	chmod +x "/etc/init.d/gdomap" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'gdomap.service' >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

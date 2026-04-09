@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.1
+dpkg-maintscript-helper rm_conffile /etc/init.d/bmc-watchdog 1.6.4-3.1\~ -- "$@"
+dpkg-maintscript-helper symlink_to_dir /usr/share/doc/freeipmi-bmc-watchdog /usr/share/doc/freeipmi-common 1.6.6-4\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'bmc-watchdog.service' >/dev/null || true
+fi
+# End automatically added section

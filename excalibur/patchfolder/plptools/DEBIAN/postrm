@@ -1,0 +1,42 @@
+#! /bin/sh
+# postrm script for plptools
+#     
+# see: dh_installdeb(1)
+
+set -e
+
+case "$1" in
+		remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+	;;
+
+	purge)
+		rm -f /etc/plptools.conf /etc/default/plptools
+	;;
+
+	*)
+		echo "postrm called with unknown argument \`$1'" >&2
+		exit 0
+	;;
+
+esac   
+
+# Automatically added by dh_installinit/13.15.3
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/plptools" ] ; then
+	chmod -x "/etc/init.d/plptools" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d plptools remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installmenu/13.15.3
+if [ -x "`command -v update-menus`" ] && [ -x "$DPKG_ROOT`command -v update-menus`" ]; then update-menus ; fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.15.3
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+exit 0

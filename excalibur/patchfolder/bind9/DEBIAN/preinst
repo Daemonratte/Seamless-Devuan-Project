@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /etc/default/bind /etc/default/named 1:9.13.6\~ -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/default/bind9 /etc/default/named 1:9.12.0\~ -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/init.d/bind /etc/init.d/named 1:9.13.6\~ -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/init.d/bind9 /etc/init.d/named 1:9.12.0\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/apparmor.d/local/usr.sbin.named 1:9.11.4\+dfsg-1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bind/db.root 1:9.11.4\+dfsg-3\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bind/db.local 1:9.20.5-1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bind/db.0 1:9.20.5-1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bind/db.127 1:9.20.5-1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bind/db.255 1:9.20.5-1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bind/db.empty 1:9.20.5-1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bind/named.conf.default-zones 1:9.20.11-3\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bind/zones.rfc1918 1:9.20.5-1\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/named" ] ; then
+	chmod +x "/etc/init.d/named" >/dev/null || true
+fi
+# End automatically added section

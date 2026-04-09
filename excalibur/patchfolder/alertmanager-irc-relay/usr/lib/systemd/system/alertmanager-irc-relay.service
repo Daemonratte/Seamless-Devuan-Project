@@ -1,0 +1,14 @@
+[Unit]
+Description=Send Prometheus Alerts to IRC using Webhooks
+Documentation=https://github.com/google/alertmanager-irc-relay
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Restart=always
+User=alertmanager-irc-relay
+EnvironmentFile=/etc/default/alertmanager-irc-relay
+ExecStart=/usr/bin/alertmanager-irc-relay $ARGS
+
+[Install]
+WantedBy=multi-user.target

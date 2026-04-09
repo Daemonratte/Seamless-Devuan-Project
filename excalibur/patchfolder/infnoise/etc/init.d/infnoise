@@ -1,0 +1,50 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          infnoise
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Wayward Geek InfNoise TRNG driver
+# Description:       The InfNoise TRNG is a hardware random-number generator;
+#                    this service integrates its output with the Linux entropy
+#                    pool.
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/infnoise
+NAME=infnoise
+DESC="InfNoise TRNG"
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+set -e
+
+case "$1" in
+	status)
+		status_of_proc $DAEMON $NAME
+		;;
+
+	start)
+		start-stop-daemon --start --pidfile /var/run/infnoise.pid --oknodo --startas $DAEMON -- --dev-random --daemon --pidfile /var/run/infnoise.pid
+		;;
+
+	stop)
+		start-stop-daemon --stop --pidfile /var/run/infnoise.pid --oknodo
+		;;
+
+	restart|force-reload)
+		$0 stop
+		$0 start
+		;;
+
+	*)
+		echo "Usage: $0 {start|stop|restart|force-reload}" >&2
+		exit 1
+		;;
+esac
+
+exit 0

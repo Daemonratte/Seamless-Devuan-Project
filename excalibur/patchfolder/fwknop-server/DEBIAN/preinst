@@ -1,0 +1,63 @@
+#!/bin/sh
+
+# This script is only intended to upgrade fwknop from version 2.6.9
+# to version 2.6.10.
+#
+# NB: As some commands can return an exit code other than 0 we do not use
+# *set -e* at the beginning.
+
+if [ "$1" = "upgrade" ]; then
+
+    status=1;
+    if [ -x "`which dpkg 2>/dev/null`" ]; then
+        dpkg --compare-versions 2.6.10 gt $2
+        status=$?
+    fi
+
+    if [ $status = 0 ]; then
+
+        echo "Stopping old service ... "
+
+        pidfile="/var/fwknop/fwknopd.pid"
+        kill_status="1"
+
+        # Try to kill the process associated to the pid
+        if [ -r "$pidfile" ]; then
+            pid=`cat "$pidfile" 2>/dev/null`
+            kill -0 "${pid:-}" 2>/dev/null
+            kill_status="$?"
+        fi
+
+        # Stop the process
+        if [ "$kill_status" = "0" ]; then
+            start-stop-daemon --stop --oknodo --quiet --pidfile "$pidfile"
+        fi
+
+        echo -n "Removing old Fwknop files ... "
+
+        # Handle the /var/fwknop directory that contains pid and cache
+        # files
+        if [ -d /var/fwknop ]; then
+            find /var/fwknop/ -type f -delete
+	    rmdir /var/fwknop
+        fi
+
+        echo "Done."
+
+    fi
+
+fi
+
+set -e
+
+# Automatically added by dh_installdeb/13.20
+dpkg-maintscript-helper rm_conffile /etc/init/fwknop-server.conf 2.6.9-2\~ fwknop-server -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.20
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/fwknop-server" ] ; then
+	chmod +x "/etc/init.d/fwknop-server" >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

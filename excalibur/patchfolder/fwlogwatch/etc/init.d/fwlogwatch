@@ -1,0 +1,69 @@
+#!/bin/sh -e
+### BEGIN INIT INFO
+# Provides:          fwlogwatch
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start daemon at boot time
+# Description:       Enable service provided by daemon.
+### END INIT INFO
+#
+# Original version by Robert Leslie
+# <rob@mars.org>, edited by iwj and cs
+# Modified for fwlogwatch by Alberto Gonzalez Iniesta <agi@agi.as>
+# Modified for fwlogwatch by J.S.Junior <j.s.junior@live.com>
+
+test $DEBIAN_SCRIPT_DEBUG && set -v -x
+
+DAEMON=/usr/sbin/fwlogwatch
+CONFIG=/etc/fwlogwatch/fwlogwatch.config
+DEFAULT=/etc/default/fwlogwatch
+NAME=fwlogwatch
+#Inicialize function
+. /lib/lsb/init-functions
+
+test -x $DAEMON || exit 0
+test -f $CONFIG || exit 0
+test -r $DEFAULT || exit 0
+
+# Source configuration generated from debconf's values
+. $DEFAULT
+
+# Start fwlogwatch as a daemon?
+if [ "$START_DAEMON" != "true" ]; then
+  exit 0
+fi
+
+PIDFILE=`grep "^pidfile" $CONFIG | sed 's/.*=[\t ]*//' `
+
+case "$1" in
+start)
+  echo -n "Starting firewall log watcher: fwlogwatch"
+  start-stop-daemon --start --quiet \
+	--exec $DAEMON -- -R $PARAMS
+  echo "."
+  ;;
+stop)
+  echo -n "Stopping firewall log watcher: fwlogwatch"
+  start-stop-daemon --stop --quiet --oknodo \
+	--exec $DAEMON --pidfile $PIDFILE
+  echo "."
+  ;;
+restart|force-reload)
+  $0 stop
+  sleep 1
+  $0 start
+  ;;
+status)
+    status_of_proc -p $PIDFILE $DAEMON $NAME
+;;
+*)
+  echo "Usage: /etc/init.d/fwlogwatch {start|stop|restart|force-reload}" >&2
+  exit 1
+  ;;
+esac
+
+exit 0
+
+# vim:set ai et sts=2 sw=2 tw=0:

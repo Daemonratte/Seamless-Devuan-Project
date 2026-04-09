@@ -1,0 +1,78 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure)
+        id -g _iked > /dev/null 2>&1 || \
+            addgroup --system --force-badname _iked
+	id _iked > /dev/null 2>&1 || \
+            adduser --system --home /var/lib/openiked/empty \
+                    --no-create-home --disabled-password \
+                    --gecos "OpenIKED IKEv2 daemon" \
+                    --force-badname \
+                    --ingroup _iked _iked
+
+        [ -f /etc/iked/private/local.key ] || \
+            openssl ecparam -genkey -name prime256v1 -noout \
+                -out "/etc/iked/private/local.key"
+        [ -f /etc/iked/local.pub ] || \
+            openssl ec -in "/etc/iked/private/local.key" -pubout\
+                -out "/etc/iked/local.pub"
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure|reconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/openiked" ]; then
+		update-rc.d openiked defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native openiked $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'openiked.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'openiked.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'openiked.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'openiked.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'openiked.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

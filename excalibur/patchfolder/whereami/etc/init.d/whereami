@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Start or stop 'whereami'
+#
+### BEGIN INIT INFO
+# Provides:          whereami
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Autoconfigure computer according to defined rules
+# Description:       Using a variety of techniques this will ascertain
+#                    the computer's location on the network, in the
+#                    docking station and so forth and configure things
+#                    appropriately.
+### END INIT INFO
+#
+# Andrew McMillan <Andrew@cat-it.co.nz>
+#
+
+test -x /usr/sbin/whereami || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+    start|restart|force-reload|reload)
+        if [ ! -d /var/run/whereami ] ; then
+            mkdir /var/run/whereami
+        fi
+    	echo -n "Where Am I: "
+      start-stop-daemon --start --quiet --exec /usr/sbin/whereami -- --run_from init --syslog --hint netstart
+    ;;
+
+    stop)
+      start-stop-daemon --start --quiet --exec /usr/sbin/whereami -- --run_from init --syslog shutdown
+    ;;
+
+    status)
+      cat /var/lib/whereami/iam
+    ;;
+
+
+    *)
+	echo "Usage: /etc/init.d/whereami {start|stop|restart|force-reload}" >&2
+	exit 1
+    ;;
+esac
+
+exit 0

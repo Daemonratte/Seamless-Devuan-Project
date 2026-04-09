@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.1
+dpkg-maintscript-helper rm_conffile /etc/privoxy/global.action 3.0.33-4\~ privoxy -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/privoxy/standard.action 3.0.33-4\~ privoxy -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/privoxy/templates/show-version 3.0.33-4\~ privoxy -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/privoxy/templates/edit-actions-for-url-string-filter 3.0.33-3\~ privoxy -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/privoxy" ] ; then
+	chmod +x "/etc/init.d/privoxy" >/dev/null || true
+fi
+# End automatically added section

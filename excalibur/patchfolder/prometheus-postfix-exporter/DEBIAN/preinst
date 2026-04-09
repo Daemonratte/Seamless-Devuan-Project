@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+  upgrade)
+    # Remove legacy rsyslog config snippet and private mail.log
+    rm -f /etc/rsyslog.d/prometheus-postfix-exporter.conf
+    rm -f /var/lib/prometheus/postfix-exporter/mail.log
+  ;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/prometheus-postfix-exporter" ] ; then
+	chmod +x "/etc/init.d/prometheus-postfix-exporter" >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

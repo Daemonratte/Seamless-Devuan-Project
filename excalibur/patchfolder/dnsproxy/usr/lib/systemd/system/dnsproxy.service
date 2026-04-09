@@ -1,0 +1,15 @@
+[Unit]
+Description=dnsproxy a proxy for DNS queries
+After=network-online.target nss-lookup.target
+Documentation=man:dnsproxy(1)
+Documentation=https://github.com/awaw/dnsproxy
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/default/dnsproxy
+ExecStart=/usr/sbin/dnsproxy $DAEMON_OPTS
+Restart=no
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

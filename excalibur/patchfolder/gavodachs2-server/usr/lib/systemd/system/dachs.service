@@ -1,0 +1,12 @@
+[Unit]
+Description=The DaCHS VO server
+After=network.target
+Documentation=man:dachs
+
+[Service]
+ExecStart=/usr/bin/dachs serve start -f
+Type=simple
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target

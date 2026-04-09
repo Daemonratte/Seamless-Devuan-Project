@@ -1,0 +1,62 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure)
+        id -g _gophernicus > /dev/null 2>&1 || \
+            addgroup --system --force-badname _gophernicus
+	id _gophernicus > /dev/null 2>&1 || \
+            adduser --system --home /nonexistent \
+                    --no-create-home --disabled-password \
+                    --gecos "gophernicus daemon" \
+                    --force-badname \
+                    --ingroup _gophernicus _gophernicus
+	if command -v update-inetd > /dev/null; then
+	    update-inetd --group STANDARD --add \
+		"#<off># gopher\tstream\ttcp\tnowait\t_gophernicus\t/usr/sbin/gophernicus\tgophernicus"
+	fi
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure|reconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.16
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'gophernicus.socket' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'gophernicus.socket'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'gophernicus.socket' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'gophernicus.socket' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.16
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'gophernicus.socket' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

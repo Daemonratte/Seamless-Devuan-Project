@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# pre remove script for Debian GNU/Linux rbootd package
+
+set -e
+
+# Automatically added by dh_installsystemd/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'rbootd.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/rbootd" ] ; then
+	invoke-rc.d --skip-systemd-native rbootd stop || exit 1
+fi
+# End automatically added section
+
+
+## Remove the local files dir if emtpy -- leave alone o/w
+test ! -d /usr/local/lib/rbootd || rmdir /usr/local/lib/rbootd || true
+

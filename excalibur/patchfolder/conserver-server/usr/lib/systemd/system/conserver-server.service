@@ -1,0 +1,16 @@
+[Unit]
+Description=Console server
+Documentation=man:conserver(8)
+After=network.target
+
+[Service]
+Type=forking
+PIDFile=/run/conserver/conserver.pid
+User=conservr
+EnvironmentFile=-/etc/conserver/server.conf
+EnvironmentFile=-/etc/conserver/server.local
+ExecStart=/usr/sbin/conserver -d $OPTS
+ExecReload=kill -SIGHUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target

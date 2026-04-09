@@ -1,0 +1,11 @@
+[Unit]
+Description=Pandora FMS agent
+Documentation=https://pandorafms.com
+
+[Service]
+Environment=PANDORA_PATH=/var/lib/pandorafms/agent
+EnvironmentFile=-/etc/default/pandorafms-agent
+ExecStart=/usr/sbin/pandora_agent $PANDORA_PATH
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+# systemd service for managing all debci-worker instances on the
+# system
+
+[Unit]
+Description=debci worker daemon
+Documentation=https://ci.debian.net/doc/
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecReload=/bin/true
+RemainAfterExit=on
+
+[Install]
+WantedBy=multi-user.target

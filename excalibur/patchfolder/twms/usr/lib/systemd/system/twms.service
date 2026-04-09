@@ -1,0 +1,13 @@
+[Unit]
+Description=twms web map service
+After=local-fs.target network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/twms
+ExecStart=/usr/bin/twms $PORT
+User=twms
+Group=twms
+
+[Install]
+WantedBy=multi-user.target

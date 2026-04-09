@@ -1,0 +1,41 @@
+# Systemd Bacula service file
+#
+# Copyright (C) 2000-2022 Kern Sibbald
+# License: BSD 2-Clause; see file LICENSE-FOSS
+#
+# /lib/systemd/system/bacula-director.service
+#
+# Description:
+#    Used to start/stop/reload the bacula director daemon service (bacula-director)
+#
+#    enable : systemctl enable bacula-director
+#    start : systemctl start bacula-director
+#
+#
+
+# From http://www.freedesktop.org/software/systemd/man/systemd.unit.html
+[Unit]
+Description=Bacula Director Daemon service
+Documentation=man:bacula-dir(8)
+Requires=network.target
+After=network.target multi-user.target postgresql.service mysql.service bacula-fd.service bacula-sd.service
+RequiresMountsFor=/var/lib/bacula /etc/bacula /usr/sbin
+
+# From http://www.freedesktop.org/software/systemd/man/systemd.service.html
+[Service]
+Type=exec
+User=bacula
+Group=bacula
+Environment="CONFIG=/etc/bacula/bacula-dir.conf"
+EnvironmentFile=-/etc/default/bacula-dir
+ExecStartPre=/usr/sbin/bacula-dir -t -c $CONFIG
+ExecStart=/usr/sbin/bacula-dir -fP -c $CONFIG
+ExecReload=/usr/sbin/bacula-dir -t -c $CONFIG
+ExecReload=/bin/kill -HUP $MAINPID
+SuccessExitStatus=15
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+Alias=bacula-dir.service

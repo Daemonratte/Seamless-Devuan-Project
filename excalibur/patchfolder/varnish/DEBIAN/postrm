@@ -1,0 +1,79 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+        upgrade)
+        ;;
+
+        remove|failed-upgrade|abort-install|abort-upgrade|disappear)
+
+        if test -e /var/log/varnish ; then
+
+            rm -r /var/log/varnish > /dev/null 2>&1 || exit 78
+
+        fi
+
+        if test -e /var/lib/varnish; then
+
+                rm -r /var/lib/varnish > /dev/null 2>&1 || exit 78
+        fi
+
+        ;;
+
+        purge)
+
+        if test -e /var/log/varnish; then
+
+                rm -r /var/log/varnish > /dev/null 2>&1 || exit 78
+
+        fi
+
+        if test -e /var/lib/varnish; then
+
+                rm -r /var/lib/varnish > /dev/null 2>&1 || exit 78
+        fi
+
+        rm -f /etc/varnish/secret
+
+        ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 64
+
+esac
+
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/default/varnish 7.1.1-1.2\~ varnish -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/default/varnishncsa 7.1.1-1.2\~ varnish -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/varnish 7.1.1-1.2\~ varnish -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/varnishncsa 7.1.1-1.2\~ varnish -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'varnishncsa.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'varnish.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

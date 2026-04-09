@@ -1,0 +1,41 @@
+# Copyright (c) 2021, Dell Inc. or its subsidiaries.  All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# See the LICENSE file for details.
+#
+# This file is part of NVMe STorage Appliance Services (nvme-stas).
+#
+[Unit]
+Description=STorage Appliance Connector (STAC)
+Documentation=man:stacd.service(8) man:stacd(8)
+Wants=modprobe@nvme_fabrics.service modprobe@nvme_tcp.service network.target stas-config.target
+After=modprobe@nvme_fabrics.service modprobe@nvme_tcp.service network.target stas-config.target
+
+# Check that the nvme-tcp kernel module was previously
+# loaded by checking for the presence of /dev/nvme-fabrics.
+AssertPathExists=/dev/nvme-fabrics
+
+[Service]
+Type=dbus
+BusName=org.nvmexpress.stac
+SyslogIdentifier=stacd
+
+ExecStart=/usr/bin/python3 -u /usr/sbin/stacd --syslog
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Run-time directory: /run/stacd
+# Cache directory: /var/cache/stacd
+RuntimeDirectory=stacd
+CacheDirectory=stacd
+RuntimeDirectoryPreserve=yes
+
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+RestrictRealtime=true
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+
+[Install]
+WantedBy=multi-user.target

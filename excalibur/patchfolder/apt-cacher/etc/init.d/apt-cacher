@@ -1,0 +1,116 @@
+#! /bin/sh
+#
+
+### BEGIN INIT INFO
+# Provides:          apt-cacher
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: apt-cacher package caching proxy daemon
+# Description:       The apt-cacher service is used to cache packages for a system or LAN
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DESC="Apt-Cacher"
+NAME=apt-cacher
+DAEMON=/usr/sbin/$NAME
+RUNDIR=/var/run/$NAME
+PIDFILE=$RUNDIR/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+CONFIG_FILES="/etc/$NAME/$NAME.conf $(run-parts --list /etc/$NAME/conf.d)"
+
+
+# Gracefully exit if the package has been removed.
+test -x $DAEMON || exit 0
+
+# Read default file if it is present.
+if [ -r /etc/default/$NAME ]
+then
+	. /etc/default/$NAME
+fi
+
+. /lib/lsb/init-functions
+
+get_config() {
+    echo $EXTRAOPT | tr -s ' ' '\n' | \
+	sed -n "s/^\s*$1\s*=//p" $CONFIG_FILES - | \
+	tail -1 | tr -d '[:blank:]'
+}
+
+#
+#	Function that starts the daemon/service.
+#
+d_start() {
+    start-stop-daemon --start --quiet  \
+		      --exec $DAEMON -- -R 3 -d -p $PIDFILE $EXTRAOPT && \
+	echo "$NAME."
+}
+
+#
+#	Function that stops the daemon/service.
+#
+d_stop() {
+    start-stop-daemon --stop --quiet --retry=TERM/10/KILL/5 --pidfile $PIDFILE \
+		      --name $NAME
+
+    # Also stop any running libcurl backend
+    /usr/share/apt-cacher/libcurl.pl EXIT
+}
+
+# apt-cacher needs $RUNDIR, but is not able to create it in inetd
+# or CGI mode, so ensure it exists
+if test ! -d $RUNDIR; then
+    mkdir -m 755 $RUNDIR
+    RUN_AS_USER=$(get_config user)
+    RUN_AS_GROUP=$(get_config group)
+    [ "$RUN_AS_USER" ] && chown "$RUN_AS_USER" $RUNDIR
+    [ "$RUN_AS_GROUP" ] && chgrp "$RUN_AS_GROUP" $RUNDIR
+fi
+
+# Nothing more to do if apt-cacher run on same port from
+# /etc/inetd.conf
+RUN_ON_PORT=$(get_config daemon_port)
+if [ -f /etc/inetd.conf ] && \
+       grep -E -q "^${RUN_ON_PORT:=3142}\s+stream\s+tcp\s+nowait\s+www-data\s+/usr/sbin/apt-cacher\s+apt-cacher\s+-i" /etc/inetd.conf
+then
+    echo "$DESC on port $RUN_ON_PORT handled by /etc/inetd.conf."
+    exit 0
+fi
+
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC: "
+	d_start
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+	d_stop
+	echo "$NAME."
+	;;
+  restart)
+	echo -n "Restarting $DESC: "
+	d_stop
+	sleep 1
+	d_start
+	;;
+  force-reload|reload)
+	echo -n "Reloading configuration of $DESC: "
+	test -f $PIDFILE && pid=$(cat $PIDFILE)
+	if test -z "$pid" ; then
+	    echo "$NAME not running."
+	else
+	    kill -HUP "$pid" && echo "done!."
+	fi
+	;;
+  status)
+	status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload|status}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

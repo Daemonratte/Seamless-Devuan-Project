@@ -1,0 +1,134 @@
+#! /bin/sh
+set -e
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'dachs.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'dachs.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'dachs.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'dachs.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'dachs.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+set_user_account()
+{
+	# have stuff the server needs to see belong to this group.
+	if ! getent group gavo > /dev/null ; then
+		addgroup gavo
+	fi
+
+	# This is the user that the server changes to if it can.
+	if ! getent passwd gavo > /dev/null ; then
+		adduser --system --no-create-home --home /nonexistent --ingroup gavo gavo
+	fi
+
+	# dachsroot should be used to write RDs, handle data, etc.  People can 
+	# also use other other accounts with group membership gavo.  Since
+	# 2020 CI doesn't let us create users with home directories, fall back
+	# to creating one without.
+	if ! getent passwd dachsroot > /dev/null ; then
+		adduser --disabled-password --gecos "" --ingroup gavo dachsroot \
+			|| adduser --system --shell /bin/sh --no-create-home --home /nonexistent --ingroup gavo dachsroot
+	fi
+}
+
+
+create_database()
+{
+	# create the database
+	if ! su postgres -c "createdb --encoding=UTF-8 --template template0 gavo" ; then
+		echo "Creation of gavo database failed; assuming it's already there"
+		echo "and carrying on."
+	fi
+}
+
+
+create_dachs_env()
+{
+	# give postgres superuser privileges to user "dachsroot"
+	! su postgres -c "createuser -s dachsroot" 
+
+	# create the "gavo" rootDir
+	mkdir -p /var/gavo/
+
+	# make sure that the rootDir is writable by "dachsroot"
+	chown dachsroot /var/gavo/
+
+	# let DaCHS create its filesystem hierarchy
+	su dachsroot -c "dachs init"
+
+	# in case there already was a DaCHS (perhaps dachs 1.x, perhaps because
+	# as a remnant of a previous installation), run an upgrade immdiately; 
+	# the stuff from upgrade_dachs_env won't run on install.
+	su dachsroot -c "dachs upgrade"
+}
+
+
+start_dachs()
+{
+	# register the "dachs" init script
+	if [ -x "/etc/init.d/dachs" ]; then
+		update-rc.d dachs defaults  > /dev/null
+		if [ -x "`which invoke-rc.d 2>/dev/null`" ]; then
+			invoke-rc.d dachs start || exit $?
+		else
+			/etc/init.d/dachs start || exit $?
+		fi
+	fi
+}
+
+
+upgrade_dachs_env()
+{
+	echo " "
+	echo "If this step fails, run    dachs upgrade   yourself"
+	echo "and read the error messages.  If that doesn't help,"
+	echo "please notify to dachs-support@g-vo.org ."
+	echo " "
+
+	su -s/bin/sh -c "dachs upgrade" dachsroot || exit $?
+
+	# restart the "dachs" server
+	invoke-rc.d dachs restart || exit $?
+}
+
+
+case "$1" in
+	configure)
+		if [ -z "$2" ]; then
+			set_user_account
+			create_database
+			create_dachs_env
+			start_dachs
+		else
+			upgrade_dachs_env
+		fi
+	;;
+	*)
+		echo "$0: does not understand being called with \`$1'" 1>&2
+		exit
+	;;
+esac

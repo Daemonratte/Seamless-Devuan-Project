@@ -1,0 +1,182 @@
+#!/bin/sh
+# postinst script for bcron.
+#
+# See: dh_installdeb(1).
+
+set -e
+
+CRONTABDIR=/var/spool/cron/crontabs
+
+# Automatically added by dh_installsysusers/13.22
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+   systemd-sysusers ${DPKG_ROOT:+--root="$DPKG_ROOT"} bcron.conf
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='bcron-sched' ENABLE='yes' ONUPGRADE='restart' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='bcron-spool' ENABLE='yes' ONUPGRADE='restart' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='bcron-update' ENABLE='yes' ONUPGRADE='restart' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.22
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/bcron-update" ]; then
+		update-rc.d bcron-update defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native bcron-update $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.22
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/bcron-sched" ]; then
+		update-rc.d bcron-sched defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native bcron-sched $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.22
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/bcron-spool" ]; then
+		update-rc.d bcron-spool defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native bcron-spool $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.22
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'bcron-sched.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'bcron-sched.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'bcron-sched.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'bcron-sched.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.22
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'bcron-spool.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'bcron-spool.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'bcron-spool.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'bcron-spool.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.22
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'bcron-update.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'bcron-update.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'bcron-update.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'bcron-update.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.22
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'bcron-sched.service' 'bcron-spool.service' 'bcron-update.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+case "$1" in
+    configure)
+	# add acls for user and group cron
+	setfacl -m u:cron:rwx $CRONTABDIR
+	setfacl -m g:cron:rwx $CRONTABDIR
+	for f in $(find $CRONTABDIR -mindepth 1 -maxdepth 1); do
+	    setfacl -m u:cron:rw $f
+	    setfacl -m g:cron:rw $f
+	done
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument '$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

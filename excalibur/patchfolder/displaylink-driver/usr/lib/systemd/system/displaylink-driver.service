@@ -1,0 +1,16 @@
+[Unit]
+Description=DisplayLink Driver Service
+After=display-manager.service
+Conflicts=getty@tty7.service
+Documentation=https://www.synaptics.com/products/displaylink-graphics
+
+[Service]
+#ExecStartPre=/bin/sh -c 'modprobe evdi || (dkms install \$(ls -t /usr/src | grep evdi | head -n1  | sed -e "s:-:/:") && modprobe evdi)'
+ExecStartPre=/bin/sh -c 'modprobe evdi'
+ExecStart=/usr/lib/displaylink/DisplayLinkManager
+Restart=always
+WorkingDirectory=/usr/lib/displaylink
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/userv" ] ; then
+	chmod -x "/etc/init.d/userv" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d userv remove >/dev/null
+fi
+# End automatically added section
+

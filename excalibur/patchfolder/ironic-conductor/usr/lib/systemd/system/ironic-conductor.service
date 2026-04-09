@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Ironic Conductor (ironic-conductor)
+After=postgresql.service mysql.service keystone.service ntp.service rabbitmq-server.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service ntp.service rabbitmq-server.service network-online.target 
+
+Documentation=man:ironic-conductor(1)
+
+[Service]
+User=ironic
+Group=ironic
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=ironic lock/ironic
+CacheDirectory=ironic
+ExecStart=/etc/init.d/ironic-conductor systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

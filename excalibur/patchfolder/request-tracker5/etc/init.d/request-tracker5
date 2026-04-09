@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          request-tracker5
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Should-Start:      mysql postgresql
+# Should-Stop:       mysql postgresql
+# X-Start-Before:    apache2
+# X-Stop-After:      apache2
+# Short-Description: Dummy init script to enforce web/database server startup ordering
+# Description:       This init script exists so that MySQL or PostgreSQL database servers,
+#  if present, will be started before Apache. This is a workaround for the problem in RT
+#  where if mod_perl is being used, inability to contact the database server when Apache is
+#  being started will cause the web server to fail to start up.
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+case "$1" in
+    start|stop|restart|force-reload)
+        # we don't have anything to do, but that's okay
+        ;;
+    *)
+        log_action_msg "Usage: /etc/init.d/request-tracker5 {start|stop|restart|force-reload}"
+        exit 1
+esac
+
+exit 0

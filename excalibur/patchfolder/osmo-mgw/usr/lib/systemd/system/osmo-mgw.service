@@ -1,0 +1,14 @@
+[Unit]
+Description=Osmocom Media Gateway (MGW)
+Documentation=https://osmocom.org/projects/osmo-mgw
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/osmo-mgw -c /etc/osmocom/osmo-mgw.cfg
+RestartSec=2
+PrivateTmp=true
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

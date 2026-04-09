@@ -1,0 +1,16 @@
+[Unit]
+Description=bootcd modify files provided by floppy before starting other services
+Documentation=man:bootcd(1)
+DefaultDependencies=no
+# make sure /etc/network/interfaces can be changed with floppy,
+# before it is used by networking.service
+Wants=network.target
+After=local-fs.target network-pre.target
+Before=network.target networking.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/init.d/bootcd start
+
+[Install]
+WantedBy=multi-user.target

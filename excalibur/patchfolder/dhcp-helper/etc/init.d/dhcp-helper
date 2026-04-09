@@ -1,0 +1,94 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:       dhcp-helper
+# Required-Start: $network $remote_fs $syslog
+# Required-Stop:  $network $remote_fs $syslog
+# Default-Start:  2 3 4 5
+# Default-Stop:   0 1 6
+# Description:    DHCP relay agent
+### END INIT INFO
+
+set +e
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DESC="DHCP relay agent"
+NAME=dhcp-helper
+DAEMON=/usr/sbin/$NAME
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Gracefully exit if the package has been removed.
+test -x $DAEMON || exit 0
+
+# Read config file if it is present.
+if [ -r /etc/default/$NAME ]
+then
+	. /etc/default/$NAME
+fi
+
+#
+#	Function that starts the daemon/service.
+#
+d_start() {
+	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+		--exec $DAEMON -- $DHCPHELPER_OPTS
+}
+
+#
+#	Function that stops the daemon/service.
+#
+d_stop() {
+	start-stop-daemon --stop --quiet --pidfile $PIDFILE \
+		--name $NAME
+	rm -f $PIDFILE
+}
+
+# Return
+#   0 if daemon is running
+#   1 if daemon is dead and pid file exists
+#   3 if daemon is not running
+#   4 if daemon status is unknown
+d_status() {
+        start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null
+        case "$?" in
+                0) [ -e "$PIDFILE" ] && return 1 ; return 3 ;;
+                1) return 0 ;;
+                *) return 4 ;;
+        esac
+}
+
+case "$1" in
+    start)
+	echo -n "Starting $DESC: $NAME"
+	d_start
+	echo "."
+	;;
+  stop)
+	echo -n "Stopping $DESC: $NAME"
+	d_stop
+	echo "."
+	;;
+  restart|force-reload)
+	echo -n "Restarting $DESC: $NAME"
+	d_stop
+	sleep 1
+	d_start
+	echo "."
+	;;
+   status)
+        echo -n "Checking $DESC: $NAME"
+        d_status
+        case "$?" in
+                0) echo " (running)" ; exit 0 ;;
+                1) echo " (dead, pid file exists)" ; exit 1 ;;
+                3) echo " (not running)" ; exit 3 ;;
+                *) echo " (unknown)" ; exit 4 ;;
+        esac
+        ;;
+    *)
+    echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload|status}" >&2
+	exit 3
+	;;
+esac
+
+exit 0

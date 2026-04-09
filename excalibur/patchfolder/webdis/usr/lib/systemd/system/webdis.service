@@ -1,0 +1,21 @@
+[Unit]
+Description=Webdis service, an HTTP interface to Redis
+After=network.target redis-server.service
+Documentation=man:webdis(1)
+Documentation=https://webd.is
+
+[Service]
+Type=forking
+WorkingDirectory=/
+ExecStartPre=mkdir -p /var/run/webdis
+ExecStartPre=chown webdis: /var/run/webdis
+ExecStart=/usr/bin/webdis /etc/webdis/webdis.json
+User=webdis
+Group=webdis
+PermissionsStartOnly=true
+PIDFile=/run/webdis/webdis.pid
+KillMode=process
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

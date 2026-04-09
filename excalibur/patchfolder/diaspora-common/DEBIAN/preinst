@@ -1,0 +1,67 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    upgrade)
+ 
+      # /etc/diaspora.conf uses export in the configuration file which is not
+      # compatible with systemd
+      
+      if ! test -e /etc/diaspora/diaspora.conf
+        then
+          echo "Creating /etc/diaspora/diaspora.conf from /etc/diaspora.conf..."
+          sed "s/^ *export *//" /etc/diaspora.conf > /etc/diaspora/diaspora.conf
+          echo "Removing obsolete configuration file /etc/diaspora.conf..."
+          rm -rf /etc/diaspora.conf
+          if which ucf >/dev/null; then
+              ucf --purge /etc/diaspora.conf
+          fi    
+          if which ucfr >/dev/null; then
+              ucfr --purge diaspora-common /etc/diaspora.conf
+          fi
+      fi
+      
+      if ! test -e /var/lib/diaspora-common/diaspora.private.conf
+        then
+          echo "Creating /var/lib/diaspora-common/diaspora.private.conf from /var/lib/diaspora-common/diaspora.conf..."
+          sed "s/^ *export *//" /var/lib/diaspora-common/diaspora.conf > /var/lib/diaspora-common/diaspora.private.conf
+          echo "Removing obsolete /var/lib/diaspora-common/diaspora.conf..."
+          rm -f /var/lib/diaspora-common/diaspora.conf
+      fi
+        ;;
+    abort-upgrade|install)
+        ;;
+    *)
+        echo "preinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/diaspora" ] ; then
+	chmod +x "/etc/init.d/diaspora" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/diaspora-sidekiq" ] ; then
+	chmod +x "/etc/init.d/diaspora-sidekiq" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/diaspora-puma" ] ; then
+	chmod +x "/etc/init.d/diaspora-puma" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/diaspora" ] ; then
+	chmod +x "/etc/init.d/diaspora" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/diaspora-common" ] ; then
+	chmod +x "/etc/init.d/diaspora-common" >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

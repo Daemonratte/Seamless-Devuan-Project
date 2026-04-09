@@ -1,0 +1,15 @@
+[Unit]
+Description=Glewlwyd OAuth2 authentication provider (Debian package)
+After=network.target
+Documentation=man:glewlwyd(8)
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/glewlwyd/glewlwyd.conf
+ExecStart=/usr/bin/glewlwyd --config-file=/etc/glewlwyd/glewlwyd.conf
+User=glewlwyd
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

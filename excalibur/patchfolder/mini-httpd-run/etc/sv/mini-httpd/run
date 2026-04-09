@@ -1,0 +1,9 @@
+#!/bin/sh
+exec 2>&1
+# Change to suit your needs.
+DATADIR=/var/www/html
+exec /usr/sbin/mini_httpd -D -r \
+	-h localhost				\
+	-u nobody					\
+	-l /dev/stdout				\
+	-d "$DATADIR"

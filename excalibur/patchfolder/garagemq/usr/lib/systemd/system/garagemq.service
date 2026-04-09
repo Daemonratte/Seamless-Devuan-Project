@@ -1,0 +1,35 @@
+[Unit]
+Description=AMQP server in golang
+After=network.target
+
+[Service]
+Type=notify
+Environment="CONFIG_OPTIONS=--config /etc/garagemq/config.yaml"
+ExecStart=/usr/bin/garagemq $CONFIG_OPTIONS $EXTRA_OPTIONS
+Restart=on-failure
+# security settings
+DynamicUser=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateMounts=yes
+PrivateUsers=yes
+DevicePolicy=closed
+ProtectSystem=strict
+ProtectHome=yes
+ProtectHostname=yes
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+# database storage location
+StateDirectory=garagemq
+WorkingDirectory=/var/lib/garagemq
+
+[Install]
+WantedBy=multi-user.target

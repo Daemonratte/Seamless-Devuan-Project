@@ -1,0 +1,10 @@
+[Unit]
+Description=mythtv-status MOTD update
+Documentation=man:mythtv-update-motd(8)
+
+[Timer]
+OnCalendar=*-*-* *:00,15,30,45
+OnBootSec=60
+
+[Install]
+WantedBy=timers.target

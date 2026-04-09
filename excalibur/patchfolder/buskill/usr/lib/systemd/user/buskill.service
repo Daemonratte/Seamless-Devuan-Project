@@ -1,0 +1,10 @@
+[Unit]
+Description=BusKill
+Documentation=man:buskill
+Documentation=https://docs.buskill.in/
+
+[Service]
+ExecStart=/usr/bin/buskill --arm
+
+[Install]
+WantedBy=multi-user.target

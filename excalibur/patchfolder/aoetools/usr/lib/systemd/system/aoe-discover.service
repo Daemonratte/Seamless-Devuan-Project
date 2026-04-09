@@ -1,0 +1,9 @@
+[Unit]
+Description=ATA over Ethernet discovery
+Documentation=man:aoe-discover(8)
+BindsTo=sys-devices-virtual-aoe-discover.device
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/aoe-discover

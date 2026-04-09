@@ -1,0 +1,16 @@
+[Unit]
+Description=the kernel time variables setting
+Documentation=man:adjtimex(8)
+DefaultDependencies=no
+After=local-fs.target
+Before=sysinit.target
+ConditionPathExists=/etc/default/adjtimex
+
+[Service]
+Type=oneshot
+Environment="TICK=10000" "FREQ=0"
+EnvironmentFile=-/etc/default/adjtimex
+ExecStart=/usr/sbin/adjtimex -tick ${TICK} -frequency ${FREQ}
+
+[Install]
+WantedBy=sysinit.target

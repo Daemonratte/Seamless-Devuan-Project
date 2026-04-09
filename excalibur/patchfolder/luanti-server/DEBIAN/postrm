@@ -1,0 +1,37 @@
+#!/bin/sh
+
+set -e
+
+
+if [ "$1" = "purge" ] ; then
+    rm --recursive --force /var/lib/luanti
+    rm --recursive --force /var/log/luanti
+    # old paths
+    rm --recursive --force /var/games/minetest-server
+    rm --recursive --force /var/log/minetest
+fi
+
+# begin-remove-after: released:trixie
+# DEP17 P1 M8: Protective diversion for moved file
+if [ "$1" = "abort-upgrade" ] && dpkg --compare-versions "$2" lt '5.10.0+dfgs-3~'; then
+  dpkg-divert --remove --no-rename --divert /lib/systemd/system/minetest-server.service.usr-is-merged /lib/systemd/system/minetest-server.service
+  dpkg-divert --remove --no-rename --divert /lib/systemd/system/minetest-server.service@.usr-is-merged /lib/systemd/system/minetest-server@.service
+fi
+
+# end-remove-after
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /etc/minetest/minetest.conf /etc/luanti/default.conf 5.10.0\+dfsg-1\~ luanti-server -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'luanti-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

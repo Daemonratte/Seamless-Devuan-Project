@@ -1,0 +1,8 @@
+[Unit]
+Description=Periodically save current clock
+
+[Timer]
+OnCalendar=hourly
+
+[Install]
+WantedBy=timers.target

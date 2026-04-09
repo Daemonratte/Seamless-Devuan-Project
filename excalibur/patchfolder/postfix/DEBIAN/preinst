@@ -1,0 +1,35 @@
+#!/bin/sh
+set -e
+
+# create spool dir with right SE Linux security context (#781776)
+mkdir -Zp -m755 /var/spool/postfix
+
+if [ upgrade = "$1" ] && dpkg --compare-versions "$2" lt-nl 3.9.1-7~
+then  # we used to copy the .proto files from /usr/share, now they're conffiles
+    for x in main master; do
+	if cmp -s /usr/share/postfix/$x.cf.dist /etc/postfix/$x.cf.proto
+	then rm -f /etc/postfix/$x.cf.proto
+	fi
+    done
+fi
+
+[ -z "${DPKG_ROOT:-}" ] && [ upgrade = "$1" ] && [ -d /run/systemd/system ] &&
+  deb-systemd-invoke stop postfix.service >/dev/null || :
+[ -z "${DPKG_ROOT:-}" ] && [ upgrade = "$1" ] && [ -x /etc/init.d/postfix ] &&
+  invoke-rc.d --skip-systemd-native postfix stop || :
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'postfix.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/postfix" ] ; then
+	chmod +x "/etc/init.d/postfix" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'postfix-resolvconf.path' 'postfix-resolvconf.service' >/dev/null || true
+fi
+# End automatically added section
+

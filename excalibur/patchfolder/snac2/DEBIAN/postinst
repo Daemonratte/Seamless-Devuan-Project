@@ -1,0 +1,83 @@
+#!/bin/sh
+
+set -e
+
+USER=debian-snac
+GROUP=debian-snac
+BASEDIR=/var/lib/snac2
+
+case "$1" in
+    configure)
+        # TODO: Check if user/group can be declarative.
+        if ! getent group $GROUP >/dev/null; then
+            addgroup --system --quiet $GROUP
+        fi
+
+        if ! getent passwd $USER >/dev/null; then
+            adduser --system --quiet --ingroup $GROUP \
+                    --no-create-home --home $BASEDIR $USER
+        fi
+
+        # Initialize data storage if needed.
+        if [ ! -e "$BASEDIR/server.json" ]; then
+            TEMPDIR=$(runuser -u $USER -- mktemp --directory --tmpdir=/tmp)
+            TEMPBASEDIR="$TEMPDIR/snac2"
+            printf '\n\nlocalhost\n/social\n' | \
+                runuser -u $USER -- snac init "$TEMPBASEDIR"
+            cp -a "$TEMPBASEDIR/." "$BASEDIR"
+            rm -rf "$TEMPDIR"
+        fi
+
+        # If apache2 is installed, then enable modules.
+        if [ -e /usr/share/apache2/apache2-maintscript-helper ]
+        then (
+            . /usr/share/apache2/apache2-maintscript-helper
+            apache2_invoke enmod proxy
+            apache2_invoke enmod proxy_http
+        ) fi
+        ;;
+esac
+
+# Automatically added by dh_apache2/UNDECLARED
+if true; then
+	if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
+		. /usr/share/apache2/apache2-maintscript-helper
+		for conf in snac2  ; do
+			apache2_invoke enconf $conf  || exit 1
+		done
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'snac2.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'snac2.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'snac2.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'snac2.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'snac2.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

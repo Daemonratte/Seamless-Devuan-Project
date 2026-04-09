@@ -1,0 +1,19 @@
+[Unit]
+Description=Use information from DeviceInfo, update pretty hostname and chassis info.
+
+Requires=dbus.socket
+After=dbus.socket
+# To allow Bluetooth to use this information.
+Before=bluetooth.service
+# To be safe
+After=lxc-android-config.service
+# Not strictly necessary as DBus will activate it for us, but it's an optimization.
+# Note that ordering is not needed.
+Wants=systemd-hostnamed.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/update-machine-info-from-deviceinfo
+
+[Install]
+WantedBy=multi-user.target

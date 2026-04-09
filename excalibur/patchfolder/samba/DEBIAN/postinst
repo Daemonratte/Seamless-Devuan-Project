@@ -1,0 +1,209 @@
+#!/bin/sh
+
+set -e
+
+# We generate several files during the postinst, and we don't want
+#	them to be readable only by root.
+umask 022
+
+if [ configure = "$1" -a -z "$2" ] # only do this if not upgrading
+then
+    # add the sambashare group; --force: ok if group already exist
+    groupadd --force --system sambashare
+    dir=/var/lib/samba/usershares
+    [ -d $dir ] || install -d -m 1770 -g sambashare $dir
+fi
+
+# in 4.17.4+dfsg-3 we stopped masking services, unmask them here
+if [ configure = "$1" ] && dpkg --compare-versions "$2" lt-nl 2:4.17.4+dfsg-3~
+then
+    for s in nmbd smbd samba-ad-dc; do
+	if [ /dev/null = $(realpath /etc/systemd/system/$s.service) ]
+	then
+	    rm -f /etc/systemd/system/$s.service
+	fi
+    done
+fi
+
+# remove old spool directory (point it to /var/tmp if in use)
+if [ configure = "$1" ] && dpkg --compare-versions "$2" lt-nl 2:4.17.4+dfsg-3~
+then
+    dir=/var/spool/samba
+    pat="^(\\s*path\\s*=\\s*)$dir"
+    if grep -q -E "$pat\\s*$" /etc/samba/smb.conf ; then
+	echo "WARNING: fixing smb.conf, replacing $dir with /var/tmp" >&2
+	sed -ri "s|$pat\\s*$|\\1/var/tmp|" /etc/samba/smb.conf
+    fi
+    if [ -d $dir -a ! -L $dir ]; then
+	echo "W: removing old samba print spool $dir" >&2
+	rm -rf $dir
+    fi
+    # we can still have it in an include file (or have a subdir there?)
+    if testparm -s 2>/dev/null | grep -E "$pat\\b" >&2; then
+	echo "WARNING: $dir is still referenced in smb.conf. Please update smb.conf" >&2
+	if [ ! -L $dir ]; then
+	    echo "WARNING: redirecting $dir to /var/tmp" >&2
+	    ln -s ../tmp $dir
+	fi
+    fi
+fi
+
+# in 2:4.20.1+dfsg-2 ad-dc functionality has been moved from samba to its own package.
+# in 2:4.21.1+dfsg-2 we cleaned up the startup scripts
+if   [ configure = "$1" ] \
+  && dpkg --compare-versions "$2" lt-nl 2:4.21.1+dfsg-2~~
+then
+
+    if [ ! -f /lib/systemd/system/samba-ad-dc.service ]
+    # samba-ad-dc package isn't installed
+    then
+        update-rc.d samba-ad-dc remove >/dev/null
+        if command -v deb-systemd-helper >/dev/null; then
+            deb-systemd-helper purge samba-ad-dc.service >/dev/null || :
+        fi
+    fi
+
+    if /usr/share/samba/is-configured samba-ad-dc
+    then
+
+        # use systemctl directly since the service file is gone
+        systemctl stop samba-ad-dc >/dev/null 2>&1 || :
+
+        # warn if ad-dc is configured but samba-ad-dc.service
+        # (which is part of samba-ad-dc package) is not present
+        if  [ ! -f /lib/systemd/system/samba-ad-dc.service ] \
+         && [ ! -f /var/lib/dpkg/info/samba-ad-dc.list ]
+        then
+            # here, the user might had requested to install samba-ad-dc *too*,
+            # in the same `apt-get` run, but it's not installed yet.  So this
+            # warning will be useless, but at least it will help in other cases.
+
+# this doesn't work:
+#    . /usr/share/debconf/confmodule
+#    db_title SAMBA || :
+#    db_input high samba/no-samba-ad-dc || :
+#    db_go || :
+# because:
+#  debconf does not display this note anywhwere when DEBIAN_FRONTEND=noninteractive
+#  lintian errors out about this note being non-translatable etc
+# so it requires too much efforts.  Let's keep the user uninformed.
+
+            cat <<-EOF >&2
+	WARNING: =====================================================================
+	WARNING: Your samba appears to be configured as an Active Directory Domain
+	WARNING: Controller (AD-DC).  AD-DC functionality has been moved out of main
+	WARNING: samba package to a separate samba-ad-dc package.
+	WARNING:
+	WARNING: Please install samba-ad-dc package for the Domain Controller to work.
+	WARNING:
+	WARNING: Please seee /usr/share/doc/samba/NEWS.Debian.gz for more information.
+	WARNING: =====================================================================
+
+EOF
+        fi
+    fi
+fi
+
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/cron.daily/samba 2:4.19.3\+dfsg-3\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/logrotate.d/samba 2:4.19.4\+dfsg-3\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/samba-ad-dc 2:4.21.1\+dfsg-1 -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/smbd" ]; then
+		update-rc.d smbd defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native smbd $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/nmbd" ]; then
+		update-rc.d nmbd defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native nmbd $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'smbd.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'smbd.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'smbd.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'smbd.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'smbd.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'nmbd.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'nmbd.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'nmbd.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'nmbd.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'nmbd.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+# remove msg.sock/ directory (moved to /run/samba/)
+dir=/var/lib/samba/private/msg.sock
+if [ -d $dir -a configure = "$1" ] &&
+   dpkg --compare-versions "$2" lt-nl 2:4.16.0+dfsg-7~
+then
+    rm -f $dir/*
+    rmdir $dir
+fi
+
+exit 0

@@ -1,0 +1,32 @@
+#!/bin/sh
+set -e
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p resource-agents:amd64 /usr/lib/ocf/lib/heartbeat
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p resource-agents:amd64 /usr/lib/ocf/lib/heartbeat || true
+fi
+
+# End automatically added section
+# Automatically added by dh_installtmpfiles/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create resource-agents.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'resource-agents-deps.target' >/dev/null || true
+	fi
+fi
+# End automatically added section

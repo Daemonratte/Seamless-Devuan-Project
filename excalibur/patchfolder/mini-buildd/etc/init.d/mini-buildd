@@ -1,0 +1,47 @@
+#!/bin/sh -e
+if [ -z "${INIT_D_SCRIPT_SOURCED}" ]; then
+	set "${0}" "${@}"
+	INIT_D_SCRIPT_SOURCED="sourced" . /lib/init/init-d-script
+fi
+
+### BEGIN INIT INFO
+# Provides:          mini-buildd
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: mini-buildd
+# Description:       mini-buildd (custom Debian build daemon)
+### END INIT INFO
+
+LOGFILE="/var/log/mini-buildd.log"
+DEFAULT_FILE="/etc/default/mini-buildd"
+MINI_BUILDD_OPTIONS=""
+if [ -e "${DEFAULT_FILE}" ]; then
+	. "${DEFAULT_FILE}"
+fi
+export PYTHONWARNINGS
+
+DAEMON=/usr/sbin/mini-buildd
+DAEMON_ARGS="${MINI_BUILDD_OPTIONS}"
+PIDFILE="/run/mini-buildd.pid"
+GENERIC_ARGS="--quiet --pidfile ${PIDFILE} --user mini-buildd"
+
+do_start_cmd()
+{
+	if [ -e "${PIDFILE}" ]; then
+		printf "(already running)"
+	else
+		start-stop-daemon --start ${GENERIC_ARGS} --exec ${DAEMON} --make-pidfile --background --chuid mini-buildd --output "${LOGFILE}" -- ${MINI_BUILDD_OPTIONS}
+	fi
+}
+
+# Default always want to add --exec, which does not work for (python) scripts
+do_stop_cmd()
+{
+	if [ -e "${PIDFILE}" ]; then
+		start-stop-daemon --stop ${GENERIC_ARGS} --retry=TERM/0/CONT/30/KILL/5 --remove-pidfile --oknodo
+	else
+		printf "(already stopped)"
+	fi
+}

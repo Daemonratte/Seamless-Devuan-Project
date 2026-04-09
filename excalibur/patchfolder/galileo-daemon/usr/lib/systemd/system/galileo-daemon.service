@@ -1,0 +1,16 @@
+# Unit file for Galileo
+#
+# See systemd.service(5) for further information.
+
+[Unit]
+Description=Synchronisation utility for Bluetooth LE-based Fitbit trackers
+Documentation=man:galileo(1) man:galileorc(5)
+Documentation=https://bitbucket.org/benallard/galileo
+After=network.target
+
+[Service]
+User=galileo
+ExecStart=/usr/bin/galileo --config /etc/galileorc daemon
+
+[Install]
+WantedBy=network.target

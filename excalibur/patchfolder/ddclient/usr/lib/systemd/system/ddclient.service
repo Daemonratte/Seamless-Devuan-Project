@@ -1,0 +1,15 @@
+[Unit]
+Documentation=man:ddclient(8)
+Description=Update dynamic domain name service entries
+Wants=network-online.target
+After=network-online.target nss-lookup.target
+
+[Service]
+Type=exec
+Environment=daemon_interval=5m
+EnvironmentFile=-/etc/default/ddclient
+ExecStart=/usr/bin/ddclient --daemon ${daemon_interval} --foreground
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

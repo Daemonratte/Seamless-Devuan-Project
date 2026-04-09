@@ -1,0 +1,10 @@
+[Unit]
+Description=RTags daemon
+
+Requires=rtags.socket
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rtags-rdm --inactivity-timeout 300
+Nice=19
+CPUSchedulingPolicy=idle

@@ -1,0 +1,10 @@
+[Unit]
+Description=Firewall agent that blocks outbound selected domains connections
+Documentation=man:blockdomains(8)
+
+[Service]
+ExecStart=/usr/bin/blockdomainsctl start
+ExecStop=/usr/bin/blockdomainsctl stop
+
+[Install]
+WantedBy=multi-user.target

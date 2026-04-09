@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -e
+
+# begin-remove-after: released:trixie
+# DEP17 P1 M8: Protective diversion for moved file
+if [ "$1" = install ] || { [ "$1" = upgrade ] && dpkg --compare-versions "$2" lt '5.10.0+dfgs-3~'; } ; then
+  dpkg-divert --add --no-rename --divert /lib/systemd/system/minetest-server.service.usr-is-merged /lib/systemd/system/minetest-server.service
+  dpkg-divert --add --no-rename --divert /lib/systemd/system/minetest-server.service@.usr-is-merged /lib/systemd/system/minetest-server@.service
+fi
+
+# end-remove-after
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /etc/minetest/minetest.conf /etc/luanti/default.conf 5.10.0\+dfsg-1\~ luanti-server -- "$@"
+# End automatically added section
+

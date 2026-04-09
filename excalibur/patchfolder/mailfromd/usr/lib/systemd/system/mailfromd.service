@@ -1,0 +1,12 @@
+[Unit]
+Description=mailfromd mail filtering daemon
+Documentation=info:mailfromd man:mailfromd(8) https://puszcza.gnu.org.ua/software/mailfromd/manual.html
+After=network.target
+
+[Service]
+Type=forking
+ExecStartPre=/usr/bin/install -m 755 -o mailfromd -g mailfromd -d /run/mailfromd
+ExecStart=/usr/sbin/mailfromd --pidfile /run/mailfromd/mailfromd.pid --user mailfromd
+
+[Install]
+WantedBy=multi-user.target

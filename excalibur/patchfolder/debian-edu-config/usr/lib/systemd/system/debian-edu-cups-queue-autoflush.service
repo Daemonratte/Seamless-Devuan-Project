@@ -1,0 +1,6 @@
+[Unit]
+Description=Auto-flush CUPS queues on hosts configured via the cups-queue-autoflush-hosts netgroup.
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/debian-edu-config/debian-edu-cups-queue-autoflush-for-netgroup-hosts

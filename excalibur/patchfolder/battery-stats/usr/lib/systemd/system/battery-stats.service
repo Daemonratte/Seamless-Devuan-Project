@@ -1,0 +1,14 @@
+[Unit]
+Description=Battery statistics collector
+After=remote-fs.target
+
+[Service]
+Type=simple
+Environment="SYS_ARGS=--syslog --output /var/log/battery-stats"
+Environment="ARGS=--interval=60 --flush=10 --ignore-missing-battery"
+# /etc/battery-stats.conf can be used to override the above parameters
+EnvironmentFile=/etc/battery-stats.conf
+ExecStart=/bin/sh -c "/usr/sbin/battery-stats-collector $SYS_ARGS $ARGS"
+
+[Install]
+WantedBy=multi-user.target

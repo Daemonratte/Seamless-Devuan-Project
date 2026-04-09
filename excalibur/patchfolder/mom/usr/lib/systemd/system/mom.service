@@ -1,0 +1,15 @@
+[Unit]
+Description=Memory Overcommitment Manager Daemon
+After=libvirtd.service
+
+[Service]
+EnvironmentFile=-/etc/default/%p
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/sbin/momd -c /etc/momd.conf $DAEMON_ARGS
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+Alias=momd.service

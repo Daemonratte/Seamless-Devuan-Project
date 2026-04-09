@@ -1,0 +1,16 @@
+[Unit]
+Description=Conntrack Daemon
+Documentation=man:conntrackd(8) man:conntrackd.conf(5)
+
+[Service]
+Type=notify
+#ExecStartPre=-/bin/rm -f /var/lock/conntrackd.lock
+ExecStart=/usr/sbin/conntrackd -C /etc/conntrackd/conntrackd.conf
+Restart=on-failure
+ProtectSystem=full
+ProtectHome=true
+#WatchdogSec=60
+
+[Install]
+WantedBy=multi-user.target
+

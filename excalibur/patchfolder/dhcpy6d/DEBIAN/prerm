@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.15.3
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = remove ] && [ -x "/etc/init.d/dhcpy6d" ] ; then
+	invoke-rc.d --skip-systemd-native dhcpy6d stop || exit 1
+fi
+# End automatically added section
+
+# Automatically added by dh_python3
+if command -v py3clean >/dev/null 2>&1; then
+	py3clean -p dhcpy6d 
+else
+	dpkg -L dhcpy6d | sed -En -e '/^(.*)\/(.+)\.py$/s,,rm "\1/__pycache__/\2".*,e'
+	find /usr/lib/python3/dist-packages/ -type d -name __pycache__ -empty -print0 | xargs --null --no-run-if-empty rmdir
+fi
+
+# End automatically added section

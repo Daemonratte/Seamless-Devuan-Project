@@ -1,0 +1,14 @@
+[Unit]
+Description=HTTP/1.x and DNS demuxer service
+Documentation=man:hddemux(1)
+Requires=hddemux.socket
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/hddemux
+WorkingDirectory=/run/hddemux/workdir
+User=hddemux
+Group=hddemux
+
+[Install]
+Also=hddemux.socket

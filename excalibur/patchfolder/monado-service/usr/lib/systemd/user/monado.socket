@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: BSL-1.0
+# SPDX-FileCopyrightText: 2020, Collabora, Ltd.
+
+[Unit]
+Description=Monado XR service module connection socket 
+ConditionUser=!root
+Conflicts=monado-dev.socket
+
+[Socket]
+ListenStream=%t/monado_comp_ipc
+RemoveOnStop=true
+FlushPending=true
+
+[Install]
+WantedBy=sockets.target

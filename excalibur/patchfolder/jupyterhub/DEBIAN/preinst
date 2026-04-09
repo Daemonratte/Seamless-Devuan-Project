@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/jupyterhub/config/jupyterhub_config.d/50-use-configurable-http-proxy.py 5.2.1\+ds1-4\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/jupyterhub/config/jupyterhub_config.d/config.yaml 5.2.1\+ds1-4\~ -- "$@"
+# End automatically added section

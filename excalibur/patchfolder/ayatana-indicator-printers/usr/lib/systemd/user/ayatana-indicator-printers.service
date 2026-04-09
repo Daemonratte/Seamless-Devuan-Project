@@ -1,0 +1,11 @@
+[Unit]
+Description=Ayatana Indicator Printers Service
+PartOf=graphical-session.target
+PartOf=ayatana-indicators.target
+
+[Service]
+ExecStart=/usr/libexec/ayatana-indicator-printers/ayatana-indicator-printers-service
+Restart=on-failure
+
+[Install]
+WantedBy=ayatana-indicators.target

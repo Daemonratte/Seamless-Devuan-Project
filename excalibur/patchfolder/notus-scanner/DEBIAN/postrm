@@ -1,0 +1,40 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    purge)
+        if dpkg-statoverride --list /var/log/notus-scanner >/dev/null 2>&1
+        then
+            dpkg-statoverride --remove /var/log/notus-scanner
+        fi
+        if dpkg-statoverride --list /var/lib/notus >/dev/null 2>&1
+        then
+            dpkg-statoverride --remove /var/lib/notus
+        fi
+    ;;
+
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'notus-scanner.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

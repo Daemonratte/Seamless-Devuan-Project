@@ -1,0 +1,12 @@
+[Unit]
+Description=Check for changes made to the boot partition since shutting down
+Documentation=man:chkboot(8)
+Requires=basic.target
+After=basic.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/chkboot/chkboot-bootcheck
+
+[Install]
+WantedBy=multi-user.target

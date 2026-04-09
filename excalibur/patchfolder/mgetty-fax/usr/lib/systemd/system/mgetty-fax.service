@@ -1,0 +1,13 @@
+[Unit]
+Description=Fax Queue Daemon
+Documentation=man:faxrunqd(8)
+ConditionPathExists=!/etc/mgetty/.faxrunqd_not_to_be_run
+
+[Service]
+Type=simple
+ExecStartPre=-/bin/sh -c 'mkdir /var/lock/fax       2>/dev/null && chown uucp:root /var/lock/fax'
+ExecStartPre=-/bin/sh -c 'mkdir /var/run/mgetty-fax 2>/dev/null && chown uucp:root /var/run/mgetty-fax'
+ExecStart=/usr/sbin/faxrunqd -u uucp -g dialout
+
+[Install]
+WantedBy=multi-user.target

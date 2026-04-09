@@ -1,0 +1,20 @@
+[Unit]
+Description=SSSD PAM Service responder
+Documentation=man:sssd.conf(5)
+After=sssd.service
+BindsTo=sssd.service
+RefuseManualStart=true
+
+[Install]
+Also=sssd-pam.socket
+
+[Service]
+Environment=DEBUG_LOGGER=--logger=files
+EnvironmentFile=-/etc/default/sssd
+ExecStart=/usr/libexec/sssd/sssd_pam ${DEBUG_LOGGER} --socket-activated
+# 'CAP_DAC_READ_SEARCH' is granted as permitted file capability to be elevated to establish GSS API context
+CapabilityBoundingSet= CAP_DAC_READ_SEARCH
+Restart=on-failure
+User=root
+Group=root
+# Note: SSSD package was built without support of running as non-privileged user

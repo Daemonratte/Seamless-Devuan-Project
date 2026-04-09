@@ -1,0 +1,12 @@
+[Unit]
+Description=Graphite Carbon Aggregator %i
+After=network.target
+Documentation=https://graphite.readthedocs.io
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/carbon-aggregator --config=/etc/carbon/carbon.conf --instance %i --pidfile=/run/carbon-aggregator-%i.pid --logdir=/var/log/carbon/ start
+PIDFile=/run/carbon-aggregator-%i.pid
+
+[Install]
+WantedBy=multi-user.target

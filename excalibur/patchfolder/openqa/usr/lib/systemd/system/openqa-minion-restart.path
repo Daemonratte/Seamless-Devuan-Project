@@ -1,0 +1,5 @@
+[Path]
+PathChanged=/usr/share/perl5/Minion/Backend/resources/migrations/pg.sql
+
+[Install]
+WantedBy=multi-user.target

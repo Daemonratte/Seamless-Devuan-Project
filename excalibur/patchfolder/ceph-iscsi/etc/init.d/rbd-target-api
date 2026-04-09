@@ -1,0 +1,16 @@
+#!/usr/bin/env /lib/init/init-d-script
+### BEGIN INIT INFO
+# Provides:          rbd-target-api
+# Required-Start:    $syslog $time $remote_fs $network tcmu-runner
+# Required-Stop:     $syslog $time $remote_fs $network tcmu-runner
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Ceph iscsi target configuration API
+# Description:       Ceph iscsi target configuration API
+### END INIT INFO
+DAEMON=/usr/bin/rbd-target-api
+
+ulimit -n 1048576
+ulimit -u 1048576
+
+alias do_reload=do_reload_sigusr1

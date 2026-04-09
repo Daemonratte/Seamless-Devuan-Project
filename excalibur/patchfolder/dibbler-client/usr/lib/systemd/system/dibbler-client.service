@@ -1,0 +1,11 @@
+[Unit]
+Description=Obsolete DHCPv6 client
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+# Doesn't fork if parent is PID1
+ExecStart=/usr/sbin/dibbler-client start
+
+[Install]
+WantedBy=multi-user.target

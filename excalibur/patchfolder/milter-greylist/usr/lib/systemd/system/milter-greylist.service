@@ -1,0 +1,13 @@
+[Unit]
+Description=Greylist Mail Filter Daemon
+Before=sendmail.service
+Before=postfix.service
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/milter-greylist
+Restart=on-failure
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

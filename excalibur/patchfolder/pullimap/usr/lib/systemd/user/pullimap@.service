@@ -1,0 +1,14 @@
+[Unit]
+Description=Pull mails from an IMAP mailbox and deliver them to an SMTP session (instance %i)
+Documentation=man:pullimap(1)
+Documentation=https://guilhem.org/interimap/pullimap.1.html
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/pullimap --idle %i
+RestartSec=2min
+Restart=always
+
+[Install]
+WantedBy=default.target

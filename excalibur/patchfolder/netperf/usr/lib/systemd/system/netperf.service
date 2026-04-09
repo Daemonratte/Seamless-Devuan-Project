@@ -1,0 +1,33 @@
+[Unit]
+Description=netperf server
+Documentation=man:netserver(1)
+After=network.target auditd.service
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/netserver
+
+# Hardening options
+DynamicUser=yes
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_NETLINK AF_UNIX AF_INET6 AF_INET
+RestrictNamespaces=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+PrivateDevices=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+ProtectKernelLogs=true
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @privileged @raw-io @reboot @swap 
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,92 @@
+#! /bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          iaxmodem
+# Required-Start:    $syslog $remote_fs $network
+# Required-Stop:     $syslog $remote_fs $network
+# Should-Start:      asterisk
+# Should-Stop:       asterisk
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Software modem with IAX2 connectivity
+# Description:       Use this software modem with Asterisk or another
+#                    IPBX with IAX2 connectivity to send and receive
+#                    faxes over VoIP.
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/iaxmodem
+NAME=iaxmodem
+DESC=iaxmodem
+
+. /lib/lsb/init-functions
+
+test -x $DAEMON || exit 0
+
+PIDFILE=/run/$NAME.pid
+
+set -e
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC: "
+	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
+	    || exit 1
+
+	start-stop-daemon --start --quiet --pidfile  $PIDFILE \
+		--exec $DAEMON
+	echo "$NAME."
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+	start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE \
+		--exec $DAEMON
+	echo "$NAME."
+	;;
+  reload)
+	echo -n "Reloading $DESC: "
+	if [ -e $PIDFILE ]; then
+	    kill -HUP $(cat $PIDFILE)
+	    echo "$NAME."
+	else
+	    echo "$NAME not running!"
+	    exit 1
+	fi
+	;;
+  restart|force-reload)
+	echo -n "Restarting $DESC: "
+	start-stop-daemon --stop --quiet --pidfile \
+		$PIDFILE --exec $DAEMON
+	sleep 1
+	start-stop-daemon --start --quiet --pidfile \
+		$PIDFILE --exec $DAEMON -- $DAEMON_OPTS
+	echo "$NAME."
+	;;
+  status)
+	if [ -s $PIDFILE ]; then
+	    RUNNING=$(cat $PIDFILE)
+	    if [ -d /proc/$RUNNING ]; then
+		if [ $(readlink /proc/$RUNNING/exe) = $DAEMON ]; then
+		    echo "$NAME is running."
+		    exit 0
+		fi
+	    fi
+
+	    # No such PID, or executables don't match
+	    echo "$NAME is not running, but pidfile existed."
+	    rm $PIDFILE
+	    exit 1
+	else
+	    rm -f $PIDFILE
+	    echo "$NAME not running."
+	    exit 1
+	fi
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|reload|force-reload|status}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

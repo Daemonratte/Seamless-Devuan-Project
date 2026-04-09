@@ -1,0 +1,8 @@
+[Unit]
+Description=Really Awesome New Cisco confIg Differ
+Documentation=man:rancid-run(1) man:rancid(1)
+
+[Service]
+Type=oneshot
+User=rancid
+ExecStart=/usr/bin/rancid-run

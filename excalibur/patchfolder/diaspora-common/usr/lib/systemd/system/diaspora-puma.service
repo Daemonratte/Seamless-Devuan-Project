@@ -1,0 +1,21 @@
+[Unit]
+Description=Diaspora Puma Server
+PartOf=diaspora.target
+Requires=redis-server.service
+Wants=postgresql.service
+After=redis-server.service postgresql.service
+PartOf=diaspora.service
+ReloadPropagatedFrom=diaspora.service
+
+[Service]
+Type=simple
+User=diaspora
+WorkingDirectory=/usr/share/diaspora
+EnvironmentFile=/etc/diaspora/diaspora.conf
+SyslogIdentifier=diaspora-puma
+ExecStart=/usr/bin/bundle exec puma -C config/puma.rb -e $RAILS_ENV
+ExecReload=/bin/kill -USR2 $MAINPID
+Restart=on-abnormal
+
+[Install]
+WantedBy=diaspora.target

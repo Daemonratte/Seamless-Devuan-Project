@@ -1,0 +1,87 @@
+#!/bin/sh
+# postinst script for chkrootkit
+set -e
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <postinst> `abort-remove'
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see https://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+case "${1-}" in
+		abort-upgrade|abort-remove|abort-deconfigure)
+		;;
+		configure)
+				old_version="${2-}"
+				# 0.57-1 creates a spurious empty file /usr/lib/chkrootkit/1 is created when chkrootkit ran
+				if [ -n "$old_version" ] && dpkg --compare-versions "$old_version" le 0.57-2; then
+						if [ -e /usr/lib/chkrootkit/1 ]; then
+								if [ -s /usr/lib/chkrootkit/1 ]; then
+										echo "Warning: Not deleting /usr/lib/chkrootkit/1 as it is not empty. This should not happen"
+								else
+										rm /usr/lib/chkrootkit/1 || :
+								fi
+						fi
+				fi
+				if [ -n "$old_version" ] && dpkg --compare-versions "$old_version" le 0.55-2~; then
+						# bullseye or earlier had settings in a non-conffile
+						# ($old_config) that was created using debconf (with some
+						# questionable advice on defaults)
+						# remove debconf
+						if [ -e /usr/share/debconf/confmodule ]; then
+								. /usr/share/debconf/confmodule
+								# Remove debconf settings
+								db_purge || true
+						fi
+				fi
+				config=/etc/chkrootkit/chkrootkit.conf
+				old_config=/etc/chkrootkit.conf
+				if [ -e "$old_config" ]; then
+						echo "WARNING: $old_config is deprecated. Please put your settings in $config instead."
+				fi
+				;;
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'chkrootkit.timer' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'chkrootkit.timer'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'chkrootkit.timer' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'chkrootkit.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'chkrootkit.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

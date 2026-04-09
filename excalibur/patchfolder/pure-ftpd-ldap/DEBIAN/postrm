@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.23
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/pure-ftpd-ldap" ] ; then
+	chmod -x "/etc/init.d/pure-ftpd-ldap" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d pure-ftpd-ldap remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.23
+dpkg-maintscript-helper symlink_to_dir /usr/share/doc/pure-ftpd-ldap pure-ftpd-common 1.0.49-4.1\~ -- "$@"
+# End automatically added section

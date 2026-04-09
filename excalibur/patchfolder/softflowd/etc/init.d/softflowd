@@ -1,0 +1,179 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          softflowd
+# Required-Start:    $network $remote_fs $syslog
+# Required-Stop:     $network $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Flow-based network traffic analyser
+# Description:       Manage all softflowd exports defined in
+#                    /etc/softflowd/*.conf
+### END INIT INFO
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+name=softflowd
+description='Flow-based network traffic analyser'
+softflowd="/usr/sbin/$name"
+pid_dir="/var/run/$name/"
+privdrop_chroot_dir='/var/run/softflowd/chroot'
+
+[ -x "$softflowd" ] || exit 0
+
+if [ "$1" = 'start' ]; then
+    mkdir -p "$privdrop_chroot_dir"
+    if [ -e /var/run/softflowd.ctl ]; then
+        [ -L /var/run/softflowd.ctl ] || rm /var/run/softflowd.ctl
+    fi
+    [ -e /var/run/softflowd.ctl ] || ln -s /var/run/softflowd/default.ctl /var/run/softflowd.ctl
+    install -D -p /etc/protocols "$privdrop_chroot_dir/etc/protocols"
+fi
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB functions
+. /lib/lsb/init-functions
+
+# Start a softflowd instance
+#
+# Return
+#   0 if daemon has been started
+#   1 if daemon was already running
+#   2 if daemon could not be started
+do_start() {
+    local instance config
+    instance="$1"
+    config="$2"
+
+    sh -n "$config" 2>/dev/null || return 2
+
+    interface=
+    options=
+
+    . "$config"
+
+    [ "$interface" ] || return 2
+
+    local pid_file ctl_sock
+    pid_file="$pid_dir$instance.pid"
+    ctl_sock="$pid_dir$instance.ctl"
+    start-stop-daemon --start --quiet \
+        --pid_file "$pid_file" --exec "$softflowd" --test >/dev/null ||
+        return 1
+    # shellcheck disable=SC2086 # We have to trust the config file
+    start-stop-daemon --start --quiet \
+        --pid_file "$pid_file" \
+        --exec "$softflowd" -- \
+        -p "$pid_file" -c "$ctl_sock" \
+        -i "$interface" $options ||
+        return 2
+    sleep 1
+    start-stop-daemon --start --quiet \
+        --pid_file "$pid_file" --exec "$softflowd" --test >/dev/null &&
+        return 2
+}
+
+# Stop a softflowd instance
+#
+# Return
+#   0 if daemon has been stopped
+#   1 if daemon was already stopped
+#   2 if daemon could not be stopped
+#   other if a failure occurred
+do_stop() {
+    local instance pid_file retval
+    instance="$1"
+    pid_file="$pid_dir/$instance.pid"
+
+    start-stop-daemon --stop --quiet \
+        --retry=TERM/30/KILL/5 --pid_file "$pid_file" --name "$name"
+    retval="$?"
+    [ "$retval" = 2 ] && return 2
+    # Many daemons don't delete their pidfiles when they exit.
+    rm -f "$pid_file"
+    return "$retval"
+}
+
+exit=0
+
+do_action() {
+    local config
+    config="$1"
+
+    instance="$(basename "${config%%.conf}")"
+
+    case "$action" in
+        start)
+            [ "$VERBOSE" != no ] && log_daemon_msg "Starting $description" "$instance"
+            do_start "$instance" "$config"
+            case "$?" in
+                0 | 1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+                2)
+                    [ "$VERBOSE" != no ] && log_end_msg 1
+                    exit=1
+                    ;;
+            esac
+            ;;
+        stop)
+            [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $description" "$instance"
+            do_stop "$instance"
+            case "$?" in
+                0 | 1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+                2)
+                    [ "$VERBOSE" != no ] && log_end_msg 1
+                    exit=1
+                    ;;
+            esac
+            ;;
+        status)
+            status_of_proc -p "$pid_dir/$instance.pid" "$softflowd" "softflowd instance $instance" || exit=$?
+            ;;
+        restart | force-reload)
+            log_daemon_msg "Restarting $description" "$instance"
+            do_stop "$instance"
+            case "$?" in
+                0 | 1)
+                    do_start "$instance" "$config"
+                    case "$?" in
+                        0) log_end_msg 0 ;;
+                        *)
+                            # Old process is still running or
+                            # failed to start
+                            log_end_msg 1
+                            ;;
+                    esac
+                    ;;
+                *)
+                    # Failed to stop
+                    log_end_msg 1
+                    ;;
+            esac
+            ;;
+        *)
+            echo "Usage: /etc/init.d/softflowd {start|stop|status|restart|force-reload} [<instance> ...]" >&2
+            exit 3
+            ;;
+    esac
+}
+
+action="$1"
+shift
+
+if [ "$1" ]; then
+    while [ "$1" ]; do
+        config="/etc/softflowd/$1.conf"
+        if [ -f "$config" ]; then
+            do_action "$config"
+        fi
+        shift
+    done
+else
+    for config in /etc/softflowd/*.conf; do
+        if [ -f "$config" ]; then
+            do_action "$config"
+        fi
+    done
+fi
+
+exit $exit

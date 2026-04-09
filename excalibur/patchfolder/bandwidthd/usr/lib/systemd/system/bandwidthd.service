@@ -1,0 +1,19 @@
+[Unit]
+Description=bandwidth monitoring and graphing daemon
+Documentation=man:bandwidthd(8) man:bandwidthd.conf(5)
+
+# abort if config file is missing.
+ConditionPathExists=/etc/bandwidthd/bandwidthd.conf
+
+[Service]
+Environment="CONFFILE=/etc/bandwidthd/bandwidthd.conf"
+
+# abort if unconfigured pgsql_connect_string detected.
+ExecStartPre=/bin/bash -c '! grep -q "^pgsql_connect_string .user = someuser dbname = mydb host = localhost." $CONFFILE'
+# abort if the config doesn't have a device set up.
+ExecStartPre=/bin/bash -c 'grep -q "^dev " $CONFFILE'
+
+Type=forking
+WorkingDirectory=/var/lib/bandwidthd
+ExecStart=/usr/sbin/bandwidthd $DAEMON_OPTS
+#Note: the daemon can rotate logs if you send SIGHUP to it.

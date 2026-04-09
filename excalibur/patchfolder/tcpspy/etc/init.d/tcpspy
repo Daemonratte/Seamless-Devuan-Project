@@ -1,0 +1,61 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          tcpspy
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: init script for tcpspy
+# Description:       tcpspy, a TCP/IP connection monitor
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/tcpspy
+NAME=tcpspy
+DESC=tcpspy
+RULESFILE=/etc/tcpspy.rules
+OPTIONSFILE=/etc/default/$NAME
+OPTIONS=""
+
+test -f $DAEMON || exit 0
+
+set -e
+
+[ -e $OPTIONSFILE ] && . $OPTIONSFILE
+
+. /lib/lsb/init-functions
+
+[ -f $RULESFILE ] || { echo "To run tcpspy, you need a $RULESFILE file. Please, see tcpspy.rules(5) manpage."; exit 0; }
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC: "
+	CMDLINE="start-stop-daemon --start --quiet --oknodo --exec $DAEMON -- $OPTIONS -f $RULESFILE"
+	eval "$CMDLINE"
+	echo "$NAME."
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+	start-stop-daemon --stop --quiet --oknodo --exec $DAEMON
+	echo "$NAME."
+	;;
+  restart|force-reload)
+	echo -n "Restarting $DESC: "
+	start-stop-daemon --stop --quiet --oknodo --exec $DAEMON
+	sleep 1
+	CMDLINE="start-stop-daemon --start --quiet --oknodo --exec $DAEMON -- $OPTIONS -f $RULESFILE"
+	eval "$CMDLINE"
+	echo "$NAME."
+	;;
+  status)
+	status_of_proc $DAEMON tcpspy
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|force-reload|status}" >&2
+	exit 1
+	;;
+esac
+
+exit 0
+

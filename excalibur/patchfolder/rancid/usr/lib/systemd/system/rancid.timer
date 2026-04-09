@@ -1,0 +1,11 @@
+[Unit]
+Description=Really Awesome New Cisco confIg Differ
+Documentation=man:rancid-run(1) man:rancid(1)
+Before=logrotate.timer
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

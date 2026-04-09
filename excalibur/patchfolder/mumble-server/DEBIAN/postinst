@@ -1,0 +1,109 @@
+#! /bin/sh
+# postinst script for mumble-server
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <postinst> `abort-remove'
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see http://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+case "$1" in
+	configure)
+		# Add user and permanent directories
+		if [ ! $(getent group mumble-server) ]; then
+			adduser --system --quiet --home /var/lib/mumble-server --group mumble-server
+		fi
+		[ -d /var/lib/mumble-server ] || mkdir /var/lib/mumble-server
+		chmod 0750 /var/log/mumble-server
+		chmod 0750 /var/lib/mumble-server
+		chown mumble-server:adm /var/log/mumble-server
+		chown mumble-server:mumble-server /var/lib/mumble-server
+		if [ -f /etc/mumble/mumble-server.ini ]; then
+			chmod 0640 /etc/mumble/mumble-server.ini
+			chown root:mumble-server /etc/mumble/mumble-server.ini
+		fi
+		chown root:mumble-server /etc/mumble/
+		# Workaround for when this was in .dirs
+		[ -d /run/mumble-server ] && chown mumble-server:adm /run/mumble-server
+
+		# Ensure the file we put in /etc/dbus-1/system.d is loaded
+		# or mumble-server will fail to bind to dbus.
+		invoke-rc.d --quiet dbus force-reload || true
+
+		# Update SuperUser password based on config.
+		# When set, clear it from config as it can't be queried and the user is
+		# likely to update it outside of debconf.
+		db_get mumble-server/password
+		if [ "$RET" != "" ] ; then
+			echo $RET | su mumble-server -s /bin/sh -c "/usr/bin/mumble-server -ini /etc/mumble/mumble-server.ini -readsupw"
+			if [ $? = 0 ] ; then
+				db_set mumble-server/password ""
+			else
+				echo "Failed to set SuperUser password." >&2
+			fi
+		fi
+		db_stop
+	;;
+
+	abort-upgrade|abort-remove|abort-deconfigure)
+	;;
+
+	*)
+		echo "postinst called with unknown argument \`$1'" >&2
+		exit 1
+	;;
+esac
+
+# Automatically added by dh_installtmpfiles/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create mumble-server.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /etc/mumble-server.ini /etc/mumble/mumble-server.ini 1.5.517-1\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'mumble-server.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'mumble-server.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'mumble-server.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'mumble-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'mumble-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

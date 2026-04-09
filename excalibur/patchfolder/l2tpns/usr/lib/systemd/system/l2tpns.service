@@ -1,0 +1,14 @@
+[Unit]
+Description=Layer 2 tunneling protocol network server (LNS)
+After=network.target
+Documentation=man:l2tpns(8) man:startup-config(5)
+
+[Service]
+EnvironmentFile=-/etc/default/l2tpns
+ExecStart=/usr/sbin/l2tpns $L2TPNS_OPTS
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

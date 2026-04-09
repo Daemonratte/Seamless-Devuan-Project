@@ -1,0 +1,13 @@
+[Unit]
+Documentation=man:tetrinetx(6)
+Description=TetriNET server
+After=network.target systemd-resolved.service
+
+[Service]
+User=games
+Type=forking
+ExecStart=/usr/games/tetrinetx
+
+#[Install]
+#WantedBy=multi-user.target
+

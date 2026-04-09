@@ -1,0 +1,9 @@
+[Unit]
+Description=HTTP/1.x and DNS demuxer socket
+Documentation=man:hddemux(1)
+
+[Socket]
+ListenStream=/run/hddemux/socket
+
+[Install]
+WantedBy=sockets.target

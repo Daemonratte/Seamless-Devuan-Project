@@ -1,0 +1,19 @@
+[Unit]
+Description=OpenVPN 3 Linux - VPN session for %I
+After=dbus.service network-online.target
+Wants=dbus.service network-online.target
+Documentation=man:openvpn3-linux(7)
+Documentation=man:openvpn3-systemd(7)
+
+[Service]
+Type=notify
+PrivateTmp=true
+ProtectSystem=true
+ProtectHome=true
+Environment="PYTHONUNBUFFERED=on"
+ExecStart=/usr/libexec/openvpn3-linux/openvpn3-systemd --start %i
+ExecReload=/usr/libexec/openvpn3-linux/openvpn3-systemd --restart %i
+ExecStop=/usr/libexec/openvpn3-linux/openvpn3-systemd --stop %i
+
+[Install]
+WantedBy=multi-user.target

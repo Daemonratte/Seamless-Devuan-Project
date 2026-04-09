@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /etc/cron.daily/aide /etc/cron.daily/dailyaidecheck 0.18.6-2\~ -- "$@"
+# End automatically added section

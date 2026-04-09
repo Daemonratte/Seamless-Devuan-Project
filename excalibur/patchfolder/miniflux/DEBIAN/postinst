@@ -1,0 +1,129 @@
+#!/bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+. /usr/share/dbconfig-common/dpkg/postinst.pgsql 
+
+dbc_go miniflux "$@"
+
+create_config() {
+  newcfg="$(mktemp)"
+  newdb="$(mktemp)"
+
+  case "$dbc_dbtype" in
+    pgsql)
+      echo "DATABASE_URL_FILE=/etc/miniflux/database" >> $newcfg
+      echo "postgresql://$dbc_dbuser:$dbc_dbpass@$dbc_dbserver/$dbc_dbname" > $newdb
+      ;;
+    "")
+      ;;
+  esac
+
+  MINIFLUX_USER="miniflux"
+  MINIFLUX_GROUP="$MINIFLUX_USER"
+  MINIFLUX_NAME="minimalist and opinionated feed reader"
+
+  if ! getent group | grep -q "^$MINIFLUX_GROUP:" ; then
+    addgroup --quiet --system "$MINIFLUX_GROUP" 2>/dev/null || true
+  fi
+  if ! getent passwd | grep -q "^$MINIFLUX_USER:" ; then
+    adduser --quiet --system --ingroup "$MINIFLUX_GROUP" \
+      --no-create-home --home /nonexistent \
+      --disabled-password "$MINIFLUX_USER" 2>/dev/null || true
+  fi
+  usermod -c "$MINIFLUX_NAME" -g "$MINIFLUX_GROUP" "$MINIFLUX_USER"
+
+  mkdir -p /etc/miniflux
+  ucf --three-way --debconf-ok "$newcfg" /etc/miniflux/miniflux.conf
+  ucfr miniflux /etc/miniflux/miniflux.conf
+
+  ucf --three-way --debconf-ok "$newdb" /etc/miniflux/database
+  ucfr miniflux /etc/miniflux/database
+
+  if ! dpkg-statoverride --list /etc/miniflux >/dev/null; then
+    chown "$MINIFLUX_USER:$MINIFLUX_GROUP" /etc/miniflux
+    chown "$MINIFLUX_USER:$MINIFLUX_GROUP" /etc/miniflux/miniflux.conf
+    chown "$MINIFLUX_USER:$MINIFLUX_GROUP" /etc/miniflux/database
+    chmod 644 /etc/miniflux/miniflux.conf
+    chmod 600 /etc/miniflux/database
+  fi
+
+  rm -f $newcfg
+  rm -f $newdb
+
+  tmpcfg="$(mktemp)"
+  cat /etc/miniflux/miniflux.conf > $tmpcfg
+
+  miniflux -c "/etc/miniflux/miniflux.conf" -migrate || true
+
+  db_get miniflux/create_admin_account || true
+  if [ "$RET" = "true" ]; then
+
+    db_get miniflux/admin_username || true
+    username="$RET"
+    db_reset miniflux/admin_username || true
+
+    db_get miniflux/admin_password || true
+    password="$RET"
+    db_reset miniflux/admin_password || true
+
+    if [ -n "$username" ] && [ -n "$password" ]; then
+      echo "ADMIN_USERNAME=$username" >> $tmpcfg
+      echo "ADMIN_PASSWORD=$password" >> $tmpcfg
+      miniflux -c "$tmpcfg" -create-admin || true
+    fi
+  fi
+  db_reset miniflux/create_admin_account || true
+
+  rm -f $tmpcfg
+}
+
+if [ "$1" = "configure" ]; then
+  create_config
+fi
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/miniflux" ]; then
+		update-rc.d miniflux defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native miniflux $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'miniflux.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'miniflux.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'miniflux.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'miniflux.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'miniflux.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

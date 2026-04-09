@@ -1,0 +1,65 @@
+#!/bin/sh
+# postinst script for notus-scanner.
+
+set -e
+
+if [ "$1" = "configure" ]; then
+    if ! getent group _gvm >/dev/null; then
+        addgroup --quiet --force-badname --system _gvm
+    fi
+
+    if ! getent passwd _gvm >/dev/null; then
+        adduser --quiet --force-badname --system --ingroup _gvm --home /var/lib/openvas --no-create-home _gvm
+    fi
+
+    if ! dpkg-statoverride --list /var/log/notus-scanner >/dev/null 2>&1; then
+        dpkg-statoverride --update --add _gvm _gvm 0755 /var/log/notus-scanner
+    fi
+    if ! dpkg-statoverride --list /var/lib/notus >/dev/null 2>&1; then
+        dpkg-statoverride --update --add _gvm _gvm 0755 /var/lib/notus
+    fi
+fi
+
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p notus-scanner 
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p notus-scanner  || true
+fi
+
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'notus-scanner.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'notus-scanner.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'notus-scanner.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'notus-scanner.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'notus-scanner.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

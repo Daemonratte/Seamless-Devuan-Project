@@ -1,0 +1,14 @@
+[Unit]
+Description=ARC LDAP-based information services - SLAPD
+After=network.target network-online.target nss-lookup.target
+PartOf=arc-infosys-ldap.service
+StopWhenUnneeded=true
+
+[Service]
+Type=forking
+Environment=FORCE_ARC_RUNDIR=/run/arc
+PIDFile=/run/arc/bdii/db/slapd.pid
+ExecStartPre=/usr/share/arc/create-slapd-config
+ExecStart=/bin/sh /run/arc/infosys/bdii-slapd.cmd
+ExecStartPost=/bin/sh /run/arc/infosys/bdii-slapd-post.cmd
+NotifyAccess=all

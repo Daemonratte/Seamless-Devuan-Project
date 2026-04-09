@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -e
+
+
+
+SLIDGE_CONF=/etc/slidge
+SLIDGE_HOME=/var/lib/slidge
+
+if [ "$1" = "purge" ] ; then
+    if [ -d "$SLIDGE_CONF" ]; then
+	rmdir --ignore-fail-on-non-empty "$SLIDGE_CONF"
+    fi
+
+    if [ -d "$SLIDGE_HOME" ]; then
+	rm -rf "$SLIDGE_HOME"
+    fi
+
+    userdel _slidge > /dev/null || true
+    groupdel _slidge > /dev/null || true
+fi

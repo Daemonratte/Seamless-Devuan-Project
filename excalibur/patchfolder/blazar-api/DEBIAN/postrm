@@ -1,0 +1,39 @@
+#!/bin/sh
+
+set -e
+
+if [ "${1}" = "purge" ] ; then
+	[ -d /etc/blazar ] && rmdir --ignore-fail-on-non-empty /etc/blazar
+	rm -f /var/log/blazar/blazar-api.*
+	[ -d /var/log/blazar ] && rmdir --ignore-fail-on-non-empty /var/log/blazar
+fi
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/blazar-api" ] ; then
+	chmod -x "/etc/init.d/blazar-api" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d blazar-api remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'blazar-api.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+exit 0

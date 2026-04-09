@@ -1,0 +1,17 @@
+[Unit]
+Description=Establish global networking routes for the system
+Documentation=man:route(8)
+DefaultDependencies=no
+After=network-online.target
+Wants=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/network/routes
+ExecStart=/etc/init.d/networking-routes start
+ExecStop=/etc/init.d/networking-routes stop
+RemainAfterExit=true
+TimeoutStartSec=5min

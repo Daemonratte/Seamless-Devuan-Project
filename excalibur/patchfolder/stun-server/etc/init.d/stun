@@ -1,0 +1,126 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          stun
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $network $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: STUN server to help clients with their NAT 
+# Description: STUN server to help clients identify and overcome limitations of their NAT 
+### END INIT INFO
+#
+# Please read /usr/share/doc/stun/README.Debian
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/stund
+NAME=stun
+DESC=stun
+START_DAEMON=false
+PIDFILE=/var/run/${NAME}.pid
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+# Include stun defaults if available
+if [ -f /etc/default/stun ] ; then
+	. /etc/default/stun
+fi
+if [ "$START_DAEMON" != "true" ] ; then 
+	exit 0
+fi
+if [ -z "$PRIMARY_PORT" ];then
+	echo "No primary port given. Using default."
+	PRIMARY_PORT=3478
+fi
+if [ -z "$SECONDARY_PORT" ];then
+	echo "No secondary port given. Using default."
+	SECONDARY_PORT=3479
+fi
+if [ -z "$DAEMON_USER" ];then
+	DAEMON_USER=nobody
+fi
+
+DAEMON_OPTS="-h $PRIMARY_IP -a $SECONDARY_IP -p $PRIMARY_PORT -o $SECONDARY_PORT $DAEMON_OPTS"
+
+set -e
+
+case "$1" in
+  start)
+	if [ -z "$PRIMARY_IP" ];then
+		echo "No primary IP given. Exiting."
+		exit 1
+	fi
+	if [ -z "$SECONDARY_IP" ];then
+		echo "No secondary IP given. Exiting."
+		exit 1
+	fi
+	echo -n "Starting $DESC: "
+	start-stop-daemon --start --quiet --background --make-pidfile \
+		--pidfile "$PIDFILE" \
+		--chuid "$DAEMON_USER" --exec "$DAEMON" -- $DAEMON_OPTS
+	echo "$NAME."
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+	start-stop-daemon --stop --quiet --pidfile "$PIDFILE" \
+		--oknodo --chuid "$DAEMON_USER" --exec "$DAEMON"
+	echo "$NAME."
+	;;
+  #reload)
+	#
+	#	If the daemon can reload its config files on the fly
+	#	for example by sending it SIGHUP, do it here.
+	#
+	#	If the daemon responds to changes in its config file
+	#	directly anyway, make this a do-nothing entry.
+	#
+	# echo "Reloading $DESC configuration files."
+	# start-stop-daemon --stop --signal 1 --quiet --pidfile \
+	#	$PIDFILE --exec $DAEMON
+  #;;
+  restart|force-reload)
+	if [ -z "$PRIMARY_IP" ];then
+		echo "No primary IP given. Exiting."
+		exit 1
+	fi
+	if [ -z "$SECONDARY_IP" ];then
+		echo "No secondary IP given. Exiting."
+		exit 1
+	fi
+	#
+	#	If the "reload" option is implemented, move the "force-reload"
+	#	option to the "reload" entry above. If not, "force-reload" is
+	#	just the same as "restart".
+	#
+	echo -n "Restarting $DESC: "
+	$0 stop
+	sleep 1
+	$0 start
+	echo "$NAME."
+	;;
+  status)
+       echo -n "Status of $DESC: "
+
+       if [ ! -r "$PIDFILE" ]; then
+           echo "$NAME is not running."
+           exit 3
+       fi
+
+       if read pid < "$PIDFILE" && ps -p "$pid" > /dev/null 2>&1; then
+           echo "$NAME is running."
+           exit 0
+       else
+           echo "$NAME is not running but $PIDFILE exists."
+           exit 1
+       fi
+       ;;
+  *)
+	N="/etc/init.d/$NAME"
+	# echo "Usage: $N {start|stop|restart|status|reload|force-reload}" >&2
+	echo "Usage: $N {start|stop|restart|status|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

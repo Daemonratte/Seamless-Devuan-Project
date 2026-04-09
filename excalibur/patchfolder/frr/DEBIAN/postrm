@@ -1,0 +1,43 @@
+#!/bin/sh
+
+set -e
+
+case "${1}" in
+	purge)
+		if dpkg-statoverride --list /etc/frr > /dev/null 2>&1
+		then
+			dpkg-statoverride --remove /etc/frr
+		fi
+
+		rm -f /etc/frr/.pkg.frr.nointegrated
+		rmdir /etc/frr > /dev/null 2>&1 || true
+
+		rm -rf /run/frr
+		rm -rf /var/lib/frr
+		;;
+
+	remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+
+		;;
+
+	*)
+		echo "postrm called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'frr.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

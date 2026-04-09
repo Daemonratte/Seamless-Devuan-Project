@@ -1,0 +1,71 @@
+#!/bin/bash
+
+set -e
+
+LMVARDIR=/var/lib/lemonldap-ng
+CAPTCHADIR=$LMVARDIR/captcha
+NOTIFICATIONSDIR=$LMVARDIR/notifications
+
+. /usr/share/debconf/confmodule
+
+function set_mode() {
+    FILE=$1
+    USER=$2
+    GROUP=$3
+    MODE=$4
+    dpkg-statoverride --list $FILE >/dev/null 2>&1 ||
+      dpkg-statoverride --update --add $USER $GROUP $MODE $FILE
+}
+
+set_mode $CAPTCHADIR www-data www-data 770
+set_mode $NOTIFICATIONSDIR www-data www-data 770
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'liblemonldap-ng-portal-perl.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'liblemonldap-ng-portal-perl.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'liblemonldap-ng-portal-perl.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'liblemonldap-ng-portal-perl.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'liblemonldap-ng-portal-perl.timer' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'liblemonldap-ng-portal-perl.timer'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'liblemonldap-ng-portal-perl.timer' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'liblemonldap-ng-portal-perl.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'liblemonldap-ng-portal-perl.service' 'liblemonldap-ng-portal-perl.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+exit 0

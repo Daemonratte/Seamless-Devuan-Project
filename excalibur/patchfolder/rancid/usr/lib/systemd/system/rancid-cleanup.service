@@ -1,0 +1,8 @@
+[Unit]
+Description=Really Awesome New Cisco confIg Differ daily log cleanup
+Documentation=man:rancid(1)
+
+[Service]
+Type=oneshot
+User=rancid
+ExecStart=find /var/log/rancid -type f -mtime +2 -exec rm {} \;

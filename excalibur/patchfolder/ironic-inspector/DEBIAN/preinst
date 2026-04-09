@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/ironic-inspector" ] ; then
+	chmod +x "/etc/init.d/ironic-inspector" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/ironic-inspector-api" ] ; then
+	chmod +x "/etc/init.d/ironic-inspector-api" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/ironic-inspector-conductor" ] ; then
+	chmod +x "/etc/init.d/ironic-inspector-conductor" >/dev/null || true
+fi
+# End automatically added section

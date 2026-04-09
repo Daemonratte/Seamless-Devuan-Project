@@ -1,0 +1,12 @@
+[Unit]
+Description=NNTP Socket activation for INN
+
+[Socket]
+# When using socket activation, the port and bindaddress parameters in
+# inn.conf are ignored. Only a single IPv4 socket is supported.
+ListenStream=0.0.0.0:119
+Service=inn.service
+
+[Install]
+WantedBy=sockets.target
+

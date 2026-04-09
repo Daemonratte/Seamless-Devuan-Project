@@ -1,0 +1,13 @@
+[Unit]
+Description=Creates an encrypted ramfs for Octavia certs
+After=cloud-config.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/octavia-agent-ramfs-start
+ExecStop=/usr/sbin/octavia-agent-ramfs-stop
+RemainAfterExit=yes
+TimeoutSec=0
+
+[Install]
+WantedBy=octavia-agent.service

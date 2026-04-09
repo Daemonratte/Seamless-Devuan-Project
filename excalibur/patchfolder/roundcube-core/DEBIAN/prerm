@@ -1,0 +1,44 @@
+#!/bin/sh
+# prerm script for roundcube
+#
+# see: dh_installdeb(1)
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+if [ -f /usr/share/dbconfig-common/dpkg/prerm ]; then
+    . /usr/share/dbconfig-common/dpkg/prerm
+    dbc_go roundcube "$@"
+fi
+
+case "$1" in
+    remove|upgrade|deconfigure)
+    ;;
+
+    failed-upgrade)
+    ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'roundcube-gc.service' 'roundcube-gc.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'roundcube-cleandb.service' 'roundcube-cleandb.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper dir_to_symlink /usr/share/roundcube/plugins/jqueryui/js/i18n /usr/share/javascript/jquery-ui/ui/i18n 1.4.5\+dfsg.1-2\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cron.daily/roundcube-core 1.6\~rc\+dfsg-2\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/default/roundcube-core 1.6\~rc\+dfsg-2\~ -- "$@"
+# End automatically added section
+
+exit 0

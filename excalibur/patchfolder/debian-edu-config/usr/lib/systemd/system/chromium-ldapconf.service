@@ -1,0 +1,12 @@
+[Unit]
+Description=Update firefox configuration from LDAP
+After=network-online.target remote-fs.target nss-lookup.target slapd.service fetch-ldap-cert.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/debian-edu-config/tools/firefox-ldapconf
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

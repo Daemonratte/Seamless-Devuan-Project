@@ -1,0 +1,28 @@
+#!/bin/sh
+
+set -e
+
+
+case "$1" in
+  install|upgrade)
+    if [ -e /etc/network/network-routes ] ; then
+    # There was a bug in the package (<< 0.15). We need to
+    # move the file to the new location
+        if dpkg-maintscript-helper supports mv_conffile; then
+         dpkg-maintscript-helper mv_conffile \
+            /etc/network/network-routes /etc/network/routes 0.14 -- "$@"
+        fi
+    fi
+  ;;
+esac
+
+
+# Automatically added by dh_installinit/13.20
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/networking-routes" ] ; then
+	chmod +x "/etc/init.d/networking-routes" >/dev/null || true
+fi
+# End automatically added section
+
+
+
+# vim:tabstop=2:expandtab:shiftwidth=2

@@ -1,0 +1,13 @@
+[Unit]
+Description=Contact/demo forms handler for static websites
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/hugo-mx-gateway
+User=www-data
+Group=www-data
+EnvironmentFile=/etc/default/hugo-mx-gateway
+WorkingDirectory=/usr/share/hugo-mx-gateway
+
+[Install]
+WantedBy=multi-user.target

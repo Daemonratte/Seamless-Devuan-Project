@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Ironic Introspection Conductor (ironic-inspector-conductor)
+After=postgresql.service mysql.service keystone.service ntp.service rabbitmq-server.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service ntp.service rabbitmq-server.service network-online.target 
+
+Documentation=man:ironic-inspector-conductor(1)
+
+[Service]
+User=ironic-inspector
+Group=ironic-inspector
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=ironic-inspector lock/ironic-inspector
+CacheDirectory=ironic-inspector
+ExecStart=/etc/init.d/ironic-inspector-conductor systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

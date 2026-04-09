@@ -1,0 +1,42 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure|triggered)
+	# what happens to this trigger when runit pkg is removed? maybe this
+	# can be moved into runit-init and runit-run pkgs??
+	if [ -z "${DPKG_ROOT:-}" ] ; then
+		/lib/runit/trigger_sv setup
+		/lib/runit/trigger_sv upgrade
+	fi
+    ;;
+esac
+
+# Automatically added by dh_sysuser/1.6.0
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+   if [ -x /usr/bin/systemd-sysusers ] && [ ! -e /etc/minsysusers.force ]; then
+      systemd-sysusers ${DPKG_ROOT:+--root="$DPKG_ROOT"} runit.conf
+   else
+      /usr/sbin/minsysusers ${DPKG_ROOT:+--root="$DPKG_ROOT"} runit.conf
+   fi
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='default-syslog' ENABLE='yes' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/sv/default-syslog/finish 2.1.2-60\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/default/runit 2.1.2-60\~ -- "$@"
+# End automatically added section
+

@@ -1,0 +1,10 @@
+#!/usr/bin/env /lib/runit/invoke-run
+#Copyright: 2022 Lorenzo Puliti <plorenzo@disroot.org>
+#License: CC0-1.0
+
+touch /etc/runit/override-sysv.d/${PWD##*/}.pkgrunit
+sv start default-syslog ||  true
+
+exec 1>&2
+
+exec /usr/sbin/cupsd -f

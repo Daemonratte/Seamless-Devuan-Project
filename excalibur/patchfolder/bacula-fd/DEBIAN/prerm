@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'bacula-fd.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/bacula-fd" ] ; then
+	invoke-rc.d --skip-systemd-native bacula-fd stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper dir_to_symlink /usr/share/doc/bacula-fd bacula-common 7.0.5\+dfsg-4\~ -- "$@"
+# End automatically added section

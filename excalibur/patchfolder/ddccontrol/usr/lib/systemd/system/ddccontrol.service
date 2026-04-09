@@ -1,0 +1,8 @@
+[Unit]
+Description=Control monitor parameters, like brightness, contrast, and other...
+
+[Service]
+Type=dbus
+BusName=ddccontrol.DDCControl
+ExecStart=/usr/lib/x86_64-linux-gnu/ddccontrol/ddccontrol_service
+User=root

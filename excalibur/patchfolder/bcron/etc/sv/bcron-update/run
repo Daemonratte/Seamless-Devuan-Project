@@ -1,0 +1,10 @@
+#!/bin/sh -eu
+exec 2>&1
+# cron-daemon-common took already care of /var/spool/cron/crontabs
+# for i in crontabs tmp ; do
+for i in tmp ; do
+	mkdir -p /var/spool/cron/$i
+	chown -R cron /var/spool/cron/$i
+	chmod go-rwx /var/spool/cron/$i
+done
+exec bcron-update /etc/crontab /etc/cron.d

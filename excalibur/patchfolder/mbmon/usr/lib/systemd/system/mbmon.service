@@ -1,0 +1,10 @@
+[Unit]
+Description=Motherboard sensor monitoring daemon
+
+[Service]
+EnvironmentFile=/etc/default/mbmon
+Type=forking
+ExecStart=/usr/bin/mbmon -r -P ${MBMONPORT}
+
+[Install]
+WantedBy=multi-user.target

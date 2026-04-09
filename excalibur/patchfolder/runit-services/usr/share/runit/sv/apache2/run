@@ -1,0 +1,13 @@
+#!/usr/bin/env /lib/runit/invoke-run
+#Copyright: 2022 Lorenzo Puliti <plorenzo@disroot.org>
+#License: CC0-1.0
+
+touch /etc/runit/override-sysv.d/${PWD##*/}.pkgrunit
+
+. /etc/apache2/envvars
+
+exec 1>&2
+
+apachectl configtest  || exit 162
+
+exec ${XCHPST:-} /usr/sbin/apache2 -DNO_DETACH

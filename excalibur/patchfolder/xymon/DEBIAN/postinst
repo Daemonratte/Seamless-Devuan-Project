@@ -1,0 +1,160 @@
+#! /bin/sh
+# postinst script for xymon
+#
+# see: dh_installdeb(1)
+
+set -e
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see http://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+# Workaround for http://bugs.debian.org/560317 in case debconf is too old like on Squeeze
+export DPKG_MAINTSCRIPT_PACKAGE=${DPKG_MAINTSCRIPT_PACKAGE:-xymon}
+export DPKG_MAINTSCRIPT_NAME=${DPKG_MAINTSCRIPT_NAME:-postinst}
+
+case "$1" in
+    configure)
+	# Setup permissions for the newly created "xymon" user to write
+	# data where he needs to.
+	# And for the Apache-run CGI's to generate reports.
+
+	test -d /var/run/xymon || mkdir /var/run/xymon
+	chown xymon:xymon /var/run/xymon
+
+	test -d /var/log/xymon || mkdir /var/log/xymon
+	chown xymon:adm /var/log/xymon ; chmod 2755 /var/log/xymon
+
+	cd /var/lib/xymon; chown xymon:xymon . acks data disabled hist histlogs hostdata logs rrd tmp www
+	cd /var/lib/xymon/www; chown xymon:xymon html notes wml rep snap; chgrp www-data rep snap; chmod g+w rep snap
+	cd /etc/xymon;
+	if [ -e critical.cfg ]; then
+	    chgrp www-data critical.cfg
+	    chmod g+w critical.cfg
+	fi
+	if [ -e critical.cfg.bak ]; then
+	    chgrp www-data critical.cfg.bak
+	    chmod g+w critical.cfg.bak
+	fi
+
+	if ! test -e /etc/xymon/hosts.cfg ; then
+		if test -e /etc/default/xymon-client ; then
+			. /etc/default/xymon-client || true
+		fi
+		cat > /etc/xymon/hosts.cfg <<EOF
+#
+# Master configuration file for Xymon
+#
+# This file defines several things:
+#
+# 1) By adding hosts to this file, you define hosts that are monitored by Xymon
+# 2) By adding "page", "subpage", "group" definitions, you define the layout
+#    of the Xymon webpages, and how hosts are divided among the various webpages
+#    that Xymon generates.
+# 3) Several other definitions can be done for each host, see the hosts.cfg(5)
+#    man-page.
+#
+# You need to define at least the Xymon server itself here.
+
+#0.0.0.0	.default.	# NOPROPRED:+apt,+libs
+
+#group Servers
+127.0.0.1	$CLIENTHOSTNAME	# bbd http://$CLIENTHOSTNAME/
+
+#group Dialup
+#0.0.0.0	notebook.bla.net # noconn dialup
+EOF
+	fi
+
+	test -e /etc/xymon/xymonpasswd   || touch /etc/xymon/xymonpasswd
+	test -e /etc/xymon/xymongroups   || touch /etc/xymon/xymongroups
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_apache2/UNDECLARED
+if true; then
+	if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
+		. /usr/share/apache2/apache2-maintscript-helper
+		for conf in xymon  ; do
+			apache2_invoke enconf $conf  || exit 1
+		done
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/xymon" ]; then
+		update-rc.d xymon defaults 98 02 >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native xymon $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'xymon.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'xymon.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'xymon.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'xymon.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'xymon.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+case "$1" in
+    configure)
+	if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
+            . /usr/share/apache2/apache2-maintscript-helper
+            # Enable CGI support
+            apache2_invoke enmod cgi
+            # Needed by the rewrite rules to migrate from old hobbit based URLs
+            apache2_invoke enmod rewrite
+            # Finally enable the xymon web interface
+            apache2_invoke enconf xymon
+        elif test -e /etc/init.d/apache2 ; then
+	    invoke-rc.d apache2 reload || :
+	fi
+    ;;
+esac
+
+exit 0

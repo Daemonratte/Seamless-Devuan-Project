@@ -1,0 +1,46 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          sysfsconf sysfsutils
+# Required-Start:    mountkernfs
+# Should-Start:      udev module-init-tools cpufrequtils
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: Set sysfs variables from /etc/sysfs.conf
+# Description:       Similarly to /etc/init.d/procps.sh, you can configure
+#                    values for sysfs variables (such as power management
+#                    defaults) and /sys file permissions in /etc/sysfs.conf.
+### END INIT INFO
+
+# /etc/init.d/sysfsutils:
+#
+# (c) 2005 Martin Pitt <mpitt@debian.org>
+
+set -e
+
+CONFFILE=/etc/sysfs.conf
+CONFDIR=/etc/sysfs.d
+
+if [ ! -r "$CONFFILE" ] && [ ! -d "$CONFDIR" ]; then
+  exit 0
+fi
+
+# shellcheck disable=SC1091
+. /lib/lsb/init-functions
+
+case "$1" in
+start|restart|force-reload)
+  log_action_begin_msg "Setting sysfs variables..."
+  update-sysfs
+  log_action_end_msg 0
+  ;;
+status)
+  ;;
+stop)
+  ;;
+*)
+  echo "Usage: /etc/init.d/sysfsutils {start|stop|force-reload|restart|status}"
+  exit 1
+  ;;
+esac

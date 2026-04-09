@@ -1,0 +1,9 @@
+[Unit]
+Description=Try hourly to initialize apt-listchanges database for APT
+Documentation=man:apt-listchanges
+
+[Timer]
+OnCalendar=hourly
+
+[Install]
+WantedBy=timers.target

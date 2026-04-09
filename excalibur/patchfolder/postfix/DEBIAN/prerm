@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+if [ remove = "$1" ] && cd /var/spool/postfix
+then
+    # remove chroot files (for main instance only)
+    # do this in prerm to stop dpkg from removing non-emoty dirs
+    rm -rf dev etc lib usr
+    #XXX remove the queue files too?
+fi
+
+[ -z "${DPKG_ROOT:-}" ] && [ remove = "$1" ] && [ -d /run/systemd/system ] &&
+  deb-systemd-invoke stop postfix.service >/dev/null || :
+[ -z "${DPKG_ROOT:-}" ] && [ remove = "$1" ] && [ -x /etc/init.d/postfix ] &&
+  invoke-rc.d --skip-systemd-native postfix stop || :
+

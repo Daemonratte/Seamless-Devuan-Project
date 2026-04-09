@@ -1,0 +1,9 @@
+[Unit]
+Description=Load st_lsm6dsx_spi st_lsm6dsx_i2c and st_lsm6dsx if not all hardware kill switches active
+
+[Service]
+ExecStart=/usr/sbin/librem5-lockdown-support
+Type=oneshot
+
+[Install]
+WantedBy=default.target

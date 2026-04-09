@@ -1,0 +1,23 @@
+[Unit]
+Description=Prometheus exporter for FRR
+Documentation=man:prometheus-frr-exporter(1) https://github.com/tynany/frr_exporter
+After=network.target
+
+[Service]
+User=frr
+Group=frrvty
+EnvironmentFile=/etc/default/prometheus-frr-exporter
+ExecStart=/usr/bin/prometheus-frr-exporter $ARGS
+Restart=on-failure
+
+# systemd hardening options
+PrivateDevices=true
+PrivateTmp=true
+PrivateUsers=true
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

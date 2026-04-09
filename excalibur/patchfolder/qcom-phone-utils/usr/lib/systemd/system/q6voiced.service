@@ -1,0 +1,11 @@
+[Unit]
+Description=Userspace daemon for the QDSP6 voice call audio driver
+After=dbus.service
+
+[Service]
+ExecStart=/usr/bin/q6voiced
+User=daemon
+Group=audio
+
+[Install]
+WantedBy=multi-user.target

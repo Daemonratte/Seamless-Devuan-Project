@@ -1,0 +1,73 @@
+#! /bin/sh
+#
+# ftp-proxy - Script to launch ftp-proxy server.
+#
+### BEGIN INIT INFO
+# Provides:          ftp-proxy
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Launch ftp-proxy
+# Description:       Launch ftp-proxy, a FTP protocol proxy server.
+### END INIT INFO
+
+set -e
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/ftp-proxy
+DESC=FTP-Proxy
+CONF=/etc/proxy-suite/ftp-proxy.conf
+
+test -x $DAEMON || exit 0
+
+# Get configuration
+if [ -r /etc/default/ftp-proxy ]; then
+	. /etc/default/ftp-proxy
+fi
+
+# Exit if FTP-Proxy is configured to be started by inetd
+grep -qi "^[[:space:]]*ServerType[[:space:]]*inetd" $CONF && exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting $DESC" "ftp-proxy"
+	if [ "$RUN_DAEMON" = "yes" ]; then
+		set +e
+		start-stop-daemon --start --quiet --exec $DAEMON -- -d
+		ret=$?
+		set -e
+		log_end_msg $ret
+	else
+		log_warning_msg " disabled."
+	fi
+	;;
+  stop)
+	log_daemon_msg "Stopping $DESC" "ftp-proxy"
+	start-stop-daemon --stop --quiet --retry 5 --oknodo --exec $DAEMON
+	log_end_msg $?
+	;;
+  reload|force-reload)
+	log_daemon_msg "Reloading $DESC configuration files" "ftp-proxy"
+	set +e
+	start-stop-daemon --stop --quiet --signal 1 --exec $DAEMON
+	ret=$?
+	set -e
+	log_end_msg $ret
+	;;
+  restart)
+	$0 stop
+	$0 start
+	;;
+  status)
+	status_of_proc "$DAEMON" ftp-proxy
+	;;
+  *)
+	log_success_msg "Usage: $0 {start|stop|restart|reload|force-reload|status}"
+	exit 1
+	;;
+esac
+
+exit 0

@@ -1,0 +1,83 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          ipband
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: ipband daemon
+# Description:       This is a daemon which can monitor as many different subnets (or individual
+#                    hosts, by specifying a "subnet" of /32) as you'd like.
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/ipband
+NAME=ipband
+DESC=ipband
+PIDDIR=/var/run/ipband
+
+set -e
+
+test -x $DAEMON || exit 0
+
+if [ -r /etc/default/ipband ]; then
+    . /etc/default/ipband
+else
+    printf "/etc/default/ipband is not readable, not starting ipband.\n"
+    exit 0
+fi
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+        printf "Starting $DESC:"
+	mkdir -p $PIDDIR
+	for config_file in $CONFIG_FILES; do
+	    if [ ! -r "$config_file" ]; then
+		[ "$CONFIG" = "true" ] || CONFIG="false"
+	    else
+		CONFIG="true"
+		IDENTIFIER="$(printf "$config_file" | tr / _)"
+		start-stop-daemon --start --background --make-pidfile \
+		    --quiet --pidfile "$PIDDIR/$IDENTIFIER.pid" \
+		    --exec $DAEMON -- $FLAGS -c "$config_file"
+		printf " $config_file"
+	    fi
+	done
+	[ "$CONFIG" = "false" ] && printf " no configuration files found"
+	printf ".\n"
+	;;
+  stop)
+	printf "Stopping $DESC: "
+	for pid_file in $PIDDIR/*.pid; do
+	    if [ ! -f "$pid_file" ]; then continue; fi
+	    start-stop-daemon --oknodo --stop --quiet --pidfile "$pid_file" \
+				--exec $DAEMON -- $FLAGS && \
+		rm -f $pid_file
+
+	done
+	printf "$NAME.\n"
+	;;
+  restart|force-reload)
+	$0 stop || true
+	$0 start
+	;;
+  status)
+	count=$(ls -1 $PIDDIR/*.pid 2>/dev/null | wc -l)
+	if [ $count -gt 0 ]; then
+	    echo -n "ipband is running $count configuration"
+	    [ $count -eq 1 ] || echo -n "s"
+	    echo "."
+	else
+	    echo "Ipband is not running."
+	fi
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

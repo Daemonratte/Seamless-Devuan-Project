@@ -1,0 +1,38 @@
+#!/bin/sh
+#Copyright: 2022 Lorenzo Puliti <plorenzo@disroot.org>
+#License: CC0-1.0
+
+# hack to fix #1024969 : dbus services fail to start as sysv scripts
+# because they are started earlier than (runit) dbus
+# run again dbus services here, only when a runscript does not exist
+# this rely on  /etc/init.d/.depend.start (insserv) boot order
+
+sv start dbus || exit 1
+if [ -h /etc/service/elogind ]; then
+	sv start elogind || true
+fi
+
+for script in '/etc/rc2.d/S'* ; do
+	[ ! -x "$script" ] && continue
+	path=$(realpath "$script")
+	name=${path##*/}
+	[ -f /etc/runit/override-sysv.d/"$name".block ] && continue
+	[ -f /etc/runit/override-sysv.d/"$name".pkgblock ] && continue
+	if [ -f /etc/runit/override-sysv.d/"$name".sysv ]; then
+		if grep -q "$name:.*dbus" /etc/init.d/.depend.start ; then
+			"$script" start
+		fi
+		continue
+	fi
+	[ -L "/etc/service/$name" ] && continue
+	[ -d "/etc/sv/$name" ] && continue
+	[ -d "/usr/share/runit/sv.current/$name" ] && continue
+	if grep -q "$name:.*dbus" /etc/init.d/.depend.start ; then
+		"$script" start
+	fi
+done
+
+sv d .
+
+exec sleep 10000
+

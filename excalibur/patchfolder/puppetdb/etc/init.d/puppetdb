@@ -1,0 +1,57 @@
+#!/bin/sh
+# kFreeBSD do not accept scripts as interpreters, using #!/bin/sh and sourcing.
+if [ true != "$INIT_D_SCRIPT_SOURCED" ] ; then
+    set "$0" "$@"; INIT_D_SCRIPT_SOURCED=true . /lib/init/init-d-script
+fi
+### BEGIN INIT INFO
+# Provides:          puppetdb
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Puppet data warehouse server
+# Description:       PuppetDB is a data warehouse server for Puppet. It stores
+#                    information about nodes, facts and catalogs and
+#                    facilitates using exported resources.
+### END INIT INFO
+
+# Author: Apollon Oikonomopoulos <apoikos@debian.org>
+DESC="Puppet data warehouse server"
+NAME="puppetdb"
+DAEMON=/usr/bin/java
+PIDFILE=/run/puppetdb/puppetdb.pid
+
+if [ -f /etc/default/puppetdb ]; then
+	. /etc/default/puppetdb
+fi
+
+do_start_prepare() {
+	if [ ! -d /run/puppetdb ]; then
+		install -d -o puppetdb -g puppetdb /run/puppetdb
+	fi
+}
+
+do_start_cmd() {
+	start-stop-daemon --start --quiet --pidfile ${PIDFILE} \
+	    -u puppetdb --exec $DAEMON --test > /dev/null \
+	    || return 1
+	start-stop-daemon --start --quiet --pidfile ${PIDFILE} \
+	    -c puppetdb:puppetdb -m -b --exec $DAEMON -- \
+	    ${JAVA_ARGS} -Djava.security.egd=/dev/urandom \
+	    -XX:OnOutOfMemoryError="kill -9 %%p" \
+	    -cp /usr/share/puppetdb/puppetdb.jar \
+	    clojure.main -m puppetlabs.puppetdb.main \
+	    --config /etc/puppetdb/conf.d \
+	    --bootstrap-config /etc/puppetdb/bootstrap.cfg \
+	    --restart-file /run/puppetdb/restart \
+	    || return 2
+}
+
+do_stop_cmd() {
+	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 \
+	    -u puppetdb --pidfile ${PIDFILE} --exec $DAEMON
+	RETVAL="$?"
+	[ "$RETVAL" = 2 ] && return 2
+	rm -f $PIDFILE
+	return $RETVAL
+}

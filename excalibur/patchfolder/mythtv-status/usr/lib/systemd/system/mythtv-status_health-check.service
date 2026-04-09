@@ -1,0 +1,7 @@
+[Unit]
+Description=Daily mythtv-status health check of MythTV
+Documentation=man:mythtv-status(1)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/mythtv-status/health-check

@@ -1,0 +1,38 @@
+[Unit]
+Description=w1retap
+Documentation=file:///usr/share/doc/w1retap/README.Debian.gz
+Documentation=man:w1retap(1)
+Documentation=file:///usr/share/doc/w1retap/w1retap.odt
+Documentation=http://www.zen35309.zen.co.uk/wx/tech.html
+
+[Service]
+Type=forking
+User=w1retap
+Group=w1retap
+ExecStart=/usr/bin/w1retap -d -R -t 120
+ExecReload=/bin/kill -HUP $MAINPID
+
+DevicePolicy=strict
+DeviceAllow=char-usb_device rw
+DeviceAllow=/dev/stdin rw
+DeviceAllow=/dev/ttyS* rw
+DeviceAllow=/dev/ttyUSB* rw
+
+MemoryDenyWriteExecute=yes
+
+ProtectSystem=strict
+PrivateTmp=yes
+ProtectHome=yes
+PrivateMounts=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ReadWritePaths=/var/lib/w1retap
+RestrictNamespaces=yes
+
+CapabilityBoundingSet=
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

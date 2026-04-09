@@ -1,0 +1,29 @@
+#! /bin/sh
+
+set -e
+
+VDIR=/var/lib/cfengine3
+
+if [ "$1" = "purge" ]; then
+    if [ -d "$VDIR" ]; then
+	cd "$VDIR"
+	find . -mindepth 1 -maxdepth 1 \
+	    -name inputs -prune -o -print0 | xargs -0r rm -rf
+	cd /; rmdir "$VDIR"
+    fi
+    rm -f /etc/default/cfengine3
+fi
+
+# Automatically added by dh_systemd_start/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_systemd_enable/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'cf-apache.service' 'cf-execd.service' 'cf-hub.service' 'cf-monitord.service' 'cf-postgres.service' 'cf-reactor.service' 'cf-serverd.service' 'cfengine3.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

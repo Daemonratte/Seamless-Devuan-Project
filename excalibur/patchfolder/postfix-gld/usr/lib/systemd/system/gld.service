@@ -1,0 +1,15 @@
+[Unit]
+Description=GreyListing Daemon
+Documentation=man:gld(8)
+After=network.target mariadb.service
+Before=postfix.service
+
+[Service]
+User=postfix-gld
+Group=postfix-gld
+Type=forking
+ExecStart=/usr/sbin/gld
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

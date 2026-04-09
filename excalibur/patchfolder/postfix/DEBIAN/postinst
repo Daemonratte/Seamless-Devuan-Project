@@ -1,0 +1,479 @@
+#!/bin/sh
+set -e
+
+# Debian Postfix postinst
+# LaMont Jones <lamont@debian.org>
+# Based on debconf code by Colin Walters <walters@cis.ohio-state.edu>,
+# and John Goerzen <jgoerzen@progenylinux.com>.
+
+if [ "$1" = triggered ]; then
+    [ -z "$DPKG_ROOT" ] || exit 0
+    echo "Restarting postfix"
+    if [ -d /run/systemd/system ]; then
+	deb-systemd-invoke start postfix.service >/dev/null || :
+    else
+	invoke-rc.d postfix restart || :
+    fi
+    exit
+fi
+
+. /usr/share/debconf/confmodule
+. /usr/share/postfix/postinst.functions
+
+myfqdn() {
+    myhostname=$(hostname --fqdn 2>/dev/null || echo "")
+    # If we don't have a name with a dot (which includes ""), then we have work.
+    if [ $myhostname = ${myhostname%.*} ]; then
+	# If it's empty, and we have /etc/hostname, try that.
+	if [ -z $myhostname ] && [ -r /etc/hostname ]; then
+	    myhostname=$(cat /etc/hostname)
+	fi
+	# If we are still lacking a domain component, then try resolv.conf.
+	if [ $myhostname = ${myhostname%.*} ]; then
+	    if [ -f /etc/resolv.conf ]; then
+		# The resolver uses the last one found, and ignores the rest
+		mydom=$(sed -n 's/^search[[:space:]]*\.*\([^[:space:]]*\).*/\1/p;s/^domain[[:space:]]*\.*\([^[:space:]]*\).*/\1/p' /etc/resolv.conf | tail -1)
+		myhostname="$myhostname${mydom:+.${mydom%.}}"
+	    else
+		myhostname="$myhostname.UNKNOWN"
+	    fi
+	fi
+    fi
+    echo $myhostname
+}
+
+fset_all_changed() {
+    db_fset postfix/main_mailer_type changed $1
+    db_fset postfix/root_address changed $1
+    db_fset postfix/destinations changed $1
+    db_fset postfix/mailname changed $1
+    db_fset postfix/relayhost changed $1
+    db_fset postfix/mynetworks changed $1
+    db_fset postfix/procmail changed $1
+    db_fset postfix/mailbox_limit changed $1
+    db_fset postfix/recipient_delim changed $1
+    db_fset postfix/protocols changed $1
+}
+
+set_postconf() {
+    CHANGES=true
+    postconf -e "$@"
+}
+
+# postfix service is not started here (started in the trigger above)
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'postfix.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'postfix.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'postfix.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'postfix.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "/etc/init.d/postfix" ]; then
+		update-rc.d postfix defaults >/dev/null || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'postfix-resolvconf.path'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'postfix-resolvconf.path' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'postfix-resolvconf.path'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'postfix-resolvconf.path' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'postfix-resolvconf.path' >/dev/null || true
+fi
+# End automatically added section
+
+
+case "$1" in
+    configure)
+	OLDVERSION="$2"
+	# see below
+	;;
+
+    abort-upgrade)
+	exit 0
+	;;
+
+    abort-remove|abort-deconfigure)
+	exit 0
+	;;
+
+    *)
+	echo "postinst called with unknown argument \`$1'" >&2
+	exit 1
+	;;
+esac
+
+CHANGES=""
+
+if dpkg --compare-versions "$OLDVERSION" lt-nl 3.9.0-3~
+then
+    # cyrus_sasl_config used to be hard-coded in debian to /etc/postfix/sasl.
+    # Since 3.9.0-3 we switched to upstream default which is empty,
+    # which means to use built-in Cyrus SASL library defaults.
+    # Debian policy says it should be /etc/postfix/sasl
+    if [ ! "$(postconf -hx cyrus_sasl_config_path)" ]; then
+	postconf -e cyrus_sasl_config_path=/etc/postfix/sasl
+    fi
+fi
+
+if dpkg --compare-versions "$OLDVERSION" lt-nl 3.9.1-7~
+then
+    [ ! -L /etc/postfix/makedefs.out ] ||
+	rm -f /etc/postfix/makedefs.out
+
+    # postfix forced statoverrides on every install. Remove unneeded one
+    dpkg-statoverride --remove --quiet /var/spool/postfix/public || :
+
+fi
+
+if dpkg --compare-versions "$OLDVERSION" lt-nl 3.9.1-8~
+then
+    if dir=$(postconf -hx html_directory) && [ no = "$dir" ]; then
+	postconf -e html_directory=/usr/share/doc/postfix/html
+	postconf -\# html_directory
+    fi
+    if dir=$(postconf -hx readme_directory) && [ no = "$dir" ]; then
+	postconf -e readme_directory=/usr/share/doc/postfix
+	postconf -\# readme_directory
+    fi
+fi
+
+if ! getent passwd postfix >/dev/null
+then
+    adduser --system --group --comment "Postfix MTA" \
+	--home /var/spool/postfix --no-create-home postfix
+fi
+
+if ! getent group postdrop >/dev/null
+then
+    addgroup --system postdrop
+fi
+
+# postdrop is for 2 dirs and 2 executables.  Postfix will create
+# subdirs in queue_directory with correct permissions.
+set -- \
+	root postdrop 02555 /usr/sbin/postdrop \
+	root postdrop 02555 /usr/sbin/postqueue \
+; while [ $# -ge 4 ]; do
+    dpkg-statoverride --list $4 >/dev/null ||
+	dpkg-statoverride --add --update $1 $2 $3 $4
+    shift 4
+done
+
+if [ ! "$OLDVERSION" ] &&
+   ! dpkg-statoverride --list /var/lib/postfix >/dev/null
+then
+    chown postfix:postfix /var/lib/postfix
+fi
+
+cd /etc/postfix
+
+if [ ! -f dynamicmaps.cf ]; then
+  echo "Creating /etc/postfix/dynamicmaps.cf"
+  echo "# dict-type	so-name (pathname)	dict-function	mkmap-function" > dynamicmaps.cf
+fi
+
+db_get postfix/main_mailer_type && mailer="$RET"
+
+[ -f master.cf ] || cp /usr/share/postfix/master.cf.dist master.cf
+
+if [ "$mailer" != "No configuration" ]; then	# [
+    if [ -f main.cf ]; then
+	NEWCONF=""
+    else
+	cp /usr/share/postfix/main.cf.debian main.cf
+	if [ -f /etc/ssl/private/ssl-cert-snakeoil.key ]; then
+	    cat /usr/share/postfix/main.cf.tls >> main.cf
+	fi
+	postconf -e "smtpd_relay_restrictions=permit_mynetworks permit_sasl_authenticated defer_unauth_destination"
+	NEWCONF=yes
+    fi
+fi	# !No configuration ]
+
+run_newaliases=
+
+if [ "$mailer" != "No configuration" ]; then	# [
+    myhostname=$(myfqdn)
+    mydomain=${myhostname#*.}
+
+    if [ -n "$NEWCONF" ]; then
+	fset_all_changed true
+	alias_maps=hash:/etc/aliases
+	nis_status=$(dpkg -l nis 2>/dev/null | sed -n '$p')
+	if [ "X$nis_status" != "X${nis_status#i}" ] && which ypcat > /dev/null &&
+		ypcat mail.aliases >/dev/null 2>&1; then
+	    alias_maps="hash:/etc/aliases, nis:mail.aliases"
+	    cat << EOF
+It appears that you have an NIS map for mail aliases; using that in
+addition to /etc/aliases.
+
+EOF
+	fi
+	if [ -n "$myhostname" ]; then
+	    echo "setting myhostname: $myhostname"
+	    set_postconf "myhostname=$myhostname"
+	fi
+	echo "setting alias maps"
+	set_postconf "alias_maps=$alias_maps"
+	echo "setting alias database"
+	set_postconf "alias_database=hash:/etc/aliases"
+    else
+	if [ -f /var/spool/postfix/mydomain-upgrade ]; then
+	  rm -f /var/spool/postfix/mydomain-upgrade
+	  db_get postfix/mydomain_upgrade && upgrade="$RET"
+	  if [ "$upgrade" = "true" ]; then
+	    echo "setting mydomain=$mydomain"
+	    set_postconf "mydomain=$mydomain"
+	  fi
+	fi
+    fi
+
+    db_fget postfix/mailname changed
+    if [ "$RET" = "true" ]; then
+	db_get postfix/mailname && mailname="$RET"
+	lcmailname="$(echo $RET| tr 'A-Z' 'a-z')"
+	if [ "X$lcmailname" = "X==default==" ]; then
+	    mailname=$(hostname --fqdn 2>/dev/null || echo localdomain)
+	fi
+	lcmailname="$(echo $mailname| tr 'A-Z' 'a-z')"
+	if [ -f /etc/mailname ] && [ "X$(tr 'A-Z' 'a-z' < /etc/mailname)" = "X$lcmailname" ]; then
+	    MAILNAME=""
+	else
+	    MAILNAME=yes
+	fi
+	if [ "X${lcmailname}" = Xubuntu.com ] || [ "X${lcmailname}" = Xdebian.org ]; then
+	    echo "refusing to set mailname to ${mailname}."
+	elif [ "X${mailname%.*}" != "X${mailname}" ]; then
+	    if [ -n "$MAILNAME" ]; then
+		echo "changing /etc/mailname to $mailname"
+		echo $mailname > /etc/mailname
+	    fi
+	    echo "setting myorigin"
+	    set_postconf "myorigin=/etc/mailname"
+	else
+	    echo "mailname is not a fully qualified domain name.  Not changing /etc/mailname."
+	fi
+    fi
+    db_fget postfix/destinations changed
+    if [ "$RET" = "true" ]; then
+	db_get postfix/destinations && destinations="$RET"
+	echo "setting destinations: $destinations"
+	set_postconf "mydestination=$destinations"
+    fi
+    db_fget postfix/relayhost changed
+    if [ "$RET" = "true" ]; then
+	db_get postfix/relayhost && relayhost="$RET"
+	echo "setting relayhost: $relayhost"
+	set_postconf "relayhost=$relayhost"
+    fi
+    db_fget postfix/mynetworks changed
+    if [ "$RET" = "true" ]; then
+	db_get postfix/mynetworks && mynetworks="$RET"
+	if [ -z "$RET" ]; then
+	    echo "deleting mynetworks"
+	    if grep -q '^mynetworks[[:space:]]*=' main.cf; then
+		# need to remove it, get postconf to do the hard part.
+		postconf -e 'mynetworks=127.0.0.0/8'
+		sed -i -e '/^mynetworks\s*=/d' main.cf
+	    fi
+	else
+	    echo "setting mynetworks: $mynetworks"
+	    set_postconf "mynetworks=$mynetworks"
+	fi
+    fi
+    db_fget postfix/procmail changed
+    if [ "$RET" = "true" ]; then
+	db_get postfix/procmail && useprocmail="$RET"
+	if [ "x$useprocmail" = "xtrue" ]; then
+	    echo "setting mailbox_command"
+	    set_postconf 'mailbox_command=procmail -a "$EXTENSION"'
+	else
+	    if grep -q ^mailbox_command /etc/postfix/main.cf; then
+		echo "clearing mailbox_command"
+		set_postconf "mailbox_command="
+	    fi
+	fi
+    fi
+    db_fget postfix/mailbox_limit changed
+    if [ "$RET" = "true" ]; then
+	db_get postfix/mailbox_limit && mailbox_limit="$RET"
+	echo "setting mailbox_size_limit: $mailbox_limit"
+	set_postconf "mailbox_size_limit=$mailbox_limit"
+    fi
+
+    db_fget postfix/recipient_delim changed
+    if [ "$RET" = "true" ]; then
+	db_get postfix/recipient_delim && recip="$RET"
+	echo "setting recipient_delimiter: $recip"
+	set_postconf "recipient_delimiter=$recip"
+    fi
+
+    db_fget postfix/main_mailer_type changed
+    if [ "$RET" = "true" ]; then
+	# If the user has picked something other than smtp, keep it
+	dtrans=$(postconf -hx default_transport)
+	if [ $(postconf -hx default_transport) = error ]; then
+	    dtrans=smtp
+	fi
+	# already have mailer
+	case "$mailer" in
+	    "Local only")	val=loopback-only; dtrans=error;;
+	    "Satellite system")	val=loopback-only;;
+	    *)			val=all;;
+	esac
+	echo "setting inet_interfaces: $val"
+	set_postconf "inet_interfaces=$val"
+
+	if [ $(postconf -hx default_transport) != $dtrans ]; then
+	    echo "setting default_transport: $dtrans"
+	    set_postconf "default_transport=$dtrans"
+	    echo "setting relay_transport: $dtrans"
+	    set_postconf "relay_transport=$dtrans"
+	fi
+    fi
+
+    db_fget postfix/protocols changed
+    if [ "$RET" = "true" ]; then
+	db_get postfix/protocols && protocols="$RET"
+	echo "setting inet_protocols: $protocols"
+	set_postconf "inet_protocols=$protocols"
+    fi
+
+    if [ -z "$CHANGES" ]; then
+	MSG="configuration was not changed"
+    else
+	if [ -n "$NEWCONF" ]; then
+	    MSG="is now set up with a default configuration"
+	else
+	    MSG="is now set up with the changes above"
+	fi
+    fi
+
+    add_root_alias=
+    #XXX could use actual $alias_maps
+    if [ ! -f /etc/aliases ]; then	## no /etc/aliases
+	#XXX should actually create /etc/aliases on first install according to policy
+	echo "/etc/aliases does not exist, creating it."
+	cat <<-'EOF' > /etc/aliases
+		# See man 5 aliases for format
+		postmaster:    root
+		EOF
+	run_newaliases=y
+    fi
+    if ! grep -qs ^root: /etc/aliases &&	## if no root alias
+       ! [ -f ~root/.forward ] ; then		## and no root .forward
+	add_root_alias=y
+    fi
+    if [ "$add_root_alias" ]; then
+	db_get postfix/root_address && root_addr="$RET"
+	case "$RET" in
+	    ([Nn][Oo][Nn][Ee] | "") ;;
+	    (*) echo "Adding alias for root: $RET"
+	        echo "root:	$RET" >> /etc/aliases
+	        run_newaliases=y
+	        ;;
+	esac
+    fi
+    db_fget postfix/root_address changed
+    if [ "$RET" = "true" ] && ! grep -q ^root: /etc/aliases; then
+	echo "WARNING: /etc/aliases exists, but does not have a root alias."
+    fi
+    if [ ! "$OLDVERSION" ] && [ ! -f /etc/aliases.db ]; then #XXX $alias_database?
+	run_newaliases=y
+    fi
+
+else	# ] No configuration [
+    if [ -f main.cf ]; then
+	MSG="configuration was not modified by debconf"
+    else
+	MSG="was not set up.  Start with
+  cp /usr/share/postfix/main.cf.debian /etc/postfix/main.cf
+"
+    fi
+fi	# not 'No configuration' ]
+
+fset_all_changed false
+
+fold -s << EOF
+
+Postfix (main.cf) $MSG.  If you need to make changes, edit /etc/postfix/main.cf (and others) as needed.  To view Postfix configuration values, see postconf(1).
+
+After modifying main.cf, be sure to run 'systemctl reload postfix'.
+
+EOF
+
+if dpkg --compare-versions "$OLDVERSION" lt-nl 3.9.1-7~ &&
+   dirs=$(postconf -hx multi_instance_directories) &&
+   [ -d /run/systemd/system ]
+then # check for postfix@- multi-instances setup
+    instances= outofconf=
+    for dir in $dirs; do
+	# previous system started only named instances
+        name=$(postconf -c $dir -hx multi_instance_name 2>/dev/null) || continue
+	[ -n "$name" ] || continue
+	instances="$instances $name ($dir)"
+	case "$dir" in
+	    (/etc/postfix-*) ;;
+	    ( * ) outofconf="$outofconf $name ($dir)" ;;
+	esac
+    done
+    if [ -n "$instances" ]; then
+	cat <<-EOF
+	WARNING:
+	WARNING: It looks like your system is running multiple postfix instances.
+	WARNING: Since postfix package version 3.9.1-7 in Debian, this configuration
+	WARNING: is done differently.  Your non-default instances will not be started
+	WARNING: automatically by default.  The following non-default instance(s) has
+	WARNING: been detected which were started before but will not anymore:
+	WARNING:  $instances
+	WARNING:
+	EOF
+	[ -z "$outofconf" ] || cat <<-EOF
+	WARNING: Additionally, the following non-default instance(s) can not be managed
+	WARNING: by the new startup scripts:
+	WARNING:  $outofconf
+	WARNING: In order for these instances to be managed by systemd automatically,
+	WARNING: config directories should start with "/etc/postfix-", and each instance
+	WARNING: has to be enabled separately as a systemd service.
+	WARNING:
+	EOF
+	cat <<-EOF
+	WARNING: Please read /usr/share/doc/postfix/README.Debian.gz, section about
+	WARNING: multiple instances, for more information.
+	WARNING:
+	EOF
+    fi
+fi
+
+if [ "$run_newaliases" ] && [ -n "$(postconf -hx alias_database)" ]; then
+    if ! newaliases; then
+	echo "WARNING: newaliases run were not successful."
+	echo "WARNING: Please review and re-run if manually if needed."
+    fi
+fi
+
+# all done with debconf here.
+db_stop
+
+dpkg-trigger --no-await /usr/lib/postfix # trigger restart (after dynamic maps are configured)

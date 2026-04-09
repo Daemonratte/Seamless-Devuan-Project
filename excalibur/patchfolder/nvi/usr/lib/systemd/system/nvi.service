@@ -1,0 +1,10 @@
+[Unit]
+Description=Recover nvi edit sessions.
+Documentation=man:nvi(1) file:/usr/share/doc/nvi/vi.ref.txt.gz
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/vi/recover
+
+[Install]
+WantedBy=multi-user.target

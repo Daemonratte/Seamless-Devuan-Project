@@ -1,0 +1,12 @@
+[Unit]
+Description=OpenStack Cluster Installer Agent
+After=network.service
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/var/lib/openstack-cluster-installer-agent
+ExecStart=/usr/bin/oci-agent-daemon
+
+[Install]
+WantedBy=multi-user.target

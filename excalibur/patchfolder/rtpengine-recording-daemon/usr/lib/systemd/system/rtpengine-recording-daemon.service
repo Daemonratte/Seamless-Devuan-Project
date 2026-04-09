@@ -1,0 +1,22 @@
+[Unit]
+Description=RTP/media Recording Daemon
+Documentation=man:rtpengine-recording(8)
+After=network-online.target
+After=remote-fs.target
+After=rtpengine-recording-nfs-mount.service
+Requires=network-online.target
+Requires=rtpengine-recording-nfs-mount.service
+
+[Service]
+Type=notify
+LimitNOFILE=100000
+RuntimeDirectory=rtpengine-recording
+PIDFile=/run/rtpengine-recording/rtpengine-recording-daemon.pid
+AmbientCapabilities=CAP_NET_ADMIN CAP_CHOWN
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_CHOW
+User=rtpengine
+Group=rtpengine
+ExecStart=/usr/bin/rtpengine-recording -f -E --no-log-timestamps --pidfile /run/rtpengine-recording/rtpengine-recording-daemon.pid --config-file /etc/rtpengine/rtpengine-recording.conf
+
+[Install]
+WantedBy=multi-user.target

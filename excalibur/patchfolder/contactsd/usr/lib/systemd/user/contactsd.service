@@ -1,0 +1,11 @@
+[Unit]
+Description=Contacts daemon
+After=lomiri.service
+Requires=dbus.socket
+
+[Service]
+ExecStart=/usr/bin/contactsd
+Restart=always
+
+[Install]
+WantedBy=lomiri.service

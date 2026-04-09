@@ -1,0 +1,33 @@
+#!/bin/sh
+set -e
+
+if [ x"$1" = xremove ] || [ x"$1" = xpurge ]; then
+
+  if grep -q "#-- daemontools-run begin" /etc/inittab; then
+    echo 'Removing SV inittab entry...'
+    rm -f /etc/inittab'{new}'
+    sed -e '/#-- daemontools-run begin/,/#-- daemontools-run end/d' \
+      /etc/inittab > /etc/inittab'{new}'
+    mv -f /etc/inittab'{new}' /etc/inittab
+    init q || :
+    echo 'Sending services the TERM and CONT signals...'
+    svc -dx /etc/service/* || :
+    sleep 5
+    echo 'Sending log services the TERM and CONT signals...'
+    svc -dx /etc/service/*/log || :
+  fi
+fi
+
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'daemontools-run.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

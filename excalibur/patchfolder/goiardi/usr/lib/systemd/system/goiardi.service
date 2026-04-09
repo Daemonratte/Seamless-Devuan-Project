@@ -1,0 +1,13 @@
+[Unit]
+Description=Goiardi Chef server
+Documentation=https://goiardi.readthedocs.io/en/latest/, man:goiardi.8
+ 
+[Service]
+Type=simple
+User=goiardi
+Group=goiardi
+ExecStart=/usr/bin/goiardi -c /etc/goiardi/goiardi.conf
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,31 @@
+[Unit]
+Description=mini_httpd server
+Documentation=man:mini_httpd(8)
+After=network.target
+
+[Service]
+Type=forking
+PIDFile=/run/mini_httpd.pid
+EnvironmentFile=-/etc/default/mini-httpd
+ExecStart=/usr/sbin/mini_httpd $DAEMON_OPTS -i /run/mini_httpd.pid
+# Sandboxing features
+PrivateTmp=yes
+NoNewPrivileges=true
+ProtectSystem=full
+CapabilityBoundingSet=~CAP_BPF CAP_LINUX_IMMUTABLE CAP_IPC_LOCK CAP_SYS_TTY_CONFIG \
+                       CAP_SYS_BOOT CAP_MAC_* CAP_SYS_NICE CAP_SYS_RESOURCE CAP_SYS_PTRACE
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @reboot @raw-io
+SystemCallFilter=chroot
+RestrictNamespaces=~uts ipc pid user cgroup
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+PrivateDevices=yes
+RestrictSUIDSGID=true
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

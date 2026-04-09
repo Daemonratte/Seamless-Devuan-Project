@@ -1,0 +1,21 @@
+[Unit]
+Description=chasquid mail daemon (service)
+Documentation=man:chasquid(1)
+Requires=chasquid-smtp.socket \
+	chasquid-submission.socket \
+	chasquid-submission_tls.socket
+
+[Service]
+ExecStart=/usr/bin/chasquid
+
+Type=simple
+Restart=always
+
+User=chasquid
+Group=chasquid
+
+# Simple security measures just in case.
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenTracker Daemon (IPv4)
+After=network.target
+Documentation=man:opentracker
+
+[Service]
+User=_opentracker
+PrivateTmp=yes
+ExecStart=/usr/bin/opentracker -f /etc/opentracker/opentracker.conf
+ExecStop=/bin/kill -INT $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=A daemon for tunneling traffic over DNS queries
+After=local-fs.target network.target systemd-tmpfiles-setup.service
+Documentation=man:iodined(8)
+
+[Service]
+EnvironmentFile=/etc/default/iodine
+ExecStart=/usr/sbin/iodined -f -u iodine -t /run/iodine $IODINED_ARGS -P ${IODINED_PASSWORD}
+Restart=on-failure
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

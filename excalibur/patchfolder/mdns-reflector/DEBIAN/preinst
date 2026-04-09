@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.15.3
+dpkg-maintscript-helper rm_conffile /etc/default/mdns-reflector 0.0.1\+git20210821.44a4a43-2 -- "$@"
+# End automatically added section

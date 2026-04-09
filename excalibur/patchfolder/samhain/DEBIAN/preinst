@@ -1,0 +1,33 @@
+#!/bin/sh
+# Preinstall file for samhain
+
+set -e
+
+case "$1" in
+    install|upgrade)
+# If there are files in /var/state from previous version of Samhain
+# them move all the files and remove the old directory (deprecated since
+# 3.1.0-7)
+        if [ -e /var/state/samhain/ ] ; then
+            [ ! -e /var/lib/samhain ] && mkdir -p /var/lib/samhain
+            mv /var/state/samhain/* /var/lib/samhain
+           rmdir /var/state/samhain/ || true
+        fi
+    ;;
+    abort-upgrade)
+    ;;
+    *)
+        echo "preinst called with unknown argument \`$1'" >&2
+        exit 0
+        ;;
+esac
+
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/samhain" ] ; then
+	chmod +x "/etc/init.d/samhain" >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

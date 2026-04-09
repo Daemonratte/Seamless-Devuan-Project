@@ -1,0 +1,10 @@
+[Unit]
+Description=Report status to sitesummary server after boot
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/environment
+EnvironmentFile=-/etc/default/sitesummary-client
+Nice=10
+ExecStart=/usr/sbin/sitesummary-client

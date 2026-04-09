@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "configure" ]; then
+  if [ -z "$2" ]; then
+    # debhelper does not start static units. use udevadm to start
+    # tiny-dfr on install if/when the hardware allows it
+    if command -v udevadm >/dev/null 2>&1; then
+      udevadm trigger --action=change --subsystem-match=backlight --subsystem-match=drm --subsystem-match=input || true
+    fi
+  fi
+fi
+
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'tiny-dfr.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

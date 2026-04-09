@@ -1,0 +1,198 @@
+#! /bin/sh
+# postinst script for amavisd-new
+# $Id: amavisd-new.postinst 908 2006-06-09 03:42:01Z hmh $
+#
+# see: dh_installdeb(1)
+
+set -e
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see http://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+#
+# quoting from the policy:
+#     Any necessary prompting should almost always be confined to the
+#     post-installation script, and should be protected with a conditional
+#     so that unnecessary prompting doesn't happen if a package's
+#     installation fails and the `postinst' is called with `abort-upgrade',
+#     `abort-remove' or `abort-deconfigure'.
+
+# Automatically added by dh_installsysusers/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+   systemd-sysusers ${DPKG_ROOT:+--root="$DPKG_ROOT"} amavisd-new.conf
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'amavis.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'amavis.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'amavis.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'amavis.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'amavis-mc.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'amavis-mc.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'amavis-mc.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'amavis-mc.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'amavis-mc.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'amavisd-snmp-subagent.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'amavisd-snmp-subagent.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'amavisd-snmp-subagent.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'amavisd-snmp-subagent.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'amavisd-snmp-subagent.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "/etc/init.d/amavis" ]; then
+		update-rc.d amavis defaults >/dev/null || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "/etc/init.d/amavis-mc" ]; then
+		update-rc.d amavis-mc defaults-disabled >/dev/null || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "/etc/init.d/amavisd-snmp-subagent" ]; then
+		update-rc.d amavisd-snmp-subagent defaults-disabled >/dev/null || exit 1
+	fi
+fi
+# End automatically added section
+
+
+case "$1" in
+    configure)
+
+	# amavis user added via dh-installsysusers
+
+	# Clean up after #190414
+	homedir=$(getent passwd amavis | cut -d : -f 6)
+	if [ "x${homedir}" = "x/" ] ; then
+	  echo 'WARNING! Homedir of user amavis was set to "/", this is' >&2
+	  echo 'extremely dangerous!  Overriding it to /var/lib/amavis...' >&2
+	  homedir=/var/lib/amavis
+	  usermod -d "${homedir}" amavis
+	fi
+
+	# dh-installsysusers does not create home directory
+	if [ ! -d "${homedir}" ] ; then
+	  mkdir -p "${homedir}" && chown amavis:amavis "${homedir}"
+	fi
+
+	# in order to give all critical dirs sane permissions we first check
+	# if we have the packages standard permissions, if yes we delete them,
+	# if no we alert the admin.
+	for i in /var/lib/amavis:755:0750:amavis:amavis /var/lib/amavis/db:755:0750:amavis:amavis \
+		 /var/lib/amavis/tmp:755:0770:amavis:amavis /var/lib/amavis/virusmails:755:0750:amavis:amavis
+	do
+		dir=$(echo $i | cut -d : -f 1)
+		perms_local=$(dpkg-statoverride --list "$dir" | awk '{print $4,$3,$1,$2}' | tr -s " " ":")
+		if [ "$perms_local" ] ; then
+			perms_old=$(echo $i | cut -d : -f 1,2,4,5)
+			perms_new=$(echo $i | cut -d : -f 1,3,4,5)
+			mode_others=$(dpkg-statoverride --list "$dir" | awk '{print $3}' | sed 's/.*\([0-9]\{1\}\)$/\1/')
+			if [ "$perms_local" = "$perms_old" ] ; then
+				dpkg-statoverride --remove "$dir"
+			elif [ "$perms_local" != "$perms_new" ] && [ "$mode_others" != "0" ] ; then
+				echo
+				echo "WARNING: $dir has set custom permissions which may be too open - please take a look at README.Debian!"
+				echo
+			fi
+		fi
+	done
+
+	umask 022
+	for i in /var/lib/amavis:0750 /var/lib/amavis/db:0750 /var/lib/amavis/tmp:0770 \
+		 /var/lib/amavis/virusmails:0750 /var/run/amavis:0755
+	do
+		dir=$(echo $i | cut -d : -f 1)
+		perm=$(echo $i | cut -d : -f 2)
+		if [ ! -d "$dir" ] ; then
+			mkdir -p "$dir"
+		fi
+		if ! dpkg-statoverride --list "$dir" > /dev/null ; then
+			dpkg-statoverride --update --add amavis amavis "$perm" "$dir"
+		fi
+	done
+
+	#
+	# Conffile upgrade handling
+	#
+	# Work around dpkg not deleting removed conffiles
+
+	# (template directories (with files) removed in 1:2.3.3-2)
+	if dpkg --compare-versions "1:2.3.3-2" gt-nl "$2" ; then
+		for i in pt_BR fr it_IT de_DE ; do
+			if [ -e "/etc/amavis/$i" ] ; then
+				echo "Moving outdated l10n template to /etc/amavis/${i}.outdated_for_2.3.3-2" >&2
+				mv "/etc/amavis/$i" "/etc/amavis/${i}.outdated_for_2.3.3-2"
+			fi
+		done
+	fi
+
+	deb-systemd-invoke start amavis amavis-mc amavisd-snmp-subagent
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# dh_installdeb will replace this with shell code automatically
+# generated by other debhelper scripts.
+
+init_failed ()
+{
+	echo "WARNING: Starting amavisd-new failed. Please check your configuration."
+}
+
+exit 0
+

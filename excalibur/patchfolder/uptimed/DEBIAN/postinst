@@ -1,0 +1,125 @@
+#! /bin/sh
+
+. /usr/share/debconf/confmodule
+
+db_version 2.0
+
+set -e
+
+# exit if the config file is not present
+if [ ! -e /etc/uptimed.conf ]; then
+	exit 0
+fi
+
+if [ "$1" = "configure" ]; then
+# Step 1: Assemble a sed(1) script that does the configuration changes we
+#         want
+	SEDSCRIPT=`mktemp /tmp/debconfXXXXXX`
+	db_get 'uptimed/interval'
+	echo >$SEDSCRIPT "s/^UPDATE_INTERVAL=.*/UPDATE_INTERVAL=$RET/"
+	db_get 'uptimed/maxrecords'
+	echo >>$SEDSCRIPT "s/^LOG_MAXIMUM_ENTRIES=.*/LOG_MAXIMUM_ENTRIES=$RET/"
+	db_get 'uptimed/mail/do_mail'
+	if [ "$RET" = "Never" ]; then
+		echo >>$SEDSCRIPT "s/^SEND_EMAIL=.*/SEND_EMAIL=0/"
+	elif [ "$RET" = "Record" ]; then
+		echo >>$SEDSCRIPT "s/^SEND_EMAIL=.*/SEND_EMAIL=3/"
+	elif [ "$RET" = "Milestone" ]; then
+		echo >>$SEDSCRIPT "s/^SEND_EMAIL=.*/SEND_EMAIL=2/"
+	else
+		echo >>$SEDSCRIPT "s/^SEND_EMAIL=.*/SEND_EMAIL=1/"
+	fi
+	if [ "$RET" != "Never" ]; then
+		db_get 'uptimed/mail/address'
+		echo >>$SEDSCRIPT "s/^EMAIL=.*/EMAIL=$RET/"
+	fi
+	# 0.1.6-4 commented these out. Leave until the yet unnamed distro
+	# after sid
+	echo >>$SEDSCRIPT "s/^#disabled#MILESTONE=/MILESTONE=/"
+
+	db_stop
+
+# Step 2: Process the config file
+	TEMPFILE=`mktemp /tmp/debconfXXXXXX`
+	sed -f $SEDSCRIPT </etc/uptimed.conf >$TEMPFILE
+	rm $SEDSCRIPT
+
+# Step 3: See if anything has changed. If so, install the new configuration
+#         and restart uptimed
+        if diff /etc/uptimed.conf $TEMPFILE >/dev/null; then
+                rm $TEMPFILE
+        else
+                mv /etc/uptimed.conf \
+                        /etc/uptimed.conf.dpkg-old
+                mv $TEMPFILE /etc/uptimed.conf
+        fi
+	chmod 644 /etc/uptimed.conf
+	chown daemon:daemon /var/spool/uptimed
+
+# Step 4: Fixup uptimed db files wrt. to #654830
+	invoke-rc.d uptimed stop
+        if dpkg --compare-versions "$2" '<<' '1:0.4.6-1~~'; then
+            if [ -f /var/spool/uptimed/records ]; then
+                /usr/libexec/uptimed/fixup-duplicate-uprecords
+            fi
+            if [ -f /var/spool/uptimed/records.old ]; then
+                /usr/libexec/uptimed/fixup-duplicate-uprecords -b
+            fi
+        fi
+	invoke-rc.d uptimed start
+fi
+
+# Automatically added by dh_installtmpfiles/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create uptimed.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.23
+dpkg-maintscript-helper rm_conffile /etc/init.d/uptimed.sh 1:0.3.16-3.1 -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/uptimed" ]; then
+		update-rc.d uptimed defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native uptimed $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'uptimed.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'uptimed.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'uptimed.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'uptimed.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'uptimed.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

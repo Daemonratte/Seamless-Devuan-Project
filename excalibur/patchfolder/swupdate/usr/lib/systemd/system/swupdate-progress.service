@@ -1,0 +1,11 @@
+[Unit]
+Description=swupdate progress service
+After=swupdate.service
+
+[Service]
+RuntimeDirectory=swupdate
+RuntimeDirectoryPreserve=true
+ExecStart=/usr/bin/swupdate-progress -r -w
+
+[Install]
+WantedBy=multi-user.target

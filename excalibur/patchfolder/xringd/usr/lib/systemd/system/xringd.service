@@ -1,0 +1,10 @@
+[Unit]
+Description=Phone line monitor
+Documentation=man:xringd(8)
+
+[Service]
+ExecStart=/usr/sbin/xringd
+Type=forking
+
+[Install]
+WantedBy=multi-user.target

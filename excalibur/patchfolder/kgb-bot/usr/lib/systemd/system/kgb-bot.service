@@ -1,0 +1,22 @@
+[Unit]
+Description=Collaborative IRC helper
+After=network.target
+Documentation=https://salsa.debian.org/kgb-team/kgb/wikis/home
+
+[Service]
+User=Debian-kgb
+Group=Debian-kgb
+Environment=TZ=UTC
+Type=forking
+PermissionsStartOnly=true
+PIDFile=/run/kgb-bot/kgb-bot.pid
+ExecStartPre=/usr/bin/touch /var/log/kgb-bot.log
+ExecStartPre=/bin/chown Debian-kgb:root /var/log/kgb-bot.log
+ExecStartPre=/bin/chmod 0644 /var/log/kgb-bot.log
+ExecStart=/usr/sbin/kgb-bot --config /etc/kgb-bot/kgb.conf
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RuntimeDirectory=kgb-bot
+
+[Install]
+WantedBy=multi-user.target

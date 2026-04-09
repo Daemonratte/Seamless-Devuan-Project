@@ -1,0 +1,1746 @@
+#!/bin/bash
+
+# Copyright (C) 2010-2023 Pädagogisches Landesinstitut Rheinland-Pfalz
+# Copyright (C) 2022-2023 Mike Gabriel <mike.gabriel@das-netzwerkteam.de>
+# Copyright (C) 2022-2023 Daniel Teichmann <daniel.teichmann@das-netzwerkteam.de>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+# postinst script for debian-edu-router-config
+#
+# see: dh_installdeb(1)
+
+set -e
+
+. /usr/share/debconf/confmodule || exit 255
+
+# Load common functions, variables and stuff.
+source /usr/share/debian-edu-router/debian-edu-router.common
+
+if [ -e /etc/debian-edu/router.conf ]; then
+	source /etc/debian-edu/router.conf
+fi
+PRODUCTNAME="${PRODUCTNAME:-"Debian Edu Router"}"
+PRODUCTVERSION=$(dpkg-query --show --showformat='${Version}' "${DPKG_MAINTSCRIPT_PACKAGE}" 2>/dev/null || echo "UNKNOWN")
+db_title "${PRODUCTNAME_PLUGIN}"
+
+db_version 2.0
+db_capb backup escape
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <postinst> `abort-remove'
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see https://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+declare -A net_int_address_v4_testmode
+net_int_address_v4_testmode[OpenLAN]="192.168.100.1/24"
+net_int_address_v4_testmode[Education]="10.0.0.1/8"
+net_int_address_v4_testmode[Mgmt]="172.16.0.253/24"
+net_int_address_v4_testmode[School-Administration]="172.16.8.253/8"
+net_int_address_v4_testmode[WiFi-Students]="172.22.0.253/21"
+net_int_address_v4_testmode[WiFi-Teachers]="172.22.8.253/21"
+net_int_address_v4_testmode[WiFi-Guests]="172.22.16.253/21"
+net_int_address_v4_testmode[Printers]="172.16.1.253/24"
+
+declare -A net_int_address_v6_testmode
+net_int_address_v6_testmode[OpenLAN]=""
+net_int_address_v6_testmode[Education]=""
+net_int_address_v6_testmode[Mgmt]=""
+net_int_address_v6_testmode[School-Administration]=""
+net_int_address_v6_testmode[WiFi-Students]=""
+net_int_address_v6_testmode[WiFi-Teachers]=""
+net_int_address_v6_testmode[WiFi-Guests]=""
+net_int_address_v6_testmode[Printers]=""
+
+#### DEBCONF VARIABLES
+
+### Networking
+
+declare -A net_int_iface
+declare -A net_int_address_v4
+declare -A net_int_address_v6
+declare -A net_int_vlanid
+
+# populate local variables
+db_get debian-edu-router-config/adopt-manual-uplink-settings
+adopt_manual_uplink_settings="${RET}"
+db_get debian-edu-router-config/net-ext-iface-uplink
+net_ext_iface_uplink="${RET}"
+db_get debian-edu-router-config/net-int-supportednetworks
+net_int_supportednetworks="$(echo ${RET} | sed -e 's/,//g')"
+db_get debian-edu-router-config/net-int-with-vlans
+net_int_with_vlans="${RET}"
+db_get debian-edu-router-config/net-int-iface-vlan
+net_int_iface_vlan="${RET}"
+db_get debian-edu-router-config/net-int-supportednetworks-via-vlan
+net_int_supportednetworks_via_vlan="$(echo ${RET} | sed -e 's/,//g')"
+db_get debian-edu-router-config/net-int-vlanid-openlan
+net_int_vlanid[OpenLAN]="${RET}"
+db_get debian-edu-router-config/net-int-vlanid-education
+net_int_vlanid[Education]="${RET}"
+db_get debian-edu-router-config/net-int-vlanid-mgmt
+net_int_vlanid[Mgmt]="${RET}"
+db_get debian-edu-router-config/net-int-vlanid-schooladministration
+net_int_vlanid[School-Administration]="${RET}"
+db_get debian-edu-router-config/net-int-vlanid-wifistudents
+net_int_vlanid[WiFi-Students]="${RET}"
+db_get debian-edu-router-config/net-int-vlanid-wifiteachers
+net_int_vlanid[WiFi-Teachers]="${RET}"
+db_get debian-edu-router-config/net-int-vlanid-wifiguests
+net_int_vlanid[WiFi-Guests]="${RET}"
+db_get debian-edu-router-config/net-int-vlanid-printers
+net_int_vlanid[Printers]="${RET}"
+db_get debian-edu-router-config/net-int-iface-openlan
+net_int_iface[OpenLAN]="${RET}"
+db_get debian-edu-router-config/net-int-iface-education
+net_int_iface[Education]="${RET}"
+db_get debian-edu-router-config/net-int-iface-mgmt
+net_int_iface[Mgmt]="${RET}"
+db_get debian-edu-router-config/net-int-iface-schooladministration
+net_int_iface[School-Administration]="${RET}"
+db_get debian-edu-router-config/net-int-iface-wifistudents
+net_int_iface[WiFi-Students]="${RET}"
+db_get debian-edu-router-config/net-int-iface-wifiteachers
+net_int_iface[WiFi-Teachers]="${RET}"
+db_get debian-edu-router-config/net-int-iface-wifiguests
+net_int_iface[WiFi-Guests]="${RET}"
+db_get debian-edu-router-config/net-int-iface-printers
+net_int_iface[Printers]="${RET}"
+db_get debian-edu-router-config/net-networks-staticip-v4
+net_networks_staticip_v4="${RET}"
+db_get debian-edu-router-config/net-networks-dhcpclient-v4
+net_networks_dhcpclient_v4="${RET}"
+db_get debian-edu-router-config/net-networks-staticip-v6
+net_networks_staticip_v6="${RET}"
+db_get debian-edu-router-config/net-networks-auto-v6
+net_networks_auto_v6="${RET}"
+db_get debian-edu-router-config/net-networks-dhcpclient-v6
+net_networks_dhcpclient_v6="${RET}"
+db_get debian-edu-router-config/net-ext-address-v4-uplink
+net_ext_address_v4_uplink="${RET}"
+db_get debian-edu-router-config/net-ext-address-v6-uplink
+net_ext_address_v6_uplink="${RET}"
+db_get debian-edu-router-config/net-ext-gateway-v4-uplink
+net_ext_gateway_v4_uplink="${RET}"
+db_get debian-edu-router-config/net-ext-gateway-v6-uplink
+net_ext_gateway_v6_uplink="${RET}"
+db_get debian-edu-router-config/net-ext-nameservers-uplink
+net_ext_nameservers_uplink="$(echo ${RET} | sed -E -e "s/,/ /g" -e "s/\s+/ /g")"
+db_get debian-edu-router-config/net-int-address-v4-openlan
+net_int_address_v4[OpenLAN]="${RET}"
+db_get debian-edu-router-config/net-int-address-v6-openlan
+net_int_address_v6[OpenLAN]="$(echo ${RET} | tr A-F a-f)"
+db_get debian-edu-router-config/net-int-address-v4-education
+net_int_address_v4[Education]="${RET}"
+db_get debian-edu-router-config/net-int-address-v6-education
+net_int_address_v6[Education]="$(echo ${RET} | tr A-F a-f)"
+db_get debian-edu-router-config/net-int-address-v4-mgmt
+net_int_address_v4[Mgmt]="${RET}"
+db_get debian-edu-router-config/net-int-address-v6-mgmt
+net_int_address_v6[Mgmt]="$(echo ${RET} | tr A-F a-f)"
+db_get debian-edu-router-config/net-int-address-v4-schooladministration
+net_int_address_v4[School-Administration]="${RET}"
+db_get debian-edu-router-config/net-int-address-v6-schooladministration
+net_int_address_v6[School-Administration]="$(echo ${RET} | tr A-F a-f)"
+db_get debian-edu-router-config/net-int-address-v4-wifistudents
+net_int_address_v4[WiFi-Students]="${RET}"
+db_get debian-edu-router-config/net-int-address-v6-wifistudents
+net_int_address_v6[WiFi-Students]="$(echo ${RET} | tr A-F a-f)"
+db_get debian-edu-router-config/net-int-address-v4-wifiteachers
+net_int_address_v4[WiFi-Teachers]="${RET}"
+db_get debian-edu-router-config/net-int-address-v6-wifiteachers
+net_int_address_v6[WiFi-Teachers]="$(echo ${RET} | tr A-F a-f)"
+db_get debian-edu-router-config/net-int-address-v4-wifiguests
+net_int_address_v4[WiFi-Guests]="${RET}"
+db_get debian-edu-router-config/net-int-address-v6-wifiguests
+net_int_address_v6[WiFi-Guests]="$(echo ${RET} | tr A-F a-f)"
+db_get debian-edu-router-config/net-int-address-v4-printers
+net_int_address_v4[Printers]="${RET}"
+db_get debian-edu-router-config/net-int-address-v6-printers
+net_int_address_v6[Printers]="$(echo ${RET} | tr A-F a-f)"
+
+### Firewall
+
+db_get debian-edu-router-config/service-firewall-networks-nat
+service_int_firewall_networks_nat="$(echo ${RET} | sed -E -e "s/,/ /g" -e "s/\s+/ /g")"
+db_get debian-edu-router-config/service-firewall-networks-routed
+service_int_firewall_networks_routed="$(echo ${RET} | sed -E -e "s/,/ /g" -e "s/\s+/ /g")"
+db_get debian-edu-router-config/service-firewall-networks-hostonly
+service_int_firewall_networks_hostonly="$(echo ${RET} | sed -E -e "s/,/ /g" -e "s/\s+/ /g")"
+db_get debian-edu-router-config/service-firewall-networks-block-internet
+service_int_firewall_networks_block_internet="$(echo ${RET} | sed -E -e "s/,/ /g" -e "s/\s+/ /g")"
+db_get debian-edu-router-config/service-firewall-networks-allow-internet
+service_int_firewall_networks_allow_internet="$(echo ${RET} | sed -E -e "s/,/ /g" -e "s/\s+/ /g")"
+db_get debian-edu-router-config/service-firewall-trustworthy-ips
+service_int_firewall_trustworthy_ips=( $(echo ${RET}) )
+db_get debian-edu-router-config/service-firewall-reverse-nat-configs
+service_int_firewall_reverse_nat_configs=( $(echo ${RET}) )
+db_get debian-edu-router-config/service-firewall-ssh-incoming
+service_firewall_ssh_incoming="$(echo ${RET} | sed -e 's/,//g')"
+
+### Services
+
+## DNS/DHCP
+declare -A service_dhcp_range_v4
+
+db_get debian-edu-router-config/service-dhcp-networks-v4
+service_dhcp_networks_v4="$(echo ${RET} | sed -E -e "s/,/ /g" -e "s/\s+/ /g")"
+db_get debian-edu-router-config/service-dhcp-networks-v6
+service_dhcp_networks_v6="$(echo ${RET} | sed -E -e "s/,/ /g" -e "s/\s+/ /g")"
+db_get debian-edu-router-config/service-dhcp-range-v4-openlan
+service_dhcp_range_v4[OpenLAN]="${RET}"
+db_get debian-edu-router-config/service-dhcp-range-v4-education
+service_dhcp_range_v4[Education]="${RET}"
+db_get debian-edu-router-config/service-dhcp-range-v4-mgmt
+service_dhcp_range_v4[Mgmt]="${RET}"
+db_get debian-edu-router-config/service-dhcp-range-v4-schooladministration
+service_dhcp_range_v4[School-Administration]="${RET}"
+db_get debian-edu-router-config/service-dhcp-range-v4-wifistudents
+service_dhcp_range_v4[WiFi-Students]="${RET}"
+db_get debian-edu-router-config/service-dhcp-range-v4-wifiteachers
+service_dhcp_range_v4[WiFi-Teachers]="${RET}"
+db_get debian-edu-router-config/service-dhcp-range-v4-wifiguests
+service_dhcp_range_v4[WiFi-Guests]="${RET}"
+db_get debian-edu-router-config/service-dhcp-range-v4-printers
+service_dhcp_range_v4[Printers]="${RET}"
+
+## SSH
+db_get debian-edu-router-config/service-ssh-custom-port || true
+service_ssh_custom_port="${RET}"
+
+CONFIG_BACKUP_DIR="$(mktemp -d --suffix -debian-edu-router-config_CONFIG_BACKUP)"
+DEBUG_CONFIG_DIR="$(mktemp -d --suffix -debian-edu-router-config_DEBUG_CONFIG)"
+
+#### end of DEBCONF VARIABLES
+
+function fill_with_trailing_blanks() {
+	length=$1
+	string=$2
+	printf "%-${length}s" "${string}"
+}
+
+function iface_address_v4() {
+	ip a show ${_iface} 2>/dev/null | grep "inet " | awk '{print $2}' | head -n1
+}
+
+function iface_address_v6() {
+	ip a show ${_iface} 2>/dev/null | grep "inet6 " | grep -v "fe80::" | awk '{print $2}' | head -n1
+}
+
+complete_network_information() {
+	if [ -n "${TEST_MODE}" ]; then
+
+		# Fake-complete networks for TEST_MODE...
+
+		# Uplink (faking for TEST_MODE)
+		_iface="${net_ext_iface_uplink}"
+		if echo "${net_networks_dhcpclient_v4}" | grep -q 'Uplink'; then
+			net_ext_address_v4="192.168.1.20/24"
+		fi
+		if echo "${net_networks_auto_v6}" | grep -q 'Uplink'; then
+			# FIXME: let's also fake IPv6 some time in the future
+			net_ext_address_v6=""
+		fi
+
+		# Internal networks (faking for TEST_MODE)
+		for int_network in ${net_int_supportednetworks}; do
+			if echo "${net_networks_dhcpclient_v4}" | grep -q "${int_network}"; then
+				net_int_address_v4[${int_network}]="${net_int_address_v4_testmode[${int_network}]}"
+			fi
+			if echo ${net_networks_auto_v6} | grep -q ${int_network}; then
+				net_int_address_v6[${int_network}]="${net_int_address_v6_testmode[${int_network}]}"
+			fi
+		done
+
+	else
+
+		# Complete networks from UP'ped interfaces in real life...
+
+		# Uplink
+		_iface="${net_ext_iface_uplink}"
+		if echo ${net_networks_dhcpclient_v4} | grep -q 'Uplink'; then
+			net_ext_address_v4="$(iface_address_v4 "${_iface}")"
+		fi
+		if echo ${net_networks_auto_v6} | grep -q 'Uplink'; then
+			net_ext_address_v6="$(iface_address_v6 "${_iface}")"
+		fi
+
+		# Internal networks
+		for int_network in ${net_int_supportednetworks}; do
+			# Physical NIC or VLAN?
+			if echo ${net_int_supportednetworks_via_vlan} | grep -q ${int_network}; then
+				_iface="${net_int_iface_vlan}.${net_int_vlanid[${int_network}]}"
+			else
+				_iface="${net_int_iface[${int_network}]}"
+			fi
+
+			# Detect networks configured as DHCP clients via current interface configuration
+			if echo "${net_networks_dhcpclient_v4}" | grep -q "${int_network}"; then
+			net_int_address_v4[${int_network}]="$(iface_address_v4 "${_iface}")"
+			fi
+			if echo "${net_networks_auto_v6}" | grep -q "${int_network}"; then
+				net_int_address_v6[${int_network}]="$(iface_address_v6 "${_iface}")"
+			fi
+		done
+
+	fi
+}
+
+flush_addresses_interfaces() {
+	declare -A internal_networks
+	get_internal_networks_ifaces "false"
+
+	db_get debian-edu-router-config/net-ext-iface-uplink
+	internal_networks["Uplink"]="${RET}"
+
+	warning_log "Starting service 'networking' failed!"
+	warning_log "Maybe there are still addresses configured for the interfaces we use. $(
+	             )Flushing them should fix this issue."
+	for network in ${!internal_networks[@]}; do
+		iface=${internal_networks[$network]}
+		warning_log "Flushing addresses of interface $iface of network $network!"
+		ip address flush dev "$iface"
+	done
+}
+
+process_networking_answers() {
+
+	local with_warnings=false
+
+	if [ -z "${TEST_MODE}" ]; then
+		# When running in production mode, make sure all (not-to-be-configured)
+		# network configurations files are removed from /etc/debian-edu-router/interfaces.d/.
+		rm -f /etc/debian-edu-router/interfaces.d/??_d-e-r_*
+
+		# Yes, remove all plugin related files too.
+		# They will be either regenerated by the next dpkg-trigger or by
+		# the next dpkg-reconfigure of the plugin package.
+		rm -f /etc/debian-edu-router/interfaces.d/??_d-e-r-p*
+	fi
+
+	if [ -n "${TEST_MODE}" ]; then
+		output="/dev/stdout"
+	fi
+
+	if [ -n "${net_ext_iface_uplink}" ]; then
+		# Find definition of existing Uplink interface and move its file (/etc/network/interfaces{.d/*}) away.
+		if [ "$adopt_manual_uplink_settings" = "true" ]; then
+			files=$(find /etc/network/interfaces /etc/network/interfaces.d/ -type f -exec grep -q "$net_ext_iface_uplink" {} \; -print)
+			for file in $files; do
+				mv -v "$file" "$file.d-e-r-backup"
+				echo "### Debian Edu Router ###"                                                   >  "$file"
+				echo "# This file was backed up to '$file.d-e-r-backup'. It isn't needed anymore." >> "$file"
+				echo ""                                                                            >> "$file"
+				echo "source /etc/network/interfaces.d/*"                                          >> "$file"
+				notice_log "Moved '$file' to '$file.d-e-r-backup' in order to adopt the existing Uplink interface."
+			done
+		fi
+
+		if ip a | grep -qE "^[0-9]+:\s*${net_ext_iface_uplink}" || [ -n "${TEST_MODE}" ] || [ "${FORCE_NETWORK_SETUP_POSTINST}" = "1" ]; then
+			ifupdown_cfg_file="/etc/debian-edu-router/interfaces.d/00_d-e-r_Uplink"
+			if [ -n "${TEST_MODE}" ]; then
+				echo "# ${ifupdown_cfg_file}"
+				echo
+				echo '```'
+			else
+				output="${ifupdown_cfg_file}"
+			fi
+			echo "###"                                                              1> "${output}"
+			echo "### Debian Edu Router Networking"                                 >> "${output}"
+			echo "###"                                                              >> "${output}"
+			echo                                                                    >> "${output}"
+			echo "### Managed by debian-edu-router-config. Don't modify this file." >> "${output}"
+			echo                                                                    >> "${output}"
+			echo "# Network 'Uplink' has been assigned to"                          >> "${output}"
+			echo "# physical interface '${net_ext_iface_uplink}'."                  >> "${output}"
+			echo                                                                    >> "${output}"
+			echo "auto ${net_ext_iface_uplink}"                                     >> "${output}"
+			if echo "${net_networks_staticip_v4}" | grep -q 'Uplink'; then
+				_addr=$(echo "${net_ext_address_v4_uplink}" | cut -d"/" -f1)
+				_netmask=$(echo "${net_ext_address_v4_uplink}" | cut -d"/" -f2)
+				echo "iface ${net_ext_iface_uplink} inet static"                    >> "${output}"
+				echo "        address ${_addr}"                                     >> "${output}"
+				echo "        netmask $(netmask_v4_converter ${_netmask})"          >> "${output}"
+				echo "        gateway ${net_ext_gateway_v4_uplink}"                 >> "${output}"
+
+				dns_nameservers_v4=""
+				for dns_server_v4 in ${net_ext_nameservers_uplink}; do
+					if is_address_v4 "${dns_server}"; then
+						dns_nameservers_v4="${dns_nameservers_v4} ${dns_server_v4}"
+					fi
+				done
+				if [ -u "${dns_nameservers_v4}" ]; then
+					# yes, the missing blank below is wanted...
+					echo "        dns-nameservers${dns_nameservers_v4}"             >> "${output}"
+				fi
+
+			elif echo "${net_networks_dhcpclient_v4}" | grep -q 'Uplink'; then
+				echo "iface ${net_ext_iface_uplink} inet dhcp"                      >> "${output}"
+			else
+				echo "iface ${net_ext_iface_uplink} inet manual"                    >> "${output}"
+			fi
+
+			if echo "${net_networks_staticip_v6}" | grep -q 'Uplink'; then
+				_addr=$(echo "${net_ext_address_v6_uplink}" | cut -d"/" -f1)
+				_netmask=$(echo "${net_ext_address_v6_uplink}" | cut -d"/" -f2)
+				echo
+				echo "iface ${net_ext_iface_uplink} inet6 static"                   >> "${output}"
+				echo "        address ${_addr}"                                     >> "${output}"
+				echo "        netmask ${_netmask}"                                  >> "${output}"
+				echo "        gateway ${net_ext_gateway_v6_uplink}"                 >> "${output}"
+
+				dns_nameservers_v6=""
+				for dns_server_v6 in ${net_ext_nameservers_uplink}; do
+					if is_address_v6 "${dns_server}"; then
+						dns_nameservers_v6="${dns_nameservers_v6} ${dns_server_v6}"
+					fi
+				done
+				if [ -u "${dns_nameservers_v6}" ]; then
+					# yes, the missing blank below is wanted...
+					echo "        dns-nameservers${dns_nameservers_v6}"             >> "${output}"
+				fi
+
+			elif echo "${net_networks_auto_v6}" | grep -q 'Uplink'; then
+				echo
+				echo "iface ${net_ext_iface_uplink} inet6 auto"                     >> "${output}"
+				if echo "${net_networks_dhcpclient_v6}" | grep -q 'Uplink'; then
+					echo "        dhcp 1"                                           >> "${output}"
+				fi
+			fi
+			if [ -n "${TEST_MODE}" ]; then
+				echo '```'
+				echo
+				echo
+			fi
+
+		else
+			warning_log "Network interface '${net_ext_iface_uplink}' for network 'Uplink' not found."
+			with_warnings=true
+		fi
+	else
+		warning_log "No 'Uplink' has been selected, so far."
+		with_warnings=true
+	fi
+
+	vlan_iface_set_up=false
+	if [ "${net_int_with_vlans}" = true ]; then
+
+		if [ -n "${net_int_iface_vlan}" ]; then
+			if ip a | grep -qE "^[0-9]+:\s*${net_int_iface_vlan}" || [ -n "${TEST_MODE}" ] || [ "${FORCE_NETWORK_SETUP_POSTINST}" = "1" ]; then
+				ifupdown_cfg_file="/etc/debian-edu-router/interfaces.d/01_d-e-r_VLAN"
+				if [ -n "${TEST_MODE}" ]; then
+					echo "# ${ifupdown_cfg_file}"
+					echo
+					echo '```'
+				else
+					output="${ifupdown_cfg_file}"
+				fi
+				echo "###"                                                              1> "${output}"
+				echo "### Debian Edu Router Networking"                                 >> "${output}"
+				echo "###"                                                              >> "${output}"
+				echo                                                                    >> "${output}"
+				echo "### Managed by debian-edu-router-config. Don't modify this file." >> "${output}"
+				echo                                                                    >> "${output}"
+				echo "# Internal VLAN networks have been assigned to"                   >> "${output}"
+				echo "# physical interface '${net_int_iface_vlan}'."                    >> "${output}"
+				echo                                                                    >> "${output}"
+				echo "auto ${net_int_iface_vlan}"                                       >> "${output}"
+				echo "iface ${net_int_iface_vlan} inet manual"                          >> "${output}"
+				if [ -n "${TEST_MODE}" ]; then
+					echo '```'
+					echo
+					echo
+				fi
+				vlan_iface_set_up=true
+			else
+				warning_log "Interface '${net_int_iface_vlan}' for internal VLAN networks not found."
+				with_warnings=true
+			fi
+		else
+			warning_log "VLAN networking shall be used for internal networks, but no VLAN network interface has been selected."
+			with_warnings=true
+		fi
+	fi
+
+	num=10
+	for int_network in ${net_int_supportednetworks}; do
+
+		# This network shall use the VLAN interfaces, but we failed setting up the physical
+		# interface for VLANs. If so, bail out...
+		if [ ${net_int_with_vlans} = true ] && echo "${net_int_supportednetworks_via_vlan}" | grep -q "${int_network}" && [ ${vlan_iface_set_up} = false ]; then
+			warning_log "Network interface for VLAN network "${int_network}" is not configured."
+			with_warnings=true
+			continue
+		elif ! ip a | grep -qE "^[0-9]+:\s*${net_int_iface[${int_network}]}" && [ -z "${TEST_MODE}" ] && [ "${FORCE_NETWORK_SETUP_POSTINST}" != "1" ]; then
+			warning_log "Network interface '${net_int_iface[${int_network}]}' for network '${int_network}' not found."
+			with_warnings=true
+			continue
+		fi
+
+		ifupdown_cfg_file="/etc/debian-edu-router/interfaces.d/${num}_d-e-r_${int_network}"
+		if [ -n "${TEST_MODE}" ]; then
+			echo "# ${ifupdown_cfg_file}"
+			echo
+			echo '```'
+		else
+			output="${ifupdown_cfg_file}"
+		fi
+		echo "###"                                                                                1> "${output}"
+		echo "### Debian Edu Router Networking"                                                   >> "${output}"
+		echo "###"                                                                                >> "${output}"
+		echo                                                                                      >> "${output}"
+		echo "### Managed by debian-edu-router-config. Don't modify this file."                   >> "${output}"
+		echo                                                                                      >> "${output}"
+
+		if [ "${net_int_with_vlans}" = true ] && \
+		   echo "${net_int_supportednetworks_via_vlan}" | grep -q "${int_network}"; then
+			_iface="${net_int_iface_vlan}.${net_int_vlanid[${int_network}]}"
+			_comment="# VLAN ID '${net_int_vlanid[${int_network}]}' on VLAN interface '${net_int_iface_vlan}'." \
+			                                                                                      >> "${output}"
+		else
+			_iface="${net_int_iface[${int_network}]}"
+			_comment="# physical interface '${_iface}'."                                          >> "${output}"
+		fi
+
+		if [ -n "${_iface}" ]; then
+			echo "# Network '${int_network}' has been assigned to"                                >> "${output}"
+			echo "${_comment}"                                                                    >> "${output}"
+			echo                                                                                  >> "${output}"
+			if [ "$IPV4" == true ] || [ "$IPV6" == true ]; then
+				echo "auto ${_iface}"                                                             >> "${output}"
+			fi
+
+			if [ "$IPV4" == true ]; then
+				if echo "${net_networks_staticip_v4}" | grep -q "${int_network}"; then
+					_addr=$(echo "${net_int_address_v4[${int_network}]}" | cut -d"/" -f1)
+					_netmask=$(echo "${net_int_address_v4[${int_network}]}" | cut -d"/" -f2)
+					echo "iface ${_iface} inet static"                                            >> "${output}"
+					echo "        address ${_addr}"                                               >> "${output}"
+					echo "        netmask $(netmask_v4_converter ${_netmask})"                    >> "${output}"
+				elif echo "${net_networks_dhcpclient_v4}" | grep -q "${int_network}"; then
+					echo "iface ${_iface} inet dhcp"                                              >> "${output}"
+				else
+					echo "iface ${_iface} inet manual"                                            >> "${output}"
+				fi
+			fi
+
+			if [ "$IPV6" == true ]; then
+				if echo "${net_networks_staticip_v6}" | grep -q "${int_network}" && [ -n "${net_int_address_v6[${int_network}]}" ]; then
+					echo                                                                          >> "${output}"
+					_addr=$(echo "${net_int_address_v6[${int_network}]}" | cut -d"/" -f1)
+					_netmask=$(echo "${net_int_address_v6[${int_network}]}" | cut -d"/" -f2)
+					echo "iface ${_iface} inet6 static"                                           >> "${output}"
+					echo "        address ${_addr}"                                               >> "${output}"
+					echo "        netmask ${_netmask}"                                            >> "${output}"
+				elif echo "${net_networks_auto_v6}" | grep -q "${int_network}"; then
+					echo                                                                          >> "${output}"
+					echo "iface ${_iface} inet6 auto"                                             >> "${output}"
+					if echo "${net_networks_dhcpclient_v6}" | grep -q "${int_network}"; then
+						echo "        dhcp 1"                                                     >> "${output}"
+					fi
+				fi
+			fi
+		else
+			echo "# No interface is assigned to network '${int_network}', currently."             >> "${output}"
+			warning_log "No interface selected/found for network '${int_network}'."
+		fi
+
+		if [ -n "${TEST_MODE}" ]; then
+			echo '```'
+			echo
+			echo
+		fi
+
+		let "num=num+10"
+
+	done
+
+	if [ ${with_warnings} = true ]; then
+		echo -e "${yellow}${bold}Run 'dpkg-reconfigure debian-edu-router-config' to (re-)configure networking.${normal}"
+	fi
+}
+
+process_firewall_answers() {
+
+	if [ -z "${TEST_MODE}" ]; then
+		# When running in production mode, make sure all (not-to-be-configured)
+		# firewall configuration files are removed from /etc/uif/uif*.d/.
+		rm -f /etc/debian-edu-router/uif.conf.d/??_d-e-r_*
+		rm -f /etc/debian-edu-router/uif-ipv*-networks.inc.d/??_d-e-r_*
+
+		# Yes, remove all plugin related files too.
+		# They will be either regenerated by the next dpkg-trigger or by
+		# the next dpkg-reconfigure of the plugin package.
+		rm -f /etc/debian-edu-router/uif.conf.d/??_d-e-r-p*
+		rm -f /etc/debian-edu-router/uif-ipv*-networks.inc.d/??_d-e-r-p*
+	fi
+
+	if [ -n "${TEST_MODE}" ]; then
+		output="/dev/stdout"
+	fi
+
+	# FIXME: do we really need this global UIF configuration file???
+	uif_cfg_file="/etc/debian-edu-router/uif.conf.d/00_d-e-r_Global"
+	if [ -n "${TEST_MODE}" ]; then
+		echo "# ${uif_cfg_file}"
+		echo
+		echo '```'
+	else
+		output="${uif_cfg_file}"
+	fi
+	echo "###"                                                                                                    1> "${output}"
+	echo "### Debian Edu Router Firewall"                                                                         >> "${output}"
+	echo "###"                                                                                                    >> "${output}"
+	echo                                                                                                          >> "${output}"
+	echo "### Managed by debian-edu-router-config. Don't modify this file."                                       >> "${output}"
+	if [ -n "${TEST_MODE}" ]; then
+		echo '```'
+		echo
+		echo
+	fi
+
+	# UIF definitions of IPv4 Networks
+	uif_cfg_file="/etc/debian-edu-router/uif-ipv4-networks.inc.d/50_d-e-r_networks_v4"
+
+	if [ -n "${TEST_MODE}" ]; then
+		echo "# ${uif_cfg_file}"
+		echo
+		echo '```'
+	else
+		output="${uif_cfg_file}"
+	fi
+	echo "###"                                                                                               1> "${output}"
+	echo "### Debian Edu Router Firewall"                                                                    >> "${output}"
+	echo "###"                                                                                               >> "${output}"
+	echo                                                                                                     >> "${output}"
+	echo "### Managed by debian-edu-router-config. Don't modify this file."                                  >> "${output}"
+	echo                                                                                                     >> "${output}"
+	echo "network {"                                                                                         >> "${output}"
+	if echo "${net_networks_staticip_v4}" | grep -q 'Uplink'; then
+		if [ -n "${net_ext_address_v4}" ]; then
+			ip="$(echo ${net_ext_address_v4} | cut -d"/" -f1)"
+			netmask="$(netmask_v4_converter $(echo ${net_ext_address_v4} | cut -d"/" -f2))"
+			network="$(network_v4_calculator ${ip} ${netmask})"
+			echo "    $(fill_with_trailing_blanks 28 "net_Uplink") ${network}/${netmask}"                    >> "${output}"
+		else
+			echo "    $(fill_with_trailing_blanks 28 "net_Uplink") 127.0.0.1"                                >> "${output}"
+		fi
+	fi
+	for int_network in ${net_int_supportednetworks}; do
+
+		if [ -n "${net_int_address_v4[${int_network}]}" ]; then
+			ip="$(echo ${net_int_address_v4[${int_network}]} | cut -d"/" -f1)"
+			netmask="$(netmask_v4_converter $(echo ${net_int_address_v4[${int_network}]} | cut -d"/" -f2))"
+			network="$(network_v4_calculator ${ip} ${netmask})"
+			echo "    $(fill_with_trailing_blanks 28 "net_${int_network}" ) ${network}/${netmask}" \
+		                                                                                                     >> "${output}"
+			echo "    $(fill_with_trailing_blanks 28 "self_${int_network}") ${ip}" \
+		                                                                                                     >> "${output}"
+		else
+			echo "    $(fill_with_trailing_blanks 28 "net_${int_network}" ) 127.0.0.1"                       >> "${output}"
+			echo "    $(fill_with_trailing_blanks 28 "self_${int_network}") 127.0.0.1"                       >> "${output}"
+		fi
+	done
+	echo "}"                                                                                                 >> "${output}"
+	if [ -n "${TEST_MODE}" ]; then
+		echo '```'
+		echo
+		echo
+	fi
+
+	# UIF definitions of IPv6 Networks
+	uif_cfg_file="/etc/debian-edu-router/uif-ipv6-networks.inc.d/50_d-e-r_networks_v6"
+	if [ -n "${TEST_MODE}" ]; then
+		echo "# ${uif_cfg_file}"
+		echo
+		echo '```'
+	else
+		output="${uif_cfg_file}"
+	fi
+	echo "###"                                                                                            1> "${output}"
+	echo "### Debian Edu Router Firewall"                                                                 >> "${output}"
+	echo "###"                                                                                            >> "${output}"
+	echo                                                                                                  >> "${output}"
+	echo "### Managed by debian-edu-router-config. Don't modify this file."                               >> "${output}"
+	echo                                                                                                  >> "${output}"
+	echo "network {"                                                                                      >> "${output}"
+	if echo "${net_networks_staticip_v6}" | grep -q 'Uplink'; then
+		echo "network {"                                                                                  >> "${output}"
+		if [ -n "${net_ext_address_v6}" ]; then
+			# FIXME: calculate IPv6 network and prefix here like for IPv4 above
+			echo "    $(fill_with_trailing_blanks 28 "net_Uplink") ${net_ext_address_v6}"                 >> "${output}"
+		else
+			echo "    $(fill_with_trailing_blanks 28 "net_Uplink") ::1"                                   >> "${output}"
+		fi
+	fi
+	for int_network in ${net_int_supportednetworks}; do
+		if [ -n "${net_int_address_v6[${int_network}]}" ]; then
+			# FIXME: calculate IPv6 network and prefix here like for IPv4 above
+			echo "    $(fill_with_trailing_blanks 28 "net_${int_network}" ) ${net_int_address_v6[${int_network}]}" \
+			                                                                                              >> "${output}"
+			echo "    $(fill_with_trailing_blanks 28 "self_${int_network}") ${net_int_address_v6[${int_network}]}" \
+			                                                                                              >> "${output}"
+		else
+			echo "    $(fill_with_trailing_blanks 28 "net_${int_network}" ) ::1"                          >> "${output}"
+			echo "    $(fill_with_trailing_blanks 28 "self_${int_network}") ::1"                          >> "${output}"
+		fi
+	done
+	echo "}"                                                                                              >> "${output}"
+	if [ -n "${TEST_MODE}" ]; then
+		echo '```'
+		echo
+		echo
+	fi
+
+	if [ -n "${net_ext_iface_uplink}" ]; then
+
+		# Uplink interface declaration + filtering rules
+		uif_cfg_file="/etc/debian-edu-router/uif.conf.d/00_d-e-r_Uplink"
+		if [ -n "${TEST_MODE}" ]; then
+			echo "# ${uif_cfg_file}"
+			echo
+			echo '```'
+		else
+			output="${uif_cfg_file}"
+		fi
+		echo "###"                                                                                            1> "${output}"
+		echo "### Debian Edu Router Firewall"                                                                 >> "${output}"
+		echo "###"                                                                                            >> "${output}"
+		echo                                                                                                  >> "${output}"
+		echo "### Managed by debian-edu-router-config. Don't modify this file."                               >> "${output}"
+		echo                                                                                                  >> "${output}"
+		if [ -z "${TEST_MODE}" ]; then
+			echo "# File: ${output}"                                                                          >> "${output}"
+			echo                                                                                              >> "${output}"
+		fi
+		echo "# External network 'Uplink' is bound to '${net_ext_iface_uplink}'"                              >> "${output}"
+		echo "interface {"                                                                                    >> "${output}"
+		echo "    $(fill_with_trailing_blanks 28 "iface_Uplink") ${net_ext_iface_uplink}"                     >> "${output}"
+		echo "}"                                                                                              >> "${output}"
+		echo                                                                                                  >> "${output}"
+		if [ -n "${TEST_MODE}" ]; then
+			echo '```'
+			echo
+			echo
+		fi
+	fi
+
+	# Internal network interfaces' declarations + filtering rules
+	num=10
+	for int_network in ${net_int_supportednetworks}; do
+		if [ "${net_int_with_vlans}" = true ] && \
+		   echo "${net_int_supportednetworks_via_vlan}" | grep -q "${int_network}"; then
+			_iface="${net_int_iface_vlan}.${net_int_vlanid[${int_network}]}"
+		else
+			_iface="${net_int_iface[${int_network}]}"
+		fi
+
+		uif_cfg_file="/etc/debian-edu-router/uif.conf.d/${num}_d-e-r_${int_network}_rules-start"
+		if [ -n "${TEST_MODE}" ]; then
+			echo "# ${uif_cfg_file}"
+			echo
+			echo '```'
+		else
+			output="${uif_cfg_file}"
+		fi
+
+		echo "###"                                                                                            1> "${output}"
+		echo "### Debian Edu Router Firewall"                                                                 >> "${output}"
+		echo "###"                                                                                            >> "${output}"
+		echo                                                                                                  >> "${output}"
+		echo "### Managed by debian-edu-router-config. Don't modify this file."                               >> "${output}"
+		echo                                                                                                  >> "${output}"
+		if [ -z "${TEST_MODE}" ]; then
+			echo "# File: ${output}"                                                                          >> "${output}"
+			echo                                                                                              >> "${output}"
+		fi
+
+		if [ -n "${_iface}" ]; then
+			echo "# Internal network '${int_network}' is bound to '${_iface}'"                                >> "${output}"
+			echo "interface {"                                                                                >> "${output}"
+			echo "    $(fill_with_trailing_blanks 28 "iface_${int_network}") ${_iface}"                       >> "${output}"
+			echo "}"                                                                                          >> "${output}"
+			echo                                                                                              >> "${output}"
+			echo "filter {"                                                                                   >> "${output}"
+			if echo "${service_int_firewall_networks_nat}" | grep -q "${int_network}"; then
+				echo "    # Internal network '${int_network}' is of type NAT"                                 >> "${output}"
+				echo "    masq+  o=iface_Uplink s=net_${int_network}(4)"                                      >> "${output}"
+			elif echo "${service_int_firewall_networks_routed}" | grep -q "${int_network}"; then
+				echo "    # Internal network '${int_network}' is of type ROUTED"                              >> "${output}"
+			else
+				echo "    # Internal network '${int_network}' is of type HOST-ONLY"                           >> "${output}"
+			fi
+			echo                                                                                              >> "${output}"
+			echo "    # Allow incoming DHCP queries on interface 'iface_${int_network}'"                      >> "${output}"
+			echo "    in+    i=iface_${int_network} p=bootp"                                                  >> "${output}"
+			echo                                                                                              >> "${output}"
+			echo "    # Allow incoming DNS queries on 'iface_${int_network}'"                                 >> "${output}"
+			echo "    in+    i=iface_${int_network} p=dns"                                                    >> "${output}"
+			echo                                                                                              >> "${output}"
+			if [ "$IPV6" == true ]; then
+				echo "    # Support ICMPv6 type 133/134 (ra/rs)"                                              >> "${output}"
+				echo "    in+    i=iface_${int_network} s=all(6) p=router-advertisement,router-solicitation"  >> "${output}"
+			fi
+			echo                                                                                              >> "${output}"
+			echo "}"                                                                                          >> "${output}"
+		else
+			echo "# No interface is bound to network '${int_network}', currently."                            >> "${output}"
+		fi
+
+		uif_cfg_file="/etc/debian-edu-router/uif.conf.d/$((${num}+9))_d-e-r_${int_network}_rules-end"
+		if [ -n "${TEST_MODE}" ]; then
+			echo "# ${uif_cfg_file}"
+			echo
+			echo '```'
+		else
+			output="${uif_cfg_file}"
+		fi
+
+		echo "###"                                                                                    1> "${output}"
+		echo "### Debian Edu Router Firewall"                                                         >> "${output}"
+		echo "###"                                                                                    >> "${output}"
+		echo                                                                                          >> "${output}"
+		echo "### Managed by debian-edu-router-config. Don't modify this file."                       >> "${output}"
+		echo                                                                                          >> "${output}"
+		if [ -z "${TEST_MODE}" ]; then
+			echo "# File: ${output}"                                                                  >> "${output}"
+			echo                                                                                      >> "${output}"
+		fi
+
+		if [ -n "${_iface}" ]; then
+			echo "filter {"                                                                           >> "${output}"
+			if echo "${service_int_firewall_networks_allow_internet}" | grep -q "${int_network}" && \
+			   ! echo "${service_int_firewall_networks_hostonly}" | grep -q "${int_network}"; then
+				echo "    # Machines on network '${int_network}' may connect to the internet, directly" \
+				                                                                                      >> "${output}"
+				echo "    fw+    s=net_${int_network}(4) o=iface_Uplink"                              >> "${output}"
+			elif echo "${service_int_firewall_networks_hostonly}" | grep -q "${int_network}"; then
+				echo "    # Machines on host-only network '${int_network}' may not connect to the internet, directly" \
+				                                                                                      >> "${output}"
+				echo "    fw-    s=net_${int_network}(4) f=log(forward-drop-hostonly)"                >> "${output}"
+			elif echo "${service_int_firewall_networks_block_internet}" | grep -q "${int_network}"; then
+				echo "    # Machines on network '${int_network}' may not connect to the internet, directly" \
+				                                                                                      >> "${output}"
+				echo "    fw-    s=net_${int_network}(4) f=log(forward-reject),reject"                >> "${output}"
+			fi
+			echo "}"                                                                                  >> "${output}"
+		else
+			echo "# No interface is bound to network '${int_network}', currently."                    >> "${output}"
+		fi
+
+		if [ -n "${TEST_MODE}" ]; then
+			echo '```'
+			echo
+			echo
+		fi
+
+		let "num=num+10"
+
+	done
+
+	#
+	# Trustworthy IP addresses and networks
+	#
+
+	# Compares supported internal networks against networks which are allow to
+	# have direct internet access. Don't generate config files if all networks
+	# are allowed direct internet access.
+	unequal_items="$(compare_comma_separated_items "${net_int_supportednetworks}" "${service_int_firewall_networks_allow_internet}")"
+	if [[ -n "${service_int_firewall_trustworthy_ips[@]}" ]] && [[ -n "${unequal_items}" ]]; then
+		# Main file
+		ifupdown_cfg_file="/etc/debian-edu-router/uif.conf.d/00_d-e-r_trustworthy-IPs-and-networks"
+		if [ -n "${TEST_MODE}" ]; then
+			echo "# ${ifupdown_cfg_file}"
+			echo
+			echo '```'
+		else
+			output="${ifupdown_cfg_file}"
+		fi
+		echo "###"                                                              1> "${output}"
+		echo "### Debian Edu Router Networking"                                 >> "${output}"
+		echo "###"                                                              >> "${output}"
+		echo                                                                    >> "${output}"
+		echo "### Managed by debian-edu-router-config. Don't modify this file." >> "${output}"
+		echo                                                                    >> "${output}"
+
+		echo "filter {"                                                         >> "${output}"
+		for idx in "${!service_int_firewall_trustworthy_ips[@]}"; do
+			item="${service_int_firewall_trustworthy_ips[$idx]}"
+
+			if is_valid_ipconfig_v4 "$item" || is_address_v4 "$item"; then
+				if [ "$IPV4" != true ]; then
+					warning_log "Found item '$item' in trustworthy $(
+						)IP/network list which is IPv4 but IPv4 $(
+						)isn't even enabled!\nThis is most likely a bug, $(
+						)since this should have been prevented in input $(
+						)validation!\n"
+					continue
+				fi
+
+				trusted_source="trusted_source_$idx(4)"
+				debug_log "Adding trusted source '$trusted_source' to uif filter rules..."
+				echo "  fw+   s=$trusted_source"                                >> "${output}"
+				echo "  # Assure that trustworthy source '$trusted_source' $(
+				        )may not get NAT'ed via transparent proxy in $(
+				        )D-E-R-P.C-F."                                          >> "${output}"
+				echo "  dnat- s=$trusted_source p=http"                         >> "${output}"
+				echo "  dnat- s=$trusted_source p=https"                        >> "${output}"
+			elif is_valid_ipconfig_v6 "$item" || is_address_v6 "$item"; then
+				if [ "$IPV6" != true ]; then
+					warning_log "Found item '$item' in trustworthy $(
+						)IP/network list which is IPv6 but IPv6 $(
+						)isn't even enabled!\nThis is most likely a bug, $(
+						)since this should have been prevented in input $(
+						)validation!\n"
+					continue
+				fi
+
+				trusted_source="trusted_source_$idx(6)"
+				debug_log "Adding trusted source '$trusted_source' to uif filter rules..."
+				echo "  fw+   s=$trusted_source"                                >> "${output}"
+				echo "  # Assure that trustworthy source '$trusted_source' $(
+				        )may not get NAT'ed via transparent proxy in $(
+				        )D-E-R-P.C-F."                                          >> "${output}"
+				echo "  dnat- s=$trusted_source p=http"                         >> "${output}"
+				echo "  dnat- s=$trusted_source p=https"                        >> "${output}"
+			else
+				warning_log "Found item '$item' in trustworthy $(
+					)IP/network list which couldn't be interpreted as a $(
+					)v4 nor v6 IP/Address while creating filter rules for UIF!"
+			fi
+		done
+		echo "}"                                                                >> "${output}"
+
+		if [ -n "${TEST_MODE}" ]; then
+			echo '```'
+			echo
+			echo
+		fi
+
+		# IPv4 network file
+		if [ "$IPV4" == true ]; then
+			ifupdown_cfg_file="/etc/debian-edu-router/uif-ipv4-networks.inc.d/00_d-e-r_trustworthy-IPs-and-networks-v4"
+			if [ -n "${TEST_MODE}" ]; then
+				echo "# ${ifupdown_cfg_file}"
+				echo
+				echo '```'
+			else
+				output="${ifupdown_cfg_file}"
+			fi
+			echo "###"                                                              1> "${output}"
+			echo "### Debian Edu Router Networking"                                 >> "${output}"
+			echo "###"                                                              >> "${output}"
+			echo                                                                    >> "${output}"
+			echo "### Managed by debian-edu-router-config. Don't modify this file." >> "${output}"
+			echo                                                                    >> "${output}"
+
+			echo "network {"                  >> "${output}"
+			for idx in "${!service_int_firewall_trustworthy_ips[@]}"; do
+				item="${service_int_firewall_trustworthy_ips[$idx]}"
+				if is_valid_ipconfig_v4 "$item" || is_address_v4 "$item"; then
+					trusted_source="trusted_source_$idx	$item"
+					debug_log "Adding trusted source definition '$trusted_source' to uif ipv4 conf file."
+					echo "  $trusted_source"  >> "${output}"
+				fi
+			done
+			echo "}"                          >> "${output}"
+
+			if [ -n "${TEST_MODE}" ]; then
+				echo '```'
+				echo
+				echo
+			fi
+		fi
+
+		# IPv6 network file
+		if [ "$IPV6" == true ]; then
+			ifupdown_cfg_file="/etc/debian-edu-router/uif-ipv6-networks.inc.d/00_d-e-r_trustworthy-IPs-and-networks-v6"
+			if [ -n "${TEST_MODE}" ]; then
+				echo "# ${ifupdown_cfg_file}"
+				echo
+				echo '```'
+			else
+				output="${ifupdown_cfg_file}"
+			fi
+			echo "###"                                                              1> "${output}"
+			echo "### Debian Edu Router Networking"                                 >> "${output}"
+			echo "###"                                                              >> "${output}"
+			echo                                                                    >> "${output}"
+			echo "### Managed by debian-edu-router-config. Don't modify this file." >> "${output}"
+			echo                                                                    >> "${output}"
+
+			echo "network {"                  >> "${output}"
+			for idx in "${!service_int_firewall_trustworthy_ips[@]}"; do
+				item="${service_int_firewall_trustworthy_ips[$idx]}"
+				if is_valid_ipconfig_v6 "$item" || is_address_v6 "$item"; then
+					trusted_source="trusted_source_$idx	$item"
+					debug_log "Adding trusted source definition '$trusted_source' to uif ipv6 conf file."
+					echo "  $trusted_source"  >> "${output}"
+				fi
+			done
+			echo "}"                          >> "${output}"
+
+			if [ -n "${TEST_MODE}" ]; then
+				echo '```'
+				echo
+				echo
+			fi
+		fi
+	fi
+
+	#
+	# Reverse NAT
+	#
+
+	if [[ -n "${service_int_firewall_reverse_nat_configs[@]}" ]] && [ "$IPV4" == true ]; then
+		declare -a reverse_nat_configs=(${service_int_firewall_reverse_nat_configs[@]})
+
+		declare -a rn_collection_dst_ports
+		declare -a rn_collection_src_ports
+		declare -A rn_collection_host_addrs
+		declare -A rn_collection_int_networks
+		rn_services_collection_counter=0
+
+		for item in "${reverse_nat_configs[@]}"; do
+			parse_reverse_nat_config "$item"
+
+			if [ -n "$error_in_parsing" ]; then
+				# Error message was shown in parse_reverse_nat_config().
+				# Let's just skip this config entry.
+				continue
+			else
+				debug_log "Config item '$item' is valid." \
+						  "Following things could be extracted:"
+				# These items should already be sanitized and we don't have to
+				# check if they're valid.
+				debug_log "  - Protocol:         $rn_protocol"
+				debug_log "  - External port:    $rn_extern_port"
+				debug_log "  - Host address:     $rn_host_address"
+				debug_log "  - Host port:        $rn_host_port"
+				debug_log "  - Internal network: $rn_matching_internal_network"
+
+				# Check if port is in use
+				ss_output=$(ss -o state listening -tuplOnaH "( dport = :$rn_extern_port or sport = :$rn_extern_port )")
+				if [[ -n "$ss_output" ]]; then
+					process_info=$(echo $ss_output | awk ' {print $6} ')
+					warning_log "While processing reverse NAT rule '${item}':"
+					warning_log "The process '$process_info'"
+					warning_log "is already listening on port ${rn_extern_port}! Either change the external"
+					warning_log "port or stop the process just mentioned."
+					# Continue with config generation even if uif will fail
+					# later on most likely.
+				fi
+
+				# Collect services (ports) for UIF.
+				case "$rn_protocol" in
+					"tcp+udp")
+						rn_collection_src_ports+=("tcp(/$rn_extern_port)")
+						rn_collection_dst_ports+=("tcp(/$rn_host_port)")
+						rn_collection_host_addrs["$rn_services_collection_counter"]="${rn_host_address}"
+						rn_collection_int_networks["$rn_services_collection_counter"]="${rn_matching_internal_network}"
+						rn_services_collection_counter=$(($rn_services_collection_counter + 1))
+
+						rn_collection_src_ports+=("udp(/$rn_extern_port)")
+						rn_collection_dst_ports+=("udp(/$rn_host_port)")
+						rn_collection_host_addrs["$rn_services_collection_counter"]="${rn_host_address}"
+						rn_collection_int_networks["$rn_services_collection_counter"]="${rn_matching_internal_network}"
+						rn_services_collection_counter=$(($rn_services_collection_counter + 1))
+						;;
+
+					"tcp")
+						rn_collection_src_ports+=("tcp(/$rn_extern_port)")
+						rn_collection_dst_ports+=("tcp(/$rn_host_port)")
+						rn_collection_host_addrs["$rn_services_collection_counter"]="${rn_host_address}"
+						rn_collection_int_networks["$rn_services_collection_counter"]="${rn_matching_internal_network}"
+						rn_services_collection_counter=$(($rn_services_collection_counter + 1))
+						;;
+
+					"udp")
+						rn_collection_src_ports+=("udp(/$rn_extern_port)")
+						rn_collection_dst_ports+=("udp(/$rn_host_port)")
+						rn_collection_host_addrs["$rn_services_collection_counter"]="${rn_host_address}"
+						rn_collection_int_networks["$rn_services_collection_counter"]="${rn_matching_internal_network}"
+						rn_services_collection_counter=$(($rn_services_collection_counter + 1))
+						;;
+
+					*)
+						# Print a warning, but don't do anything else.
+						# We have validated this before, sooo....
+						warning_log "While processing reverse NAT rule '${item}':"
+						warning_log "Protocol '${rn_protocol}' is not supported!"
+						;;
+				esac
+			fi
+		done
+
+		# Write collected services into conf file.
+		if [[ -n "${rn_collection_dst_ports[@]}" && -n "${rn_collection_src_ports[@]}" ]]; then
+			#
+			# Definitions file
+			#
+
+			ifupdown_cfg_file="/etc/debian-edu-router/uif.conf.d/00_d-e-r_Reverse-NAT-definitions"
+			if [ -n "${TEST_MODE}" ]; then
+				echo "# ${ifupdown_cfg_file}"
+				echo
+				echo '```'
+			else
+				output="${ifupdown_cfg_file}"
+			fi
+			echo "###"                                                              1> "${output}"
+			echo "### Debian Edu Router Networking"                                 >> "${output}"
+			echo "###"                                                              >> "${output}"
+			echo                                                                    >> "${output}"
+			echo "### Managed by debian-edu-router-config. Don't modify this file." >> "${output}"
+			echo                                                                    >> "${output}"
+
+			echo "service {"             >> "${output}"
+			for ((i = 0 ; i < ${rn_services_collection_counter}; i++)); do
+				dst_port="${rn_collection_dst_ports[$i]}"
+				src_port="${rn_collection_src_ports[$i]}"
+				int_network="${rn_collection_int_networks[$i]}"
+
+				rn_declaration="${int_network}-rev-nat-port-decl-dst-$i $dst_port"
+				#debug_log "Adding reverse NAT port definition '$rn_declaration'..."
+				echo "  $rn_declaration"                                           >> "${output}"
+
+				rn_declaration="${int_network}-rev-nat-port-decl-src-$i $src_port"
+				#debug_log "Adding reverse NAT port definition '$rn_declaration'..."
+				echo "  $rn_declaration"                                           >> "${output}"
+			done
+			echo -e "}\n"                                                          >> "${output}"
+
+			echo "network {"                                                       >> "${output}"
+			for ((i = 0 ; i < ${rn_services_collection_counter}; i++)); do
+				host_address="${rn_collection_host_addrs[$i]}"
+				int_network="${rn_collection_int_networks[$i]}"
+
+				rn_declaration="${int_network}-rev-nat-host-addr-decl-$i $host_address"
+				#debug_log "Adding reverse NAT host addr definition '$rn_declaration'..."
+				echo "  $rn_declaration"                                           >> "${output}"
+			done
+			echo "}"                                                               >> "${output}"
+
+			if [ -n "${TEST_MODE}" ]; then
+				echo '```'
+				echo
+				echo
+			fi
+
+			#
+			# Actual Reverse NAT rules
+			#
+
+			ifupdown_cfg_file="/etc/debian-edu-router/uif.conf.d/00_d-e-r_Reverse-NAT"
+			if [ -n "${TEST_MODE}" ]; then
+				echo "# ${ifupdown_cfg_file}"
+				echo
+				echo '```'
+			else
+				output="${ifupdown_cfg_file}"
+			fi
+			echo "###"                                                                                              1> "${output}"
+			echo "### Debian Edu Router Networking"                                                                 >> "${output}"
+			echo "###"                                                                                              >> "${output}"
+			echo                                                                                                    >> "${output}"
+			echo "### Managed by debian-edu-router-config. Don't modify this file."                                 >> "${output}"
+			echo                                                                                                    >> "${output}"
+			echo "# Reverse NAT syntax: <uplink_port>:<host_address>:<host_port>"                                   >> "${output}"
+			echo                                                                                                    >> "${output}"
+
+			echo "filter {"                                                                                         >> "${output}"
+			for ((i = 0 ; i < ${rn_services_collection_counter}; i++)); do
+				int_network="${rn_collection_int_networks[$i]}"
+
+				dst_port="${rn_collection_dst_ports[$i]}"
+				dst_port_decl="${int_network}-rev-nat-port-decl-dst-$i"
+
+				src_port="${rn_collection_src_ports[$i]}"
+				src_port_decl="${int_network}-rev-nat-port-decl-src-$i"
+
+				host_address="${rn_collection_host_addrs[$i]}"
+				host_address_decl="${int_network}-rev-nat-host-addr-decl-$i"
+
+				echo -e "  # Reverse NAT: ${src_port}:${host_address}:${dst_port} ($int_network)"                   >> "${output}"
+				echo -e "  fw+\tp=${dst_port_decl}\td=${host_address_decl}(4)"                                      >> "${output}"
+				echo -e "  nat+\ti=iface_Uplink\tp=${src_port_decl}\tD=${host_address_decl}(4)\tP=${dst_port_decl}" >> "${output}"
+				echo ""                                                                                             >> "${output}"
+			done
+			echo "}"                                                                                                >> "${output}"
+
+			if [ -n "${TEST_MODE}" ]; then
+				echo '```'
+				echo
+				echo
+			fi
+		fi
+	fi
+
+	#
+	# SSH
+	#
+
+	re='^[0-9]+$'
+	if [ -n "$service_ssh_custom_port" ] && [[ $service_ssh_custom_port =~ $re ]]; then
+		# Global file for 'service' definition (custom SSH port.)
+		uif_cfg_file="/etc/debian-edu-router/uif.conf.d/00_d-e-r_Global_incoming-SSH"
+		if [ -n "${TEST_MODE}" ]; then
+			echo "# ${uif_cfg_file}"
+			echo
+			echo '```'
+		else
+			output="${uif_cfg_file}"
+		fi
+		echo "###"                                                              1> "${output}"
+		echo "### Debian Edu Router Firewall"                                   >> "${output}"
+		echo "###"                                                              >> "${output}"
+		echo                                                                    >> "${output}"
+		echo "### Managed by debian-edu-router-config. Don't modify this file." >> "${output}"
+		echo                                                                    >> "${output}"
+
+		echo "service {"                                                        >> "${output}"
+		echo "  ssh_custom tcp(/$service_ssh_custom_port)"                      >> "${output}"
+		echo "}"                                                                >> "${output}"
+
+		if [ -n "${TEST_MODE}" ]; then
+			echo '```'
+			echo
+			echo
+		fi
+
+		ssh_networks="${net_int_supportednetworks}"
+		if [[ -n "${net_ext_iface_uplink}" ]]; then
+			# Only include uplink, if Uplink interface is defined.
+			ssh_networks="Uplink ${ssh_networks}"
+		fi
+
+		# allow/block ssh for uplink + internal networks (firewall)
+		num=01
+		for int_network in ${ssh_networks}; do
+			uif_cfg_file="/etc/debian-edu-router/uif.conf.d/${num}_d-e-r_${int_network}_incoming-SSH"
+			if [ -n "${TEST_MODE}" ]; then
+				echo "# ${uif_cfg_file}"
+				echo
+				echo '```'
+			else
+				output="${uif_cfg_file}"
+			fi
+			echo "###"                                                              1> "${output}"
+			echo "### Debian Edu Router Firewall"                                   >> "${output}"
+			echo "###"                                                              >> "${output}"
+			echo                                                                    >> "${output}"
+			echo "### Managed by debian-edu-router-config. Don't modify this file." >> "${output}"
+			echo                                                                    >> "${output}"
+
+			if echo ${service_firewall_ssh_incoming} | grep -q ${int_network}; then
+				echo "# Allow incoming SSH connections from ${int_network}."        >> "${output}"
+				echo "filter {"                                                     >> "${output}"
+				echo "  in+ p=ssh_custom i=iface_${int_network}"                    >> "${output}"
+				echo "}"                                                            >> "${output}"
+				echo ""                                                             >> "${output}"
+			else
+				echo "# Block incoming SSH connections from ${int_network}."        >> "${output}"
+				echo "filter {"                                                     >> "${output}"
+				echo "  in- p=ssh_custom i=iface_${int_network}"                    >> "${output}"
+				echo "}"                                                            >> "${output}"
+				echo ""                                                             >> "${output}"
+			fi
+
+			if [ -n "${TEST_MODE}" ]; then
+				echo '```'
+				echo
+				echo
+			fi
+
+			let "num=num+10"
+
+		done
+	fi
+}
+
+process_services_answers() {
+	#
+	# DNSMASQ
+	#
+
+	if [ -z "${TEST_MODE}" ]; then
+		# When running in production mode, make sure all (not-to-be-configured)
+		# DNS/DHCP configuration files are removed from /etc/debian-edu-router/dnsmasq.d/.
+		rm -f /etc/debian-edu-router/dnsmasq.d/*.d-e-r 2>/dev/null || true
+
+		# Yes, remove all plugin related files too.
+		# They will be either regenerated by the next dpkg-trigger or by
+		# the next dpkg-reconfigure of the plugin package.
+		rm -f /etc/debian-edu-router/dnsmasq.d/*.d-e-r-p 2>/dev/null || true
+	fi
+
+	if [ -n "${TEST_MODE}" ]; then
+		output="/dev/stdout"
+	fi
+
+	# Internal network interfaces' declarations + filtering rules
+	for int_network in "${!internal_networks[@]}"; do
+		dnsmasq_cfg_file="/etc/debian-edu-router/dnsmasq.d/${int_network}.d-e-r"
+		if [ -n "${TEST_MODE}" ]; then
+			echo "# ${dnsmasq_cfg_file}"
+			echo
+			echo '```'
+		else
+			output="${dnsmasq_cfg_file}"
+		fi
+
+		echo "###"                                                                                               1> "${output}"
+		echo "### Debian Edu Router Service: DNS/DHCP"                                                           >> "${output}"
+		echo "###"                                                                                               >> "${output}"
+		echo                                                                                                     >> "${output}"
+		echo "### Managed by debian-edu-router-config. Don't modify this file."                                  >> "${output}"
+		echo                                                                                                     >> "${output}"
+		if [ -z "${TEST_MODE}" ]; then
+			echo "# File: ${output}"                                                                             >> "${output}"
+			echo                                                                                                 >> "${output}"
+		fi
+
+		echo "# Enable '${int_network}' network's interface"                                                     >> "${output}"
+
+		# Physical NIC or VLAN?
+		if echo ${net_int_supportednetworks_via_vlan} | grep -q ${int_network}; then
+			_iface="${net_int_iface_vlan}.${net_int_vlanid[${int_network}]}"
+		else
+			_iface="${net_int_iface[${int_network}]}"
+		fi
+
+		echo "interface=${_iface}"                                                                               >> "${output}"
+		echo "bind-dynamic"                                                                                      >> "${output}"
+		echo                                                                                                     >> "${output}"
+		echo "# Don't listen on 127.0.0.1 or similar to avoid conflicts with other dnsmasq instances."           >> "${output}"
+		echo "except-interface=lo"                                                                               >> "${output}"
+		echo                                                                                                     >> "${output}"
+
+		# If $int_network should get DHCP service.
+		if [[ "${service_dhcp_networks_v4}" = *"$int_network"* ]]; then
+			echo "# DHCP free lease range for network '${int_network}'"                                          >> "${output}"
+			echo "# Note: this also enables the DHCP server for network '${int_network}'."                       >> "${output}"
+			range=$(echo "${service_dhcp_range_v4[$int_network]}" | cut -d"," -f1-2)
+			expire=$(echo "${service_dhcp_range_v4[$int_network]}" | cut -d"," -f3)
+			echo "dhcp-range=${range},${expire}"                                                                 >> "${output}"
+
+			declare -A internal_networks
+			get_internal_networks_v4 "false"
+
+			# FIXME: TODO: This is a very bad way of implementing this. We should let d-e-r-p.c-f create a file,
+			# which should be included here or something.
+			db_get debian-edu-router-plugin.content-filter/dns-alias || true
+			dns_alias="${RET}"
+			if [ -z "$dns_alias" ]; then
+				notice_log "DNS alias is empty and has yet to be answered. Assuming 'webchache' as default".
+				dns_alias="webcache"
+			fi
+
+			if echo ${service_int_firewall_networks_block_internet} | grep -qi ${int_network}; then
+				echo "# Offer WPAD file if direct internet access has been disabled."                            >> "${output}"
+				echo "# WPAD files can be used to auto discover proxies."                                        >> "${output}"
+				echo "dhcp-option-force=252,http://$dns_alias/wpad.dat"                                          >> "${output}"
+				echo                                                                                             >> "${output}"
+				echo "# Offer DNS for '$dns_alias'. NOTE: If you use any other DNS, please adjust the entry"     >> "${output}"
+				echo "# for '$dns_alias' there too! In Debian Edu: Use GOsa² on Tjener for editing DNS entries." >> "${output}"                                                                               >> "${output}"
+				echo "address=/$dns_alias/${internal_networks[$int_network]%/*}"                                 >> "${output}"
+				echo                                                                                             >> "${output}"
+			fi
+		else
+			echo "# Note: this disables the DHCP server for network '${int_network}'."                           >> "${output}"
+			echo "no-dhcp-interface=${_iface}"                                                                   >> "${output}"
+		fi
+
+		set +x
+
+		if [ -n "${TEST_MODE}" ]; then
+			echo '```'
+			echo
+			echo
+		fi
+	done
+
+	#
+	# SSH
+	#
+
+	# enable/disable SSH service and configure (custom) port
+	re='^[0-9]+$'
+	if [ -n "$service_ssh_custom_port" ] && [[ $service_ssh_custom_port =~ $re ]]; then
+
+		# ssh config file for custom port
+		ssh_cfg_file="/etc/debian-edu-router/ssh.d/20_d-e-r_port.conf"
+		if [ -n "${TEST_MODE}" ]; then
+			echo "# ${ssh_cfg_file}"
+			echo
+			echo '```'
+		else
+			output="${ssh_cfg_file}"
+		fi
+		echo "###"                                                              1> "${output}"
+		echo "### Debian Edu Router SSH"                                        >> "${output}"
+		echo "###"                                                              >> "${output}"
+		echo                                                                    >> "${output}"
+		echo "### Managed by debian-edu-router-config. Don't modify this file." >> "${output}"
+		echo                                                                    >> "${output}"
+
+		config_file_content=$(
+		cat <<- ENDOFMESSAGE
+		Port $service_ssh_custom_port
+		ENDOFMESSAGE
+		)
+
+		echo "$config_file_content" >> "${output}"
+
+		if [ -n "${TEST_MODE}" ]; then
+			echo '```'
+			echo
+			echo
+		fi
+
+		DISABLE_SSHD=""
+	else
+		DISABLE_SSHD=true
+	fi
+}
+
+# This function generates a config file in /etc/sysctl.d/
+function generate_sysctl_config() {
+	config_file_path="/etc/sysctl.d/30-debian-edu-router-config.conf"
+
+	net_ipv4_ip_forward="0"
+	if [ "$IPV4" == "true" ]; then
+		net_ipv4_ip_forward="1"
+	fi
+
+	net_ipv6_conf_all_forwarding="0"
+	if [ "$IPV6" == "true" ]; then
+		net_ipv6_conf_all_forwarding="1"
+	fi
+
+	config_file_content=$(
+	cat <<- ENDOFMESSAGE
+		#
+		# $config_file_path - Configuration file for
+		# tweaking system variables for the Debian Edu Router system.
+		#
+		# See sysctl.conf (5) for information.
+
+		# Enables Spoof protection (reverse-path filter)
+		# Turn on Source Address Verification in all interfaces to
+		# prevent some spoofing attacks
+		net.ipv4.conf.default.rp_filter=1
+		net.ipv4.conf.all.rp_filter=1
+
+		# Enables TCP/IP SYN cookies
+		# See http://lwn.net/Articles/277146/
+		# Note: This may impact IPv6 TCP sessions too
+		net.ipv4.tcp_syncookies=1
+
+		# Enables packet forwarding for IPv4
+		net.ipv4.ip_forward=$net_ipv4_ip_forward
+
+		# Enables packet forwarding for IPv6
+		#  Enabling this option disables Stateless Address Autoconfiguration
+		#  based on Router Advertisements for this host
+		net.ipv6.conf.all.forwarding=$net_ipv6_conf_all_forwarding
+
+		# The kernels log levels.
+		# KERN_EMERG      "0"
+		# KERN_ALERT      "1"
+		# KERN_CRIT       "2"
+		# KERN_ERR        "3"
+		# KERN_WARNING    "4"
+		# KERN_NOTICE     "5"
+		# KERN_INFO       "6"
+		# KERN_DEBUG      "7"
+		# KERN_DEFAULT    ""
+		# KERN_CONT       "c"
+		# current, default, minimum and boot-time-default log levels.
+		kernel.printk=2 4 1 7
+	ENDOFMESSAGE
+	)
+
+	# Writing everything into the file now.
+	if [ ! -d "$(dirname "$config_file_path")" ]; then
+		mkdir -p "$(dirname "$config_file_path")"
+	fi
+	echo "$config_file_content" > "$config_file_path"
+
+	debug_log "Sysctl config file '$config_file_path' generated."
+}
+
+function create_config_backup() {
+	chmod -R 0700 "${CONFIG_BACKUP_DIR}"
+
+	# Creating a backup of old d-e-r config files.
+	mkdir -p                                                     ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/interfaces.d/
+	cp /etc/debian-edu-router/interfaces.d/??_d-e-r_*            ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/interfaces.d/ &> /dev/null || true
+
+	mkdir -p                                                     ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/uif.conf.d/
+	cp /etc/debian-edu-router/uif.conf.d/??_d-e-r_*              ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/uif.conf.d/ &> /dev/null || true
+
+	mkdir -p                                                     ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/uif-ipv4-networks.inc.d/
+	cp /etc/debian-edu-router/uif-ipv4-networks.inc.d/??_d-e-r_* ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/uif-ipv4-networks.inc.d/ &> /dev/null || true
+
+	mkdir -p                                                     ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/uif-ipv6-networks.inc.d/
+	cp /etc/debian-edu-router/uif-ipv6-networks.inc.d/??_d-e-r_* ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/uif-ipv6-networks.inc.d/ &> /dev/null || true
+
+	mkdir -p                                                     ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/dnsmasq.d/
+	cp /etc/debian-edu-router/dnsmasq.d/??_d-e-r_*               ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/dnsmasq.d/ &> /dev/null || true
+
+	mkdir -p                                                     ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/ssh.d/
+	cp /etc/debian-edu-router/ssh.d/??_d-e-r_*                   ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/ssh.d/ &> /dev/null || true
+}
+
+function restore_config_backup() {
+	error_log "New configuration for '$1' failed while restarting the service."
+	error_log "Restoring configuration backup now..."
+
+	if [ -n "${D_E_R_DEBUG}" ]; then
+		config_files=(
+			"/etc/debian-edu-router/interfaces.d"
+			"/etc/debian-edu-router/uif.conf.d"
+			"/etc/debian-edu-router/uif-ipv4-networks.inc.d"
+			"/etc/debian-edu-router/uif-ipv6-networks.inc.d"
+			"/etc/debian-edu-router/dnsmasq.d"
+			"/etc/debian-edu-router/ssh.d"
+		)
+
+		for conf_file in "${config_files[@]}"; do
+			mkdir -p "${DEBUG_CONFIG_DIR}/$conf_file"
+
+			# Move new and broken conf files into tmp folder.
+			mv -v "$conf_file"/??_d-e-r_* "${DEBUG_CONFIG_DIR}$conf_file" || true
+		done
+	else
+		# Delete new and broken d-e-r config files.
+		rm -fv /etc/debian-edu-router/interfaces.d/??_d-e-r_*            || true
+		rm -fv /etc/debian-edu-router/uif.conf.d/??_d-e-r_*              || true
+		rm -fv /etc/debian-edu-router/uif-ipv4-networks.inc.d/??_d-e-r_* || true
+		rm -fv /etc/debian-edu-router/uif-ipv6-networks.inc.d/??_d-e-r_* || true
+		rm -fv /etc/debian-edu-router/dnsmasq.d/??_d-e-r_*               || true
+		rm -fv /etc/debian-edu-router/ssh.d/??_d-e-r_*                   || true
+
+		debug_log "Generated config files were purged from the system."
+	fi
+
+	# Copying old and hopefully working d-e-r config files.
+	cp -fv ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/interfaces.d/*            /etc/debian-edu-router/interfaces.d/            || true
+	cp -fv ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/uif.conf.d/*              /etc/debian-edu-router/uif.conf.d/              || true
+	cp -fv ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/uif-ipv4-networks.inc.d/* /etc/debian-edu-router/uif-ipv4-networks.inc.d/ || true
+	cp -fv ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/uif-ipv6-networks.inc.d/* /etc/debian-edu-router/uif-ipv6-networks.inc.d/ || true
+	cp -fv ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/dnsmasq.d/*               /etc/debian-edu-router/dnsmasq.d/               || true
+	cp -fv ${CONFIG_BACKUP_DIR}/etc/debian-edu-router/ssh.d/*                   /etc/debian-edu-router/ssh.d/                   || true
+
+	warning_log "Old config files are installed again."
+
+	# Hopefully everything should be alright now.
+	manage_unit restart networking || error_log "Something is terribly broken since the old config files for 'networking ifupdown' don't work either!"
+	manage_unit restart uif        || error_log "Something is terribly broken since the old config files for 'uif' don't work either!"
+	manage_unit restart sshd       || error_log "Something is terribly broken since the old config files for 'sshd' don't work either!"
+
+	manage_unit restart "dnsmasq_d-e-r.target"
+
+	# Setting d-e-r to skip configuring networks next time the package gets
+	# reconfigured. To prevent d-e-r from breaking anything at a package
+	# upgrade for example.
+	db_set debian-edu-router-config/net-setup-mode "SKIP-NETWORK-SETUP - don't configure network interface assignments for now, at all"
+
+	_command_to_restore_config_files="rsync -auv ${DEBUG_CONFIG_DIR}/etc/ /etc; etckeeper post-install"
+	debug_log "Generated config files are now located at: '${cyan}${DEBUG_CONFIG_DIR}${green}'."
+	debug_log "You can restore the config files using this command:\n  - ${cyan}${_command_to_restore_config_files}${green}."
+
+	exit 1
+}
+
+function main() {
+	parse_ip_versions
+
+	# Activate reconfiguration triggers for all known D-E-R plugins.
+	dpkg-trigger --no-await debian-edu-router-reconfigured
+
+	# Collect all ifaces of internal networks
+	declare -A internal_networks
+	get_internal_networks_v4 "false"
+
+	# Making sure temporary backup folder isn't accessible to others
+	if [ -n "${CONFIG_BACKUP_DIR}" ]; then
+		create_config_backup
+	else
+		error_log "\${CONFIG_BACKUP_DIR} is not initialized! Can't create backup!"
+		exit 1
+	fi
+
+	db_get debian-edu-router-config/skip-networking-if-not-enough-ifaces-available
+	nosetup_reason1=${RET}
+	db_get debian-edu-router-config/net-setup-mode
+	nosetup_reason2=$(echo ${RET} | cut -d" " -f1)
+
+	if [ "${nosetup_reason1}" = true ]; then
+		warning_log "Skipping network setup; not enough usable network interfaces available."
+		echo -e "${yellow}${bold}Run 'dpkg-reconfigure debian-edu-router-config' to (re-)configure networking.${normal}"
+	elif [ "${nosetup_reason2}" = "SKIP-NETWORK-SETUP" ] && [ "${FORCE_NETWORK_SETUP_POSTINST}" != "1" ]; then
+		echo -e "${yellow}${bold}Skipping network setup; as requested by system administrator.${normal}"
+		echo -e "${yellow}${bold}Run 'dpkg-reconfigure debian-edu-router-config' to (re-)configure networking.${normal}"
+	else
+		if [ -z "${TEST_MODE}" ] && [ "${SKIP_SERVICE_RESTARTS_POSTINST}" != "1" ]; then
+
+			# stop networking
+			notice_log "Stopping '${magenta}networking${blue}' service. This could take a while..."
+			manage_unit stop networking
+
+			# process network settings
+			process_networking_answers
+
+			# start networking again
+			notice_log "Starting '${magenta}networking${blue}' service again. This could take a while..."
+
+			# If first try didn't work, try flushing addresses of interfaces
+			manage_unit start networking || flush_addresses_interfaces
+			# If that didn't work, restore old config...
+			manage_unit start networking || restore_config_backup "networking ifupdown" && \
+			debug_log "Networking 'ifupdown' reconfigured and restarted."
+		fi
+	fi
+
+	# obtain IP addresses and subnets for DHCPv4 and RAv6 configured interfaces
+	complete_network_information
+
+	# process firewall settings and restart firewall
+	process_firewall_answers
+	if [ -z "${TEST_MODE}" ] && [ "${SKIP_SERVICE_RESTARTS_POSTINST}" != "1" ]; then
+		manage_unit restart uif || restore_config_backup "uif" && \
+		debug_log "Firewall 'uif' reconfigured and restarted."
+	fi
+
+	# process service settings and restart related services
+	process_services_answers
+
+	if [ -z "${TEST_MODE}" ] && [ "${SKIP_SERVICE_RESTARTS_POSTINST}" != "1" ]; then
+		notice_log "Fully disabling default service '${green}dnsmasq${blue}'."
+		manage_unit mask dnsmasq.service
+
+		# Stop our dnsmasq target
+		manage_unit stop dnsmasq_d-e-r.target
+
+		# Collect a list of services, which are setup (and running?) already. Finally stop them.
+		list_old_services=( $(systemctl list-dependencies --plain dnsmasq_d-e-r.target | tail -n +2 | awk '{ print $1 }' | tr '\n' ' ') )
+		for service in "${list_old_services[@]}"; do
+			manage_unit reset-failed "$service"
+			manage_unit disablenow "$service"
+		done
+
+		for network in "${!internal_networks[@]}"; do
+			service="dnsmasq_d-e-r@$network.service"
+
+			db_get debian-edu-router-config/service-dhcp-networks-v4 || true
+			service_dhcp_networks_v4="${RET}"
+			services="DNS"
+			if [ -n "$(echo $service_dhcp_networks_v4 | grep $network)" ]; then
+				services="DNS/DHCP"
+			fi
+
+			notice_log "Enabling and starting $services service '${green}$service${blue}'."
+			manage_unit enable "$service"
+		done
+
+		manage_unit enablenow dnsmasq_d-e-r.target
+	fi
+
+	if [ -n "$DISABLE_SSHD" ]; then
+		manage_unit disable ssh
+	else
+		if [ -z "${TEST_MODE}" ]; then
+			manage_unit enable ssh
+		fi
+		if [ -z "${TEST_MODE}" ] && [ "${SKIP_SERVICE_RESTARTS_POSTINST}" != "1" ]; then
+			manage_unit restart ssh || restore_config_backup "sshd" && \
+			debug_log "SSH service 'sshd' reconfigured and restarted."
+		fi
+	fi
+
+	# Okay everything went well, apparently. Let's generate a sysctl config
+	# in /etc/sysctl.d
+	generate_sysctl_config
+	# Reload config files
+	sysctl --system > /dev/null
+
+	# Setting d-e-r to skip configuring networks next time the package gets
+	# reconfigured. To prevent d-e-r from breaking anything at a package
+	# upgrade for example.
+	db_set debian-edu-router-config/net-setup-mode "SKIP-NETWORK-SETUP - don't configure network interface assignments for now, at all"
+
+	debug_log "Configuration finished. Thank you for using $PRODUCTNAME."
+}
+
+case "$1" in
+	configure)
+		main
+		;;
+
+	abort-upgrade)
+		notice_log "Upgrade of debian-edu-router-config package was aborted."
+		;;
+	*)
+		error_log "postinst called with unknown argument \`$1'" >&2
+		exit 1
+		;;
+esac
+
+# dh_installdeb will replace this with shell code automatically
+# generated by other debhelper scripts.
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'dnsmasq_d-e-r.target' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'dnsmasq_d-e-r.target'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'dnsmasq_d-e-r.target' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'dnsmasq_d-e-r.target' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'dnsmasq_d-e-r.target' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

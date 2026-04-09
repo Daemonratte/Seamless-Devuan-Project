@@ -1,0 +1,11 @@
+[Unit]
+Description=Really Awesome New Cisco confIg Differ daily log cleanup
+Documentation=man:rancid-run(1) man:rancid(1)
+Before=logrotate.timer
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

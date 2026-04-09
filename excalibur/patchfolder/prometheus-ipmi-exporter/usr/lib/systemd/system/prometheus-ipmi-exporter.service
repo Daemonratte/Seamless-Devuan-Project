@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus exporter for IPMI devices
+Documentation=https://github.com/prometheus-community/ipmi_exporter
+After=network.target
+
+[Service]
+User=prometheus
+EnvironmentFile=/etc/default/prometheus-ipmi-exporter
+ExecStart=/usr/bin/prometheus-ipmi-exporter $ARGS
+Restart=on-failure
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,71 @@
+#!/bin/sh -e
+### BEGIN INIT INFO
+# Provides:          inn
+# Required-Start:    $local_fs $remote_fs $syslog
+# Required-Stop:     $local_fs $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: INN news server
+# Description:       The InterNetNews news server.
+### END INIT INFO
+#
+# Start/stop the news server.
+#
+
+. /lib/lsb/init-functions
+
+test -f /usr/sbin/innd || exit 0
+
+case "$1" in
+  start)
+    if [ ! -d /var/run/innd ]; then
+      mkdir -p /var/run/innd
+      chown news:news /var/run/innd
+      chmod 775 /var/run/innd
+    fi
+    start-stop-daemon --quiet --start --exec /etc/news/boot
+    ;;
+  stop)
+    echo -n "Stopping news server:"
+    if [ -f /var/run/innd/innwatch.pid ]; then
+      echo -n " innwatch"
+      start-stop-daemon --quiet --stop --oknodo \
+        --pidfile /var/run/innd/innwatch.pid
+    fi
+    if [ -f /var/run/innd/actived.pid ]; then
+      echo -n " actived"
+      start-stop-daemon --quiet --stop --oknodo
+        --pidfile /var/run/innd/actived.pid --exec /usr/lib/news/bin/actived
+    fi
+    rm -f /var/run/innd/actived.pid /var/run/innd/innwatch.pid
+    if [ -f /var/run/innd/innd.pid ]; then
+      echo -n " innd"
+      ctlinnd -s -t 20 throttle 'system is going down' || true
+      ctlinnd -s -t 20 shutdown 'system is going down' || true
+      start-stop-daemon --quiet --stop --oknodo \
+        --pidfile /var/run/innd/innd.pid
+    fi
+    echo "."
+    ;;
+  reload|force-reload)
+    echo -n "Reloading INN configuration files: "
+    ctlinnd -t 20 reload '' /etc/init.d/inn
+    ;;
+  restart)
+    echo -n "Restarting innd: "
+    if [ -f /var/run/innd/innd.pid ]; then
+      ctlinnd -s -t 20 throttle "restarting" || true
+      ctlinnd -s -t 20 xexec inndstart ||
+        start-stop-daemon --quiet --start --exec /etc/news/boot
+    else
+      start-stop-daemon --quiet --start --exec /etc/news/boot
+    fi
+    echo "done."
+    ;;
+  *)
+    echo "Usage: /etc/init.d/inn start|stop|restart|reload" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

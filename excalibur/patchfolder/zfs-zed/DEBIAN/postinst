@@ -1,0 +1,63 @@
+#!/bin/sh
+set -e
+
+zedd="/usr/lib/zfs-linux/zed.d"
+etcd="/etc/zfs/zed.d"
+
+# enable all default zedlets that are not overridden
+while read -r file ; do
+    etcfile="${etcd}/${file}"
+    [ -e "${etcfile}" ] && continue
+    ln -sfT "${zedd}/${file}" "${etcfile}"
+done < "${zedd}/DEFAULT-ENABLED"
+
+# remove the overrides created in prerm
+find "${etcd}" -maxdepth 1 -lname '/dev/null' -delete
+# remove any dangling symlinks to old zedlets
+find "${etcd}" -maxdepth 1 -lname "${zedd}/*" -xtype l  -delete
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/zfs-zed" ]; then
+		update-rc.d zfs-zed defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native zfs-zed $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'zfs-zed.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'zfs-zed.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'zfs-zed.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'zfs-zed.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'zfs-zed.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+

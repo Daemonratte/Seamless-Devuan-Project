@@ -1,0 +1,68 @@
+#!/bin/sh -e
+### BEGIN INIT INFO
+# Provides:          inn2
+# Required-Start:    $local_fs $remote_fs $syslog
+# Required-Stop:     $local_fs $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: INN news server
+# Description:       The InterNetNews news server.
+### END INIT INFO
+#
+# Start/stop the news server.
+#
+
+. /lib/lsb/init-functions
+
+test -f /usr/lib/news/bin/rc.news || exit 0
+
+start () {
+    if [ ! -d /run/news ]; then
+	mkdir -p /run/news
+	chown news:news /run/news
+	chmod 775 /run/news
+    fi
+    start-stop-daemon --start --oknodo --chuid news:news \
+      --exec /usr/lib/news/bin/rc.news > /var/log/news/rc.news 2>&1
+}
+
+stop () {
+    start-stop-daemon --start --oknodo --chuid news:news \
+      --exec /usr/lib/news/bin/rc.news -- stop >> /var/log/news/rc.news 2>&1
+}
+
+case "$1" in
+    start)
+	log_daemon_msg "Starting news server" "innd"
+	start
+	log_end_msg 0
+	;;
+    stop)
+	log_daemon_msg "Stopping news server" "innd"
+	stop
+	log_end_msg 0
+	;;
+    reload|force-reload)
+	echo -n "Reloading most INN configuration files: "
+	ctlinnd -t 20 reload '' 'init script'
+	;;
+    restart)
+	log_daemon_msg "Restarting news server" "innd"
+	if [ -f /run/news/innd.pid ]; then
+	    ctlinnd -t 20 throttle 'init script' > /dev/null || true
+	    ctlinnd -t 20 xexec innd > /dev/null || start
+	else
+	    start
+	fi
+	log_end_msg 0
+	;;
+    status)
+	status_of_proc -p /run/news/innd.pid /usr/lib/news/bin/innd INN
+	;;
+    *)
+	log_action_msg "Usage: /etc/init.d/inn2 {start|stop|restart|reload}"
+	exit 1
+	;;
+esac
+
+exit 0

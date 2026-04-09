@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Barbican API (barbican-api)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service frr.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service frr.service network-online.target 
+
+Documentation=man:barbican-api(1)
+
+[Service]
+User=barbican
+Group=barbican
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=barbican lock/barbican
+CacheDirectory=barbican
+ExecStart=/etc/init.d/barbican-api systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

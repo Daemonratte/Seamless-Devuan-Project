@@ -1,0 +1,25 @@
+#!/usr/bin/env /lib/init/init-d-script
+### BEGIN INIT INFO
+# Provides:          dqcache
+# Required-Start:    $syslog $time $remote_fs
+# Required-Stop:     $syslog $time $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: DNS Cache
+# Description:       Debian init script to start the dqcache daemon
+### END INIT INFO
+NAME="dqcache"
+# Read configuration variable file if it is present
+# ROOT is needed for START_ARGS
+[ -r "/etc/default/${NAME}" ] && . "/etc/default/${NAME}"
+DESC="DNS cache daemon"
+DAEMON=/usr/sbin/dqcache
+PIDFILE=/run/dqcache.pid
+START_ARGS="--background --make-pidfile --startas /usr/sbin/dqcache-start"
+DAEMON_ARGS="${ROOT} dqcache /usr/sbin/dqcache"
+for i in ROOT IP CACHESIZE FORWARDONLY IPSEND4 IPSEND6 HIDETTL OKCLIENT; do
+	eval s=\${$i+set}
+	if [ -n "$s" ]; then
+		export $i
+	fi
+done

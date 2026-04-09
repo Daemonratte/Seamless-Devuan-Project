@@ -1,0 +1,15 @@
+[Unit]
+Description=kernel.org upload server
+Documentation=man:kup-server(1)
+Requires=remote-fs.target
+Wants=ssh.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+UMask=022
+ExecStart=mkdir -p /run/kup ; touch /run/kup/lock
+ExecStop=rm -f /run/kup/lock
+
+[Install]
+WantedBy=multi-user.target

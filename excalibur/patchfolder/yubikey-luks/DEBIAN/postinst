@@ -1,0 +1,40 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure)
+        if [ -x /usr/sbin/update-initramfs -a -e /etc/initramfs-tools/initramfs.conf ] ; then
+            update-initramfs -u
+        fi
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'yubikey-luks-suspend.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'yubikey-luks-suspend.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'yubikey-luks-suspend.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'yubikey-luks-suspend.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'yubikey-luks-suspend.service' >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

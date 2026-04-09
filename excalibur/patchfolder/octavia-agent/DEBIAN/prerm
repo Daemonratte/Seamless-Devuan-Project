@@ -1,0 +1,32 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/octavia-agent-netns" ] ; then
+	invoke-rc.d octavia-agent-netns stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/octavia-agent-certs-ramfs" ] ; then
+	invoke-rc.d octavia-agent-certs-ramfs stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/octavia-agent" ] ; then
+	invoke-rc.d octavia-agent stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'octavia-agent.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'octavia-agent-certs-ramfs.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'octavia-agent-netns.service' >/dev/null || true
+fi
+# End automatically added section

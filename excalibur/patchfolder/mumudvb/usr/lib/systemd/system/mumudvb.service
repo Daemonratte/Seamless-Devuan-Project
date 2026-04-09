@@ -1,0 +1,16 @@
+[Unit]
+Description=MuMuDVB
+Documentation=file:///user/share/doc/mumudvb/html
+Requires=var-run.mount network.target
+After=var-run.mount network.target
+
+[Service]
+ExecStart=/usr/bin/mumudvb -c /etc/mumudvb/mumudvb.conf
+type=forking
+WorkingDirectory=/etc/mumudvb
+Restart=on-failure
+RestartPreventExitStatus=0 2
+TimeoutSec=5
+
+[Install]
+WantedBy=multi-user.target

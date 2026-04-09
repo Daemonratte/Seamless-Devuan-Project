@@ -1,0 +1,9 @@
+[Unit]
+Description=Run debian-edu-cups-queue-autoflush.service every day.
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=1d
+
+[Install]
+WantedBy=timers.target

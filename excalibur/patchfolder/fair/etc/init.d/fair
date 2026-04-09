@@ -1,0 +1,87 @@
+#! /bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          fair
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $network $remote_fs
+# Should-Start:      $syslog $named
+# Should-Stop:       $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start fair daemon(s)
+# Description:       Starts the carrousel and/or transponder daemon
+#                    depending on the configuration in /etc/default/fair.
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+
+carrousel=/usr/sbin/carrousel
+transponder=/usr/sbin/transponder
+
+test -x $carrousel || exit 0
+test -x $transponder || exit 0
+test -f /etc/fair.conf || exit 0
+
+CARROUSEL=false
+TRANSPONDER=false
+
+if [ -f /etc/default/fair ]
+then
+	. /etc/default/fair
+fi
+
+case "$1" in
+start)
+	echo -n 'Starting fair load balancer:'
+	if $CARROUSEL
+	then
+		start-stop-daemon --start --quiet --exec $carrousel
+		echo -n ' carrousel'
+	fi
+	if $TRANSPONDER
+	then
+		start-stop-daemon --start --quiet --exec $transponder -- $BALANCERS
+		echo -n ' transponder'
+	fi
+	echo .
+;;
+stop)
+	echo -n 'Stopping fair load balancer:'
+	if $TRANSPONDER
+	then
+		start-stop-daemon --stop --quiet --name ${transponder##*/} --exec $transponder
+		echo -n ' transponder'
+	fi
+	if $CARROUSEL
+	then
+		start-stop-daemon --stop --quiet --name ${carrousel##*/} --exec $carrousel
+		echo -n ' carrousel'
+	fi
+	echo .
+;;
+reload)
+	echo -n 'Reloading fair load balancer:'
+	if $TRANSPONDER
+	then
+		start-stop-daemon --stop --quiet --signal 1 --name ${transponder##*/} --exec $transponder
+		echo -n ' transponder'
+	fi
+	if $CARROUSEL
+	then
+		start-stop-daemon --stop --quiet --signal 1 --name ${carrousel##*/} --exec $carrousel
+		echo -n ' carrousel'
+	fi
+	echo .
+;;
+restart|force-reload)
+	$0 stop
+	$0 start
+;;
+*)
+	echo "Usage: $0 {start|stop|reload|restart|force-reload}" >&2
+	exit 1
+esac
+
+exit 0

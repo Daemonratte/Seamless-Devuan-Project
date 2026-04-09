@@ -1,0 +1,81 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+purge)
+	rmdir --ignore-fail-on-non-empty /var/log/xen
+	;;
+
+remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+	;;
+
+*)
+	echo "postrm called with unknown argument \`$1'" >&2
+	exit 
+	;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/xendomains" ] ; then
+	chmod -x "/etc/init.d/xendomains" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d xendomains remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/xen" ] ; then
+	chmod -x "/etc/init.d/xen" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d xen remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/default/xend 4.11.1-2\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/xen/xend-config.sxp 4.11.1-2\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/xen/xend-pci-permissive.sxp 4.11.1-2\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/xen/xend-pci-quirks.sxp 4.11.1-2\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_ucf/13.24.2
+if [ "$1" = "purge" ]; then
+	for ext in .ucf-new .ucf-old .ucf-dist ""; do
+		rm -f "/etc/default/xen$ext"
+	done
+	
+	if [ -x "`command -v ucf`" ]; then
+		ucf --purge "/etc/default/xen"
+	fi
+	if [ -x "`command -v ucfr`" ]; then
+		ucfr --purge xen-utils-common "/etc/default/xen"
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'xendomains.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'xen.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

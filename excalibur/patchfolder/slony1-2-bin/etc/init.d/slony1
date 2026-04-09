@@ -1,0 +1,136 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          slony1
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Should-Start:      $time postgresql
+# Should-Stop:       $time postgresql
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: start Slony-I daemon
+# Description: Slony-I is a replication system for PostgreSQL.
+### END INIT INFO
+
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/slon
+SLON_START_ARGS="--nowatchdog"
+
+test -x $DAEMON || exit 5
+
+if [ -r /etc/default/slony1 ]; then
+    . /etc/default/slony1
+fi
+
+. /lib/lsb/init-functions
+
+
+instances() {
+	ls /etc/slony1/*/slon.conf 2>/dev/null | sed -n 's,^/etc/slony1/\(.*\)/slon.conf$,\1,p'
+	echo $SLON_TOOLS_START_NODES | sed -r 's/\b[0-9]+\b/node&/g'
+}
+
+conffile() {
+	echo "/etc/slony1/$1/slon.conf"
+}
+
+logfile() {
+	echo "/var/log/slony1/slon-$1.log"
+}
+
+pidfile() {
+	echo "/var/run/slony1/$1.pid"
+}
+
+prepare_start() {
+	mkdir -p /var/run/slony1 \
+	&& chown postgres:postgres /var/run/slony1/ \
+	&& chmod 2775 /var/run/slony1/
+}
+
+d_start() {
+	if [ -e $(conffile $1) ]; then
+		su -c ". /lib/lsb/init-functions ; umask 027 ; start_daemon -p $(pidfile $1) $DAEMON -f $(conffile $1) -p $(pidfile $1) >>$(logfile $1) 2>&1 </dev/null &" - postgres
+	else
+		local cluster node
+		if echo "$1" | grep -q -- ':'; then
+			cluster=$(echo "$1" | cut -d: -f1)
+			node=$(echo "$1" | cut -d: -f2)
+		else
+			node=$1
+		fi
+		is_running $1 || su -c "umask 027 ; slon_start ${cluster+"--config /etc/slony1/slon_tools_${cluster}.conf"} $SLON_START_ARGS $node >/dev/null" - postgres
+	fi
+}
+
+d_stop() {
+	killproc -p $(pidfile $1) $DAEMON
+}
+
+is_running() {
+	pidofproc -p $(pidfile $1) $DAEMON >/dev/null
+}
+
+
+case $1 in
+    start)
+	status=0
+	log_daemon_msg "Starting Slony-I daemon"
+	prepare_start
+	for x in $(instances); do
+		log_progress_msg $x
+		d_start $x
+		status=$(($status || $?))
+	done
+	log_end_msg $status
+	;;
+    stop)
+	status=0
+	log_daemon_msg "Stopping Slony-I daemon"
+	for x in $(instances); do
+		log_progress_msg $x
+		d_stop $x
+		status=$(($status || $?))
+	done
+	log_end_msg $status
+	;;
+    status)
+	status=0
+	for x in $(instances); do
+		is_running $x
+		instancestatus=$?
+		if [ $instancestatus -eq 0 ]; then
+			log_success_msg "Slony-I daemon $x is running"
+		else
+			log_failure_msg "Slony-I daemon $x is not running"
+		fi
+                status=$(($status || $instancestatus))
+	done
+	exit $((3 * $status))
+	;;
+    restart|force-reload)
+	status=0
+	log_daemon_msg "Restarting Slony-I daemon"
+	for x in $(instances); do
+		log_progress_msg $x
+		d_stop $x && sleep 1 && d_start $x
+		status=$(($status || $?))
+	done
+	log_end_msg $status
+	;;
+    try-restart)
+	if $0 status >/dev/null; then
+		$0 restart
+	else
+		exit 0
+	fi
+	;;
+    reload)
+	exit 3
+	;;
+    *)
+	log_failure_msg "Usage: $0 {start|stop|status|restart|try-restart|reload|force-reload}"
+	exit 2
+	;;
+esac

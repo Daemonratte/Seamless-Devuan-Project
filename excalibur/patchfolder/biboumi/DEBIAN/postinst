@@ -1,0 +1,60 @@
+#!/bin/sh
+# postinst script for biboumi
+
+set -e
+
+NAME=biboumi
+ACCOUNTNAME=_$NAME
+ACCOUNTHOME=/var/lib/$NAME
+GECOS="Biboumi XMPP gateway"
+
+case "$1" in
+  configure)
+	# Create user
+	if ! getent passwd $ACCOUNTNAME >/dev/null 2>&1; then
+		adduser --force-badname --system --group \
+			 --home $ACCOUNTHOME \
+			--gecos "$GECOS" --group --disabled-password \
+			--quiet $ACCOUNTNAME
+	fi
+
+	# Chown data directory
+	if ! dpkg-statoverride --list $ACCOUNTHOME >/dev/null; then
+		chown $ACCOUNTNAME:$ACCOUNTNAME $ACCOUNTHOME
+		chmod 750 $ACCOUNTHOME
+	fi
+
+	;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'biboumi.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'biboumi.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'biboumi.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'biboumi.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'biboumi.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

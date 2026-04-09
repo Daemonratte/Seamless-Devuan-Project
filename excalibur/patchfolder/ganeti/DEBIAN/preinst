@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/bash_completion.d/ganeti 2.16.0\~rc2-6\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/ganeti" ] ; then
+	chmod +x "/etc/init.d/ganeti" >/dev/null || true
+fi
+# End automatically added section

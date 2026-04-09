@@ -1,0 +1,14 @@
+[Unit]
+Description=dhcp-probe daemon to survey DHCP/BootP server on interface %I
+Documentation=man:dhcp-probe(8)
+PartOf=dhcp-probe.service
+Requires=sys-subsystem-net-devices-%i.device
+After=sys-subsystem-net-devices-%i.device
+
+[Service]
+RuntimeDirectory=dhcp-probe
+RuntimeDirectoryPreserve=yes
+PIDFile=/run/dhcp-probe/dhcp_probe.pid.%I
+ExecStartPre=/bin/sh -c 'i=0; while ! ip address show dev "$0" | grep -qw 'inet' && [ $i -lt 10 ]; do sleep 1; i=$(( i + 1 )); done' %I
+ExecStart=/usr/sbin/dhcp_probe -T -p ${PIDFILE} %I
+ExecStopPost=/bin/rm -f ${PIDFILE}

@@ -1,0 +1,11 @@
+[Unit]
+Description=chkrootkit daily timer
+Documentation=man:chkrootkit(8)
+
+[Timer]
+OnCalendar=daily
+# but run on resume/boot if we missed a slot
+Persistent=true
+
+[Install]
+WantedBy=timers.target

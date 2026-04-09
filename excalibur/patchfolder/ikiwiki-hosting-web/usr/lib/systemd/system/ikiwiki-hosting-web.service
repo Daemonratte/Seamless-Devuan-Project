@@ -1,0 +1,19 @@
+[Unit]
+Description=ikiwiki-hosting git service
+
+[Service]
+# git daemon is run in virtual host mode, so for git://example.com/*,
+# it looks in /var/lib/ikiwiki-hosting-web/git/example.com
+# %H needs to be escaped as %%H to pass it through systemd into git-daemon
+ExecStart=/usr/lib/git-core/git-daemon --reuseaddr --interpolated-path=/var/lib/ikiwiki-hosting-web/git/%%H
+User=ikiwiki-anon
+Group=ikiwiki-anon
+Restart=on-failure
+# ikiwiki-anon needs to be willing to serve the git repositories of
+# websites owned by each site-specific uid
+Environment=GIT_CONFIG_COUNT=1
+Environment=GIT_CONFIG_KEY_0=safe.directory
+Environment=GIT_CONFIG_VALUE_0=*
+
+[Install]
+WantedBy=multi-user.target

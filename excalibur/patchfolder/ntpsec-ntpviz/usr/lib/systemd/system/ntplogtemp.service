@@ -1,0 +1,7 @@
+[Unit]
+Documentation=man:ntplogtemp(8)
+Description=Temperature information logger for ntpviz
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/ntplogtemp -o -l /var/log/ntpsec/temps

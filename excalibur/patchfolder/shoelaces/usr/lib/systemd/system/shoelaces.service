@@ -1,0 +1,15 @@
+[Unit]
+Description=Shoelaces: painless server bootstrapping
+Documentation=https://github.com/thousandeyes/shoelaces
+
+[Service]
+Restart=always
+User=shoelaces
+Group=shoelaces
+EnvironmentFile=/etc/default/shoelaces
+ExecStart=/usr/bin/shoelaces $ARGS
+PrivateTmp=yes
+ProtectSystem=yes
+
+[Install]
+WantedBy=multi-user.target

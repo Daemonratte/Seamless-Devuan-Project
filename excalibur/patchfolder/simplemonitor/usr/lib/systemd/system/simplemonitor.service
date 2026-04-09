@@ -1,0 +1,22 @@
+[Unit]
+Description=Simplemonitor
+Documentation=file:///usr/share/doc/simplemonitor/html/
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=simplemonitor
+Group=simplemonitor
+
+WorkingDirectory=/etc/simplemonitor
+
+ExecStartPre=/usr/bin/simplemonitor --test
+ExecStart=/usr/bin/simplemonitor
+
+Restart=on-failure
+RestartSec=5
+
+ExecReload=/bin/kill -HUP $MAINPID
+PrivateTmp=true

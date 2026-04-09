@@ -1,0 +1,99 @@
+#!/bin/sh
+# vim:ts=2:sw=2:et
+
+set -e
+
+case "$1" in
+  configure)
+    if [ -z "$2" ]; then
+      # Changed in 1.1.5-1 for new installs (we used to start at S50
+      # and stop at K50)  We now start at S50 and stop at K19 so we
+      # start after services which may be used and stop before them.
+      update-rc.d freeradius start 50 2 3 4 5 . stop 19 0 1 6 . >/dev/null
+
+      for file in radius.log radwtmp; do
+        [ ! -f "/var/log/freeradius/${file}" ] && install -o freerad -g freerad -m 644 /dev/null /var/log/freeradius/${file}
+      done
+
+      action="start"
+    else
+      action="restart"
+    fi
+
+    if [ -z "$2" ]; then
+      # Set up initial permissions on all the freeradius directories
+      chown -R freerad:adm /var/log/freeradius
+      chown -R freerad:freerad /etc/freeradius
+      chmod 2750 /etc/freeradius
+      find /etc/freeradius -type f -exec chmod 640 '{}' \;
+    fi
+
+    if dpkg --compare-versions "$2" lt 3.0.16+dfsg-3; then
+      chmod 2750 /etc/freeradius
+    fi
+
+    # Create links for default sites, but only if this is an initial
+    # install or an upgrade from before there were links; users may
+    # want to remove them...
+    if [ -z "$2" ]; then
+      for site in default inner-tunnel; do
+        if test ! -h /etc/freeradius/3.0/sites-enabled/$site && \
+           test ! -e /etc/freeradius/3.0/sites-enabled/$site; then
+          ln -s ../sites-available/$site /etc/freeradius/3.0/sites-enabled/$site
+        fi
+      done
+    fi
+
+    invoke-rc.d freeradius $action || true
+    ;;
+
+  abort-upgrade)
+    invoke-rc.d freeradius restart || true
+    ;;
+
+  abort-remove)
+    invoke-rc.d freeradius start || true
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'freeradius.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'freeradius.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'freeradius.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'freeradius.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'freeradius.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+case "$1" in
+  configure)
+    # After removing conffiles (in the DEBHELPER part above), delete all
+    # directories underneath /etc/freeradius which are now empty.
+    find /etc/freeradius -type d -empty -delete
+    ;;
+esac
+
+exit 0

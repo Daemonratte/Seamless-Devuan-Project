@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/wdmd" ] ; then
+	chmod +x "/etc/init.d/wdmd" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/sanlock" ] ; then
+	chmod +x "/etc/init.d/sanlock" >/dev/null || true
+fi
+# End automatically added section

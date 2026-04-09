@@ -1,0 +1,13 @@
+[Unit]
+Description=netflow capture daemon
+Documentation=man:nfcapd(1)
+Documentation=man:softflowd(8)
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecReload=/bin/true
+RemainAfterExit=on
+
+[Install]
+WantedBy=multi-user.target

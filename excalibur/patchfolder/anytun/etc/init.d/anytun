@@ -1,0 +1,181 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          anytun
+# Required-Start:    $remote_fs $network $named $syslog
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start anycast tunneling daemon at boot time
+# Description:       Enables networking over vpn tunnel interfaces
+### END INIT INFO
+PATH=/usr/local/sbin:/usr/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=anytun
+LAUNCHER=/usr/lib/$DAEMON-launcher
+DESC="secure anycast tunneling daemon"
+CONFIG_DIR=/etc/$DAEMON
+VARCONTROL_DIR=/var/run/$DAEMON-controld
+VARRUN_DIR=/var/run/$DAEMON/
+
+# Include anytun defaults if available
+if [ -f /etc/default/anytun ] ; then
+  . /etc/default/anytun
+fi
+
+. /lib/lsb/init-functions
+
+start_vpn () {
+  STATUS="OK"
+  if [ -f $CONFIG_DIR/$1/config ] ; then
+    $LAUNCHER vpn $1 || STATUS="FAILED"
+  else
+    STATUS=" no config found"
+  fi
+  start_configd $1
+  echo -n "($STATUS)"
+}
+stop_vpn () {
+  kill `cat $PIDFILE` || true
+  rm $PIDFILE
+  stop_configd $1
+}
+
+start_configd () {
+  $LAUNCHER configd $1
+}
+stop_configd () {
+  if [ -d $CONFIG_DIR/$1/conf.d ] ; then
+    echo -n " ($1-controlld)"
+    kill `cat $VARCONTROL_DIR/$1.pid` || true
+    rm $VARCONTROL_DIR/$1.pid
+  fi
+}
+
+set -e
+case "$1" in
+  start)
+    echo -n "Starting $DESC:"
+    if test -z "$2" ; then
+      if [ -f $CONFIG_DIR/autostart ] ; then
+        for NAME in `sed 's/#.*//'  <  $CONFIG_DIR/autostart | grep -e '\w'`; do
+          echo -n " $NAME"
+          start_vpn $NAME
+        done
+      else
+        echo "no config found"
+        exit 1;
+      fi
+    else
+      while shift ; do
+        [ -z "$1" ] && break
+        echo -n " $1"
+        start_vpn $1
+      done
+    fi
+    echo "."
+    ;;
+  stop)
+    echo -n "Stoping $DESC:"
+    if test -z "$2" ; then
+      for PIDFILE in `ls $VARRUN_DIR/*.pid 2> /dev/null`; do
+        NAME=`basename $PIDFILE`
+        NAME=${NAME%%.pid}
+        echo -n " $NAME"
+        stop_vpn $NAME
+      done
+    else
+      while shift ; do
+        [ -z "$1" ] && break
+        if test -e $VARRUN_DIR/$1.pid ; then
+          PIDFILE=`ls $VARRUN_DIR/$1.pid 2> /dev/null`
+          NAME=`basename $PIDFILE`
+          NAME=${NAME%%.pid}
+          echo -n " $NAME"
+          stop_vpn $NAME
+        else
+          echo -n " (failure: No such tunnel is running: $1)"
+        fi
+      done
+    fi
+    echo "."
+    ;;
+  reload)
+    echo -n "Reloading $DESC:"
+    if test -z "$2" ; then
+      for PIDFILE in `ls $VARRUN_DIR/*.pid 2> /dev/null`; do
+        NAME=`basename $PIDFILE`
+        NAME=${NAME%%.pid}
+        echo -n " $NAME"
+        if [ -d $CONFIG_DIR/$NAME/conf.d ] ; then
+          stop_vpn $NAME
+          start_vpn $NAME
+        else
+          stop_configd $NAME
+          start_configd $NAME
+        fi
+      done
+    else
+      while shift ; do
+        [ -z "$1" ] && break
+        if test -e $VARRUN_DIR/$1.pid ; then
+          PIDFILE=`ls $VARRUN_DIR/$1.pid 2> /dev/null`
+          NAME=`basename $PIDFILE`
+          NAME=${NAME%%.pid}
+          echo -n " $NAME"
+          if [ -d $CONFIG_DIR/$NAME/conf.d ] ; then
+            stop_vpn $NAME
+            start_vpn $NAME
+          else
+            stop_configd $NAME
+            start_configd $NAME
+          fi
+        else
+          echo -n " (failure: No such tunnel is running: $1)"
+        fi
+      done
+    fi
+    echo "."
+    ;;
+  force-reload)
+    echo -n "Restarting $DESC:"
+    if test -z "$2" ; then
+      for PIDFILE in `ls $VARRUN_DIR/*.pid 2> /dev/null`; do
+        NAME=`basename $PIDFILE`
+        NAME=${NAME%%.pid}
+        echo -n " $NAME"
+        stop_vpn $NAME
+        sleep 1
+        start_vpn $NAME
+      done
+    else
+      while shift ; do
+        [ -z "$1" ] && break
+        if test -e $VARRUN_DIR/$1.pid ; then
+          PIDFILE=`ls $VARRUN_DIR/$1.pid 2> /dev/null`
+          NAME=`basename $PIDFILE`
+          NAME=${NAME%%.pid}
+          echo -n " $NAME"
+          stop_vpn $NAME
+          sleep 1
+          start_vpn $NAME
+        else
+          echo -n " (failure: No such tunnel is running: $1)"
+        fi
+      done
+    fi
+    echo "."
+    ;;
+  restart)
+    SCRIPT=$0
+    shift
+    $SCRIPT stop $*
+    sleep 1
+    $SCRIPT start $*
+    ;;
+  *)
+    N=/etc/init.d/$DAEMON
+    echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

@@ -1,0 +1,73 @@
+#!/bin/sh
+
+set -e
+
+pathfind() {
+	OLDIFS="$IFS"
+	IFS=:
+	for p in $PATH; do
+		if [ -x "$p/$*" ]; then
+			IFS="$OLDIFS"
+			return 0
+		fi
+	done
+	IFS="$OLDIFS"
+	return 1
+}
+
+case "${1}" in
+	purge)
+		if [ -e /usr/share/debconf/confmodule ]
+		then
+			. /usr/share/debconf/confmodule
+
+			db_get gnunet/user
+			GNUNET_USER="${RET:-gnunet}"
+
+			db_get gnunet/group
+			GNUNET_GROUP="${RET:-gnunet}"
+		else
+			GNUNET_USER="gnunet"
+			GNUNET_GROUP="gnunet"
+		fi
+
+		GNUNETDNS_GROUP="gnunetdns"
+
+		userdel ${GNUNET_USER} > /dev/null 2>&1 || true
+		groupdel ${GNUNET_GROUP} > /dev/null 2>&1 || true
+		groupdel ${GNUNETDNS_GROUP} > /dev/null 2>&1 || true
+
+		rm -rf /var/log/gnunet /var/lib/gnunet /etc/default/gnunet
+		;;
+
+	remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+
+		;;
+
+	*)
+		echo "postrm called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'gnunet.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.1
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+exit 0

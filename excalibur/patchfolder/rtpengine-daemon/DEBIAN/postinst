@@ -1,0 +1,106 @@
+#!/bin/sh
+
+set -e
+
+default=/etc/default/rtpengine-daemon
+modname=xt_RTPENGINE
+
+if [ -x "$(command -v ngcp-virt-identify)" ]; then
+	if ngcp-virt-identify --type container; then
+		VIRT="yes"
+	fi
+fi
+
+if [ "$VIRT" = "yes" ]; then
+	echo "Container environment detected. Skip kernel module check"
+else
+	if [ -f $default ]; then
+		. $default || true
+	fi
+
+	if [ -n "$TABLE" ] && [ "$TABLE" -ge 0 ] && \
+		 [ -n "$NO_FALLBACK" ] && \
+		 { [ "$NO_FALLBACK" = "1" ] || [ "$NO_FALLBACK" = "yes" ] ; }
+	then
+		if lsmod | grep -q $modname || modinfo $modname > /dev/null 2> /dev/null; then
+			true
+		else
+			echo "Kernel module $modname not found and NO_FALLBACK is set."
+			echo "Daemon restart not performed."
+			exit 0
+		fi
+	fi
+fi
+
+if [ "$1" = configure ]; then
+	adduser --system --home /nonexistent --gecos rtpengine \
+		--no-create-home --disabled-password \
+		--group --quiet rtpengine || true
+
+	rtpdir='/var/spool/rtpengine'
+	if ! dpkg-statoverride --list "$rtpdir" > /dev/null 2>&1; then
+		chown rtpengine:rtpengine "$rtpdir"
+		chmod 0770 "$rtpdir"
+	fi
+
+	# set up modprobe.d fragment for auto-load usage
+	if ! [ -f /etc/modprobe.d/rtpengine.conf ] || grep -q DPKG-GENERATED /etc/modprobe.d/rtpengine.conf; then
+		OPTIONS="options xt_RTPENGINE proc_mask=0x7"
+
+		PUID=$(id -u rtpengine 2> /dev/null)
+		test -z "$PUID" || OPTIONS="$OPTIONS proc_uid=$PUID"
+		PGID=$(id -g rtpengine 2> /dev/null)
+		test -z "$PGID" || OPTIONS="$OPTIONS proc_gid=$PGID"
+
+		( echo "# DPKG-GENERATED FILE";
+			echo "$OPTIONS" ) > /etc/modprobe.d/rtpengine.conf
+	fi
+fi
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/rtpengine-daemon" ]; then
+		update-rc.d rtpengine-daemon defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native rtpengine-daemon $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'rtpengine-daemon.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'rtpengine-daemon.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'rtpengine-daemon.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'rtpengine-daemon.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'rtpengine-daemon.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0
+

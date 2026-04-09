@@ -1,0 +1,11 @@
+[Unit]
+Description=burp backup server
+Documentation=https://burp.grke.org/docs.html
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/burp -c /etc/burp/burp-server.conf
+
+[Install]
+WantedBy=multi-user.target

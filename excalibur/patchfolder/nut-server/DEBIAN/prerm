@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+handle_start_failure () {
+# The MODE defined in /etc/nut/nut.conf shouldn't affect the exit code when the
+# daemon is stopped. If it fails to stop, the maintainer script should fail
+# too.
+  return 1
+}
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'nut-driver-enumerator.path' 'nut-driver-enumerator.service' 'nut-driver.target' 'nut-server.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/nut-server" ] ; then
+	invoke-rc.d --skip-systemd-native nut-server stop || handle_start_failure
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,14 @@
+[Unit]
+Description=Diaspora Services
+BindsTo=diaspora-puma.service diaspora-sidekiq.service
+After=diaspora-puma.service diaspora-sidekiq.service
+
+[Service]
+Type=idle
+RemainAfterExit=yes
+ExecStart=-/bin/true
+ExecReload=-/bin/true
+
+[Install]
+WantedBy=diaspora.target
+

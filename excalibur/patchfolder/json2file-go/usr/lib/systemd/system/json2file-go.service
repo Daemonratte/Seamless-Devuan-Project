@@ -1,0 +1,19 @@
+# systemd service definition for json2file-go
+[Unit]
+Description=json2file-go daemon
+After=network.target
+Requires=json2file-go.socket
+ConditionPathExists=/etc/json2file-go/dirlist
+Documentation=man:json2file-go(8)
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/lib/json2file-go/json2file-go
+NonBlocking=true
+User=www-data
+Group=www-data
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target

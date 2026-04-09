@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Placement Service API (placement-api)
+After=postgresql.service mysql.service keystone.service ntp.service rabbitmq-server.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service ntp.service rabbitmq-server.service network-online.target 
+
+Documentation=man:placement-api(1)
+
+[Service]
+User=placement
+Group=placement
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=placement lock/placement
+CacheDirectory=placement
+ExecStart=/etc/init.d/placement-api systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

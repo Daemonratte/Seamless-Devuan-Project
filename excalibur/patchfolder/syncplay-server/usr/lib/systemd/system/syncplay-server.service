@@ -1,0 +1,60 @@
+[Unit]
+Description=Server to host Syncplay rooms
+Documentation=man:syncplay-server(1)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=true
+
+# The certbot hook will copy certificates into RuntimeDirectory=, which systemd
+# creates at /run/syncplay-server
+RuntimeDirectory=syncplay-server
+
+# We must call the certbot hook as root, i.e., prefixed with '!', to copy
+# the certificate into /run/syncplay-server. The hook script takes care to set
+# permissions to protects the files.
+ExecStartPre=!sh -c '. /etc/default/syncplay-server ; RENEWED_DOMAINS=$DOMAIN /etc/letsencrypt/renewal-hooks/deploy/syncplay-server'
+
+# Even if the user does not use certificates, we can unconditionally pass
+# '--tls <path>' as syncplay-server does not fail withouth certificates. It will
+# log a warning, though.
+ExecStart=/usr/bin/syncplay-server --tls /run/syncplay-server
+
+# Security measures
+PrivateUsers=true
+ProtectClock=true
+ProtectHome=true
+PrivateDevices=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=noaccess
+LockPersonality=true
+MemoryDenyWriteExecute=false
+RestrictAddressFamilies=~AF_PACKET
+CapabilityBoundingSet=~CAP_NET_ADMIN
+CapabilityBoundingSet=~CAP_SYS_MODULE
+CapabilityBoundingSet=~CAP_SYS_ADMIN
+CapabilityBoundingSet=~CAP_SETUID
+CapabilityBoundingSet=~CAP_SETGID
+CapabilityBoundingSet=~CAP_SETPCAP
+CapabilityBoundingSet=~CAP_SYS_PTRACE
+CapabilityBoundingSet=~CAP_CHOWN
+CapabilityBoundingSet=~CAP_FSETID
+CapabilityBoundingSet=~CAP_SETFCAP
+CapabilityBoundingSet=~CAP_FOWNER
+CapabilityBoundingSet=~CAP_IPC_OWNER
+CapabilityBoundingSet=~CAP_LINUX_IMMUTABLE
+CapabilityBoundingSet=~CAP_IPC_LOCK
+CapabilityBoundingSet=~CAP_SYS_CHROOT
+CapabilityBoundingSet=~CAP_BLOCK_SUSPEND
+CapabilityBoundingSet=~CAP_LEASE
+CapabilityBoundingSet=~CAP_SYS_PACCT
+CapabilityBoundingSet=~CAP_SYS_TTY_CONFIG
+CapabilityBoundingSet=~CAP_SYS_BOOT
+
+[Install]
+WantedBy=multi-user.target

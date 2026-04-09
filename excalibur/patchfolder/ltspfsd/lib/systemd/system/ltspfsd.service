@@ -1,0 +1,6 @@
+[Unit]
+Description=LTSP Filesystem Daemon
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/ltspfsd

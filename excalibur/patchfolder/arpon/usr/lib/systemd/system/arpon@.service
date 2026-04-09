@@ -1,0 +1,18 @@
+[Unit]
+Description=Anti ARP poisoning daemon on interface %I
+PartOf=arpon.service
+ReloadPropagatedFrom=arpon.service
+Documentation=man:arpon(8)
+
+[Service]
+PrivateTmp=true
+Type=simple
+EnvironmentFile=/etc/default/arpon
+ExecStartPre=/bin/mkdir -p /var/log/arpon
+ExecStart=/usr/sbin/arpon -i %i $DAEMON_ARGS
+PIDFile=/run/arpon.pid
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

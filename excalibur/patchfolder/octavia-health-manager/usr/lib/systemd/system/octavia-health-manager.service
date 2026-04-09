@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Octavia Health Manager (octavia-health-manager)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:octavia-health-manager(1)
+
+[Service]
+User=octavia
+Group=octavia
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=octavia lock/octavia
+CacheDirectory=octavia
+ExecStart=/etc/init.d/octavia-health-manager systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

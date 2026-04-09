@@ -1,0 +1,26 @@
+[Unit]
+Description=Sympa Web Interface FastCGI backend
+After=sympa.service
+Requires=wwsympa.socket
+Documentation=man:wwsympa(8)
+
+[Service]
+User=sympa
+Group=sympa
+ExecStart=/usr/bin/multiwatch -f $WWS_FCGI_CHILDREN \
+          -- /usr/lib/cgi-bin/sympa/wwsympa.fcgi
+StandardOutput=null
+StandardInput=socket
+StandardError=null
+
+Environment="WWS_FCGI_CHILDREN=5"
+EnvironmentFile=-/etc/default/sympa
+
+Restart=on-failure
+RestartSec=15
+
+PrivateTmp=true
+
+[Install]
+Also=wwsympa.socket
+WantedBy=multi-user.target

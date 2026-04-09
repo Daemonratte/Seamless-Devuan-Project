@@ -1,0 +1,10 @@
+[Unit]
+BindsTo=sys-subsystem-net-devices-%i.device
+After=sys-subsystem-net-devices-%i.device
+
+[Service]
+RuntimeDirectory=pcapdump
+ExecStart=/usr/bin/pcapdump -C /etc/pcapdump/%i
+
+[Install]
+WantedBy=multi-user.target

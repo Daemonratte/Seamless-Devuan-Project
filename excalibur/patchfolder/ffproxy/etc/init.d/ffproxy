@@ -1,0 +1,157 @@
+#!/bin/sh
+#
+# ffproxy       This init.d script is used to start ffproxy
+#
+
+### BEGIN INIT INFO
+# Provides:          ffproxy
+# Required-Start:    $remote_fs $network $syslog
+# Required-Stop:     $remote_fs $network $syslog
+# Should-Start:      $named
+# Should-Stop:       $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start, stop or reload ffproxy
+# Description:       ffproxy is a light and customizable http(s) proxy server
+### END INIT INFO
+
+# Edit /etc/default/ffproxy to change this.
+FFPROXY_START=yes
+FFPROXY_USECHROOT=yes
+FFPROXY_USER=nobody
+FFPROXY_GROUP=nogroup
+FFPROXY_OPTS=
+
+# Do not edit vars below
+FFPROXY_CHROOT=/var/lib/ffproxy
+FFPROXY_CONFDIR=/etc/ffproxy
+FFPROXY_PID=/var/run/ffproxy.pid
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+FFPROXY=/usr/bin/ffproxy
+NAME=ffproxy
+DESC="http(s) proxy server"
+VERBOSE=no
+
+if [ ! -x "$FFPROXY" ]; then
+    exit 0
+fi
+
+# loading lsb functions
+. /lib/lsb/init-functions
+
+# Override root's umask while invoking this script
+umask 0022
+
+# Include ffproxy defaults if available
+if [ -f /etc/default/ffproxy ]; then
+    . /etc/default/ffproxy
+fi
+
+# Include rcS defaults
+if [ -f /etc/default/rcS ]; then
+    . /etc/default/rcS
+fi
+
+if [ "$FFPROXY_START" = "no" ] && [ "$1" != "stop" ]; then
+    if [ "$VERBOSE" != "no" ]; then
+        log_daemon_msg "Not starting ffproxy - edit /etc/default/ffproxy and change FFPROXY_START to be 'yes'."
+    fi
+    exit 0
+fi
+
+update_chroot() {
+    if [ ! -d "$FFPROXY_CHROOT" ]; then
+        mkdir -p "$FFPROXY_CHROOT"
+    fi
+    for f in /etc/localtime /etc/hosts /etc/resolv.conf /etc/nsswitch.conf \
+        $(find "$FFPROXY_CONFDIR" -type f) /lib/*/libns*so* /lib/*/libresolv*so* ; do
+        d=$(dirname "$f")
+        if [ ! -d "$FFPROXY_CHROOT/$d" ]; then
+            mkdir -p "$FFPROXY_CHROOT/$d"
+        fi
+        if [ -e "$FFPROXY_CHROOT/$f" ]; then
+            rm -f "$FFPROXY_CHROOT/$f"
+        fi
+        cp "$f" "$FFPROXY_CHROOT/$f"
+    done
+}
+
+delete_chroot() {
+    rm -rf "$FFPROXY_CHROOT"
+}
+
+do_start() {
+    if [ "$FFPROXY_USECHROOT" = "yes" ]; then
+        update_chroot
+        FFPROXY_OPTS="$FFPROXY_OPTS -r $FFPROXY_CHROOT -D $FFPROXY_CONFDIR"
+    else
+        FFPROXY_OPTS="$FFPROXY_OPTS -D $FFPROXY_CONFDIR"
+    fi
+    if [ -n "$FFPROXY_USER" ] && [ -n "$FFPROXY_GROUP" ]; then
+        FFPROXY_OPTS="$FFPROXY_OPTS -u $FFPROXY_USER -g $FFPROXY_GROUP"
+    fi
+    log_daemon_msg "Starting $DESC"
+    log_progress_msg "$NAME"
+    start_daemon -p $FFPROXY_PID $FFPROXY $FFPROXY_OPTS
+    RET=$?
+    log_end_msg $RET
+    return $RET
+}
+
+do_reload() {
+    log_daemon_msg "Reloading $DESC"
+    log_progress_msg "$NAME"
+    if [ "$FFPROXY_USECHROOT" = "yes" ]; then
+        update_chroot
+    fi
+    killproc -p $FFPROXY_PID $FFPROXY SIGHUP
+    RET=$?
+    log_end_msg $RET
+    return $RET
+}
+
+do_stop() {
+    log_daemon_msg "Stopping $DESC"
+    log_progress_msg "$NAME"
+    if [ -d "$FFPROXY_CHROOT" ]; then
+        delete_chroot
+    fi
+    start-stop-daemon --stop --quiet --oknodo --pidfile $FFPROXY_PID
+    RET=$?
+    log_end_msg $?
+    return $RET
+}
+
+do_status() {
+    status_of_proc -p "$FFPROXY_PID" "$(basename "$FFPROXY")" "$NAME"
+    RET=$?
+    return $RET
+}
+
+case "$1" in
+    start)
+        do_start || exit $?
+        ;;
+    stop)
+        do_stop || exit $?
+        ;;
+    reload|force-reload)
+        do_reload || exit $?
+        ;;
+    restart)
+        do_stop
+        sleep 5
+        do_start || exit $?
+        ;;
+    status)
+        do_status || exit $?
+        ;;
+    *)
+        N=/etc/init.d/$NAME
+        echo "Usage: $N {start|stop|restart|reload|force-reload|status}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

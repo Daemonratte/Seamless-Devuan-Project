@@ -1,0 +1,24 @@
+[Unit]
+Description=OpenStack Swift object auditor
+PartOf=swift-object-auditor.service
+ReloadPropagatedFrom=swift-object-auditor.service
+ConditionFileNotEmpty=/etc/swift/object-server/%i.conf
+AssertFileNotEmpty=/etc/swift/account.ring.gz
+AssertFileNotEmpty=/etc/swift/container.ring.gz
+AssertPathExistsGlob=/etc/swift/object*.ring.gz
+Documentation=man:swift-object-auditor(1)
+
+
+[Service]
+User=swift
+Group=swift
+WorkingDirectory=~
+CacheDirectory=swift
+RuntimeDirectory=swift lock/swift
+ExecStart=/usr/bin/swift-object-auditor /etc/swift/object-server/%i.conf
+Restart=on-failure
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+

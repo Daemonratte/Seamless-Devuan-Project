@@ -1,0 +1,68 @@
+#!/bin/sh
+
+set -e
+
+ACTION=$1
+
+if [ "$ACTION" = "configure" ]; then
+  MOST_RECENTLY_CONFIGURED_VERSION=$2
+  mkdir --parents /var/lib/luanti /var/log/luanti
+
+  if dpkg --compare-versions "$MOST_RECENTLY_CONFIGURED_VERSION" lt '5.10.0+dfsg-1~'; then
+    # migrate default configuration to new paths
+
+    OLD_SERVER_STATE_PATH="/var/games/minetest-server/.minetest"
+    if [ -d $OLD_SERVER_STATE_PATH ]; then
+      mv $OLD_SERVER_STATE_PATH /var/lib/luanti/default
+    fi
+
+    OLD_SERVER_LOG_PATH="/var/log/minetest/minetest.log"
+    if [ -f $OLD_SERVER_LOG_PATH ]; then
+      mkdir /var/log/luanti/default
+      mv $OLD_SERVER_LOG_PATH /var/log/luanti/default/server.log
+    fi
+  fi
+
+  # begin-remove-after: released:trixie
+  # DEP17 P1 M8: Protective diversion for moved file
+  if dpkg --compare-versions "$MOST_RECENTLY_CONFIGURED_VERSION" lt '5.10.0+dfgs-3~'; then
+    dpkg-divert --remove --no-rename --divert /lib/systemd/system/minetest-server.service.usr-is-merged /lib/systemd/system/minetest-server.service
+    dpkg-divert --remove --no-rename --divert /lib/systemd/system/minetest-server.service@.usr-is-merged /lib/systemd/system/minetest-server@.service
+  fi
+  # end-remove-after
+fi
+
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /etc/minetest/minetest.conf /etc/luanti/default.conf 5.10.0\+dfsg-1\~ luanti-server -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'luanti-server.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'luanti-server.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'luanti-server.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'luanti-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'luanti-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

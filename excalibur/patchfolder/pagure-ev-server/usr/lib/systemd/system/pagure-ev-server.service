@@ -1,0 +1,14 @@
+[Unit]
+Description=Pagure EventSource server (Allowing live refresh of the pages supporting it)
+After=redis.target
+Documentation=https://pagure.io/pagure
+
+[Service]
+ExecStart=/usr/share/pagure-ev-server/bin/pagure_stream_server.py
+Type=simple
+User=_pagure
+Group=_pagure
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

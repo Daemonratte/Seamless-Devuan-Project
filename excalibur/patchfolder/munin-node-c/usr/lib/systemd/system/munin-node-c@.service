@@ -1,0 +1,11 @@
+[Unit]
+Description=Munin Node written in C
+Documentation=https://github.com/munin-monitoring/munin-c/
+JoinsNamespaceOf=munin-node-daemon.service
+
+[Service]
+ExecStart=/usr/sbin/munin-node-c
+PrivateTmp=yes
+ProtectHome=yes
+StandardInput=socket
+StandardOutput=socket

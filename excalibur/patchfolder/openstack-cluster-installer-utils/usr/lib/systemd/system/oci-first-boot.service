@@ -1,0 +1,12 @@
+[Unit]
+Description=OCI First Boot script
+After=frr.service networking.service chrony.service
+
+[Service]
+User=root
+Group=root
+ExecStart=/usr/bin/oci-first-boot
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Pesign signing daemon
+
+[Service]
+PrivateTmp=true
+PIDFile=/run//pesign.pid
+ExecStart=/usr/bin/pesign --daemonize --nofork
+ExecStartPost=/usr/share/pesign/pesign-authorize
+
+[Install]
+WantedBy=multi-user.target

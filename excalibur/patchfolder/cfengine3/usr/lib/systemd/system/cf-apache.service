@@ -1,0 +1,20 @@
+[Unit]
+Description=CFEngine Enterprise Webserver
+After=syslog.target
+Wants=cf-postgres.service
+After=cf-postgres.service
+ConditionPathExists=/var/lib/cfengine3/httpd/bin/apachectl
+PartOf=cfengine3.service
+
+[Service]
+Type=forking
+ExecStart=/var/lib/cfengine3/httpd/bin/apachectl start
+ExecStop=/var/lib/cfengine3/httpd/bin/apachectl stop
+ExecReload=/var/lib/cfengine3/httpd/bin/apachectl graceful
+PIDFile=/var/lib/cfengine3/httpd/httpd.pid
+Restart=always
+RestartSec=10
+UMask=0177
+
+[Install]
+WantedBy=multi-user.target

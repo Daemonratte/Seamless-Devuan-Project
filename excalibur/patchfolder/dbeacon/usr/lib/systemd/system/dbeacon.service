@@ -1,0 +1,11 @@
+[Unit]
+Description=Multicast beacon
+Documentation=man:dbeacon
+AssertPathExists=/etc/dbeacon.conf
+
+[Service]
+User=Debian-dbeacon
+ExecStart=/usr/bin/dbeacon -c /etc/dbeacon.conf
+
+[Install]
+WantedBy=multi-user.target

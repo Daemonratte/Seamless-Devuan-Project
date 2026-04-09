@@ -1,0 +1,5 @@
+#!/bin/sh
+PORT=10116
+PREFIX=TCPREMOTEIP
+exec 2>&1
+exec tcpsvd -v -u _socklog-ucspi-tcp 0 "$PORT" socklog ucspi "$PREFIX"

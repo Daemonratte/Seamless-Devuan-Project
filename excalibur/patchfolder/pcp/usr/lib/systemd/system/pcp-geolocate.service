@@ -1,0 +1,15 @@
+[Unit]
+Description=PCP geographical location label service
+Documentation=man:pcp-geolocate(1)
+ConditionPathExists=!/etc/pcp/labels/optional/geolocate
+After=network-online.target
+Before=pmcd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/pcp/bin/pcp-geolocate /etc/pcp/labels/optional/geolocate
+Group=root
+User=root
+
+[Install]
+WantedBy=multi-user.target

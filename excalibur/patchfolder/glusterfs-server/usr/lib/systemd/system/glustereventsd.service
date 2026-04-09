@@ -1,0 +1,17 @@
+[Unit]
+Description=Gluster Events Notifier
+After=network.target
+Documentation=man:glustereventsd(8)
+
+
+[Service]
+Environment=PYTHONPATH=/usr/lib/python3.13/site-packages:$PYTHONPATH
+Type=simple
+ExecStart=/usr/sbin/glustereventsd --pid-file /var/run/glustereventsd.pid
+ExecReload=/bin/kill -SIGUSR2 $MAINPID
+KillMode=control-group
+PIDFile=/run/glustereventsd.pid
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

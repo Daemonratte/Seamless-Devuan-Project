@@ -1,0 +1,27 @@
+[Unit]
+Description=dnss daemon
+Documentation=man:dnss
+Requires=dnss.socket
+
+
+[Service]
+EnvironmentFile=-/etc/default/dnss
+ExecStart=/usr/bin/dnss \
+        --dns_listen_addr=systemd \
+	$MONITORING_FLAG \
+	$MODE_FLAGS
+
+Type=simple
+Restart=always
+
+User=dnss
+Group=dnss
+
+# Simple security measures just in case.
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+ProtectSystem=full
+
+
+[Install]
+Also=dnss.socket
+WantedBy=multi-user.target

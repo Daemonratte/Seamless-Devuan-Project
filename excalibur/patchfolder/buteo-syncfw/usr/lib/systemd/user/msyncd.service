@@ -1,0 +1,7 @@
+[Unit]
+Description=Sync FW daemon
+
+[Service]
+Type=dbus
+ExecStart=/usr/bin/msyncd
+BusName=com.meego.msyncd

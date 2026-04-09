@@ -1,0 +1,41 @@
+#!/bin/sh /lib/init/init-d-script
+### BEGIN INIT INFO
+# Provides:          sphinxsearch
+# Required-Start:    $local_fs $remote_fs $syslog $network $time
+# Required-Stop:     $local_fs $remote_fs $syslog $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Fast standalone full-text SQL search engine
+### END INIT INFO
+
+DAEMON=/usr/bin/searchd
+NAME=sphinxsearch
+PIDFILE=/run/sphinxsearch/searchd.pid
+
+START_ARGS="--chuid sphinxsearch"
+STOP_ARGS="--user sphinxsearch"
+
+do_start_prepare() {
+        if [ "$START" != "yes" ]; then
+          echo "To enable $NAME, edit /etc/default/sphinxsearch and set START=yes"
+          exit 0
+        fi
+
+        # Check if we have the configuration file
+        if [ ! -f /etc/sphinxsearch/sphinx.conf ]; then
+            echo "\n"
+            echo "Please create an /etc/sphinxsearch/sphinx.conf configuration file."
+            echo "A template is provided as /etc/sphinxsearch/sphinx.conf.sample."
+            exit 1
+        fi
+
+        # Make sure the pidfile directory exists with correct permissions
+        piddir=$(dirname "$PIDFILE")
+        if [ ! -d "$piddir" ]; then
+            mkdir -p "$piddir"
+            chown -R sphinxsearch "$piddir"
+            chgrp -R sphinxsearch "$piddir"
+        fi
+}
+
+# vim: set syntax=sh:

@@ -1,0 +1,13 @@
+[Unit]
+Description=Tang Server socket
+Documentation=man:tang(8)
+
+[Socket]
+ListenStream=80
+Accept=true
+
+ExecStartPre=-/usr/bin/chmod --silent 0440 -- /var/lib/tang/*.jwk /var/lib/tang/.*.jwk
+ExecStartPre=-/usr/bin/chown -R _tang:_tang /var/lib/tang
+
+[Install]
+WantedBy=sockets.target

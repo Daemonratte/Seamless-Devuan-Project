@@ -1,0 +1,15 @@
+[Unit]
+Description=Fast bidirectional synchronization for QRESYNC-capable IMAP servers (instance %i)
+Documentation=man:interimap(1)
+Documentation=https://guilhem.org/interimap/interimap.1.html
+PartOf=interimap.service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/interimap --config=%i --watch=60
+RestartSec=10min
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

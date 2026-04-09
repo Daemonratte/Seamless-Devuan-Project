@@ -1,0 +1,13 @@
+[Unit]
+Description=fair carrousel daemon
+Documentation=man:carrousel(8)
+Wants=network-online.target
+After=network-online.target
+ConditionFileExists=/etc/fair.conf
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/carrousel
+
+[Install]
+WantedBy=multi-user.target

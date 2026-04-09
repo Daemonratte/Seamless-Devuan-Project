@@ -1,0 +1,786 @@
+#!/bin/bash
+
+# Copyright (C) 2024 Pädagogisches Landesinstitut Rheinland-Pfalz
+# Copyright (C) 2024 Daniel Teichmann <daniel.teichmann@das-netzwerkteam.de>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+# postinst script for debian-edu-router-plugin.krb5-connector
+#
+# see: dh_installdeb(1)
+
+set -e
+
+. /usr/share/debconf/confmodule || exit 255
+
+if [ -e /etc/debian-edu/router.conf ]; then
+	source /etc/debian-edu/router.conf
+fi
+PRODUCTNAME="${PRODUCTNAME:-"Debian Edu Router"}"
+PRODUCTNAME_PLUGIN_SUFFIX="${PRODUCTNAME_PLUGIN_SUFFIX:-"Plugin"}"
+PRODUCTNAME_PLUGIN="${PRODUCTNAME_PLUGIN:-"${PRODUCTNAME} ${PRODUCTNAME_PLUGIN_SUFFIX}: Krb5 Connector"}"
+PRODUCTVERSION=$(dpkg-query --show --showformat='${Version}' "${DPKG_MAINTSCRIPT_PACKAGE}" 2>/dev/null || echo "UNKNOWN")
+db_title "${PRODUCTNAME_PLUGIN}"
+
+common_file="/usr/share/debian-edu-router/debian-edu-router.common"
+
+# Load common functions, variables and stuff.
+if [ -s "$common_file" ]; then
+	source "$common_file"
+else
+	echo "Could not load common file at "$common_file"."
+	exit 0;
+fi
+
+db_version 2.0
+db_capb backup escape
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <postinst> `abort-remove'
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see https://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+CONFIG_BACKUP_DIR="$(mktemp -d --suffix -debian-edu-router-plugin.krb5-connector_CONFIG_BACKUP)"
+DEBUG_CONFIG_DIR="$(mktemp -d --suffix -debian-edu-router-plugin.krb5-connector_DEBUG_CONFIG)"
+
+
+# Load Krb5 Connector dialog answers
+db_get debian-edu-router-plugin.krb5-connector/krb5-connector-enabled || true
+krb5_connector_enabled="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/kerberos-server-kdc-host || true
+kerberos_server_kdc_host="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/kerberos-server-admin-host || true
+kerberos_server_admin_host="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/kerberos-server-admin-variant || true
+kerberos_server_admin_variant="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/kerberos-realm || true
+kerberos_realm="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/kerberos-realm-default || true
+kerberos_realm_default="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/kerberos-domain || true
+kerberos_domain="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/computer-account-create-mode || true
+computer_account_create_mode="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/computer-account-initial-password || true
+computer_account_initial_password="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/computer-account-base-ou || true
+computer_account_base_ou="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/kerberos-server-admin-principal || true
+kerberos_server_admin_principal="${RET}"
+db_get debian-edu-router-plugin.krb5-connector/kerberos-server-admin-password || true
+kerberos_server_admin_password="${RET}"
+
+# ! CONTENT-FILTER ! dialog answers #
+db_get debian-edu-router-plugin.content-filter/dns-alias || true
+dns_alias="${RET}"
+
+export SERVICE_PRINCIPAL_NAME="HTTP/$(hostname -f)@${kerberos_realm}"
+
+function create_config_backup() {
+	chmod -R 0700 "${CONFIG_BACKUP_DIR}"
+
+	# Creating a backup of old d-e-r config files.
+
+	# mkdir -p                     ${CONFIG_BACKUP_DIR}/etc/krb5-connector/conf.d/
+	# cp /etc/ldap/ldap_d-e-r.conf ${CONFIG_BACKUP_DIR}/etc/krb5-connector/conf.d/ &> /dev/null || true
+}
+
+function restore_config_backup() {
+	error_log "New configuration for '$1' failed while restarting the service."
+	error_log "Restoring configuration backup now..."
+
+	if [ -n "${D_E_R_DEBUG}" ]; then
+		config_files=(
+			# "/etc/ldap"
+		)
+
+		for conf_file in "${config_files[@]}"; do
+			mkdir -p "${DEBUG_CONFIG_DIR}/$conf_file"
+
+			# Move new and broken conf files into tmp folder.
+			# mv -v "$conf_file"/ldap_d-e-r.conf "${DEBUG_CONFIG_DIR}$conf_file" || true
+		done
+
+		debug_log "Generated config files are now located at: '${cyan}${DEBUG_CONFIG_DIR}${green}'."
+	else
+		# Delete new and broken d-e-r config files.
+		# rm -fv /etc/ldap/ldap_d-e-r.conf || true
+
+		debug_log "Generated config files were purged from the system."
+	fi
+
+	# Copying old and hopefully working d-e-r config files.
+	# cp -fv ${CONFIG_BACKUP_DIR}/etc/ldap/ldap_d-e-r.conf /etc/ldap/ || true
+
+	debug_log "Old config files are installed again."
+
+	# Hopefully everything should be alright now.
+
+	exit 1
+}
+
+function create_squid_snippets_from_templates() {
+	local debug_arg=""
+	if [[ -n "$D_E_R_DEBUG" ]]; then
+		debug_arg="-d"
+	fi
+
+	snippets_templates_dir="/usr/share/debian-edu-router/templates/squid/snippets.d/d-e-r-p.k-c/"
+	for snippet_tpl in $(ls ${snippets_templates_dir}/*.in); do
+		snippet="/etc/debian-edu-router/squid-snippets.d/$(basename ${snippet_tpl/.in/})"
+
+		# Using '|' instead of '/' and '%' instead of '@', because both are used by $SERVICE_PRINCIPAL_NAME.
+		cp "${snippet_tpl}" "${snippet}"
+		sed -i "${snippet}" -e "s/@PRODUCTNAME@/${PRODUCTNAME_PLUGIN}/"                 \
+		                    -e "s|%SERVICE_PRINCIPAL_NAME%|${SERVICE_PRINCIPAL_NAME}|"  \
+		                    -e "s|@DEBUG_ARG@|${debug_arg}|"                            \
+		                    ${NULL}
+	done
+}
+
+function toggle_computer_acc_watcher_service() {
+	local enable_computer_acc_watcher="$1"
+
+	local hostname="$(hostname -f)"
+	local args_hostname=()
+	if [[ -n "$dns_alias" && -n "${kerberos_domain}" ]]; then
+		# Use DNS alias additionally
+		args_hostname=(-h "${dns_alias}.${kerberos_domain}")
+		debug_log "Using custom DNS alias '${dns_alias}.${kerberos_domain}' to maintain computer account password."
+	else
+		debug_log "Using default hostname '${hostname}' (not using DNS alias) to maintain computer account password."
+	fi
+
+	local cron_tpl="/usr/share/debian-edu-router/templates/cron.d/d-e-r-p.k-c_msktutil-refresh-computer-acc-pw.in"
+	local cron_file="/usr/share/debian-edu-router/templates/cron.d/d-e-r-p.k-c_msktutil-refresh-computer-acc-pw"
+
+	cp "${cron_tpl}" "${cron_file}"
+	sed -i "${cron_file}" -e "s/@PRODUCTNAME@/${PRODUCTNAME_PLUGIN}/"              \
+	                      -e "s|@MSKTUTIL_SERVER@|${kerberos_server_admin_host}|"  \
+	                      -e "s|@REALM@|${kerberos_realm}|"                        \
+	                      -e "s|@ARGS_HOST@|${args_hostname[*]}|"                  \
+	                      ${NULL}
+
+	local systemd_tpl="/usr/share/debian-edu-router/templates/systemd.d/msktutil_d-e-r_refresh-computer-acc-pw.service.in"
+	local systemd_file="/usr/lib/systemd/system/msktutil_d-e-r_refresh-computer-acc-pw.service"
+
+	cp "${systemd_tpl}" "${systemd_file}"
+	sed -i "${systemd_file}" -e "s/@PRODUCTNAME@/${PRODUCTNAME_PLUGIN}/"              \
+	                         -e "s|@MSKTUTIL_SERVER@|${kerberos_server_admin_host}|"  \
+	                         -e "s|@REALM@|${kerberos_realm}|"                        \
+	                         -e "s|@ARGS_HOST@|${args_hostname[*]}|"                  \
+	                         ${NULL}
+
+	if [[ "${enable_computer_acc_watcher}" = "true" ]]; then
+		if [ -d /run/systemd/system ]; then # Checks if systemd is available.
+			notice_log "Enabling systemd service for auto-refreshing computer account password."
+
+			#systemctl daemon-reload
+
+			manage_unit enable    msktutil_d-e-r_refresh-computer-acc-pw.service
+			manage_unit enablenow msktutil_d-e-r_refresh-computer-acc-pw.timer
+
+			rm -f /etc/cron.d/d-e-r-p.k-c_msktutil-refresh-computer-acc-pw || true
+		else
+			notice_log "Enabling auto-refreshing computer account password cron job (for now)."
+			cp -v "${cron_file}" /etc/cron.d/
+		fi
+	else
+		manage_unit disablenow msktutil_d-e-r_refresh-computer-acc-pw.service
+		manage_unit disablenow msktutil_d-e-r_refresh-computer-acc-pw.timer
+
+		rm -f /etc/cron.d/d-e-r-p.k-c_msktutil-refresh-computer-acc-pw || true
+	fi
+}
+
+function process_services_answers() {
+	#
+	# Kerberos client configuration (krb5-connector service)
+	#
+
+	create_squid_snippets_from_templates
+
+	generate_krb5_config
+
+	create_squid_service_principal
+}
+
+function generate_krb5_config() {
+	local _section_realms
+	local _section_domain_realm
+
+	# Prepare Krb5 config file using HEADER TEMPLATE. Similar to .in files, but generate
+	# sections below using echo's.
+	local file_header_template="/usr/share/debian-edu-router/templates/krb5/krb5.conf.squid.header"
+	local krb5_config="/etc/debian-edu-router/krb5.d/$(basename ${file_header_template/.header/})"
+	cp "${file_header_template}" "${krb5_config}"
+	sed -i "${krb5_config}" -e "s|@PRODUCTNAME@|${PRODUCTNAME_PLUGIN}|"       \
+	                        -e "s|@DEFAULT_REALM@|${kerberos_realm_default}|" \
+	                        ${NULL}
+
+	_section_realms=$(cat <<EOF
+[realms]
+	${kerberos_realm} = {
+		kdc = ${kerberos_server_kdc_host}
+		admin_server = ${kerberos_server_admin_host}
+		default_domain = ${kerberos_domain}
+	}
+EOF
+	)
+
+	_section_domain_realm=$(cat <<EOF
+[domain_realm]
+	${kerberos_domain} = ${kerberos_realm}
+	.${kerberos_domain} = ${kerberos_realm}
+EOF
+	)
+
+	echo "${_section_realms}"       >> "${krb5_config}"
+	echo ""                         >> "${krb5_config}"
+	echo "${_section_domain_realm}" >> "${krb5_config}"
+	echo ""                         >> "${krb5_config}"
+}
+
+function validate_working_kerberos_connection() {
+	if ! ping -c1 "${kerberos_server_kdc_host}" > /dev/null; then
+		error_log "Connection to KDC host '${kerberos_server_kdc_host}' could not be established!"
+
+		# Check if $kerberos_server_kdc_host is in /etc/hosts and is not an IP address, to give this tip.
+		if ! getent hosts | awk -v host="$kerberos_server_kdc_host" '{for(i=1;i<=NF;i++){if($i==host){print $i;e=1}}}END{exit !e}'; then
+			if ! is_address_v4 "$kerberos_server_kdc_host" && ! is_address_v6 "$kerberos_server_kdc_host"; then
+				error_log "Please add the IP address of your Kerberos KDC host '$kerberos_server_kdc_host' to /etc/hosts."
+				error_log "Finally reconfigure the debian-edu-router-plugin.krb5-connector package afterwards."
+			fi
+		fi
+		return 1
+	fi
+
+	if ! ping -c1 "${kerberos_server_admin_host}" > /dev/null; then
+		error_log "Connection to Krb5 admin-server '${kerberos_server_admin_host}' could not be established!"
+
+		# Check if $kerberos_server_admin_host is in /etc/hosts and is not an IP address, to give this tip.
+		if ! getent hosts | awk -v host="$kerberos_server_admin_host" '{for(i=1;i<=NF;i++){if($i==host){print $i;e=1}}}END{exit !e}'; then
+			if ! is_address_v4 "$kerberos_server_admin_host" && ! is_address_v6 "$kerberos_server_kdc_host"; then
+				error_log "Please add the IP address of your Kerberos admin-server host '$kerberos_server_admin_host' to /etc/hosts."
+				error_log "Finally reconfigure the debian-edu-router-plugin.krb5-connector package afterwards."
+			fi
+		fi
+		return 1
+	fi
+
+	return
+}
+
+function create_squid_service_principal_kadmin() {
+	if ! validate_working_kerberos_connection; then
+		return 0 # Do not crash and discard debconf questions, just exit gracefully instead.
+	fi
+
+	local exitcode
+
+	###
+	local stdout_tmp="$(mktemp d-e-r-p.k-c.kadmin.stdout.XXXX)"
+	local stderr_tmp="$(mktemp d-e-r-p.k-c.kadmin.stderr.XXXX)"
+
+	set +e # Pause -e, because we do error handling manually (and NOT exit incase of error).
+	# Maybe use 'expect' to avoid -w (password) flag? This is a security issue.
+	# Or just use `kinit` before?
+	kadmin -w "${kerberos_server_admin_password}" -p "${kerberos_server_admin_principal}" \
+		-q "add_principal -randkey ${SERVICE_PRINCIPAL_NAME}" \
+		1> "${stdout_tmp}" 2> "${stderr_tmp}"
+	exitcode="$?"
+	set -e
+
+	if cat "${stdout_tmp}" | grep "Principal \"${SERVICE_PRINCIPAL_NAME}\" created."; then
+		notice_log "Principal '${SERVICE_PRINCIPAL_NAME}' created on KRB admin-server."
+	elif cat "${stderr_tmp}" | grep "add_principal: Principal or policy already exists while creating"; then
+		notice_log "Principal '${SERVICE_PRINCIPAL_NAME}' already exists on KRB admin-server."
+	else
+		error_log "Could not create the service principal '${SERVICE_PRINCIPAL_NAME}'!"
+		error_log "Exit code of kadmin: $exitcode."
+		error_log "Error output of kadmin:"
+		cat "${stderr_tmp}"
+		error_log "Standard output of kadmin:"
+		cat "${stdout_tmp}"
+		return
+	fi
+	###
+
+	###
+	local stdout_tmp="$(mktemp d-e-r-p.k-c.kadmin.stdout.XXXX)"
+	local stderr_tmp="$(mktemp d-e-r-p.k-c.kadmin.stderr.XXXX)"
+
+	debug_log "Adding service principal ${SERVICE_PRINCIPAL_NAME} to keytab file ${KRB5_KTNAME}."
+
+	set +e # Pause -e, because we do error handling manually (and NOT exit incase of error).
+	# Maybe use 'expect' to avoid -w (password) flag? This is a security issue.
+	# Or just use `kinit` before?
+	kadmin -w "${kerberos_server_admin_password}" -p "${kerberos_server_admin_principal}" \
+		-q "ktadd -k ${KRB5_KTNAME} ${SERVICE_PRINCIPAL_NAME}" \
+		1> "${stdout_tmp}" 2> "${stderr_tmp}"
+	exitcode="$?"
+	set -e
+
+	if [[ "$exitcode" -ne 0 ]] || [[ -n "$(cat ${stderr_tmp})" ]]; then
+		error_log "Non-Zero exit code or something printed to stderr"
+		return
+	fi
+	###
+}
+
+# $1 FORCED_MODE: Accepts choices of computer_account_create_mode debconf question.
+function kinit_against_microsoft_ad() {
+	if ! validate_working_kerberos_connection; then
+		return 1
+	fi
+
+	local FORCED_MODE="$1"
+	if [[ -n "${FORCED_MODE}" ]]; then
+		computer_account_create_mode="${FORCED_MODE}"
+		debug_log "Forcing computer_account_create_mode='${FORCED_MODE}'."
+	fi
+
+	export LOGIN_RIGHTS="" # Either normal, privileged or empty, if failed.
+	export KRB5_KTNAME="/etc/debian-edu-router/krb5.d/krb5.keytab.squid"
+	export KRB5_CONFIG="/etc/debian-edu-router/krb5.d/krb5.conf.squid"
+
+	local stdout_tmp="$(mktemp d-e-r-p.k-c.msktutil.stdout.XXXX)"
+	local stderr_tmp="$(mktemp d-e-r-p.k-c.msktutil.stderr.XXXX)"
+	local exitcode
+
+	# Mark with '$' at the end, to indicate that this is a computer account.
+	local computer_account_name
+	if [[ -n "$dns_alias" ]]; then
+		computer_account_name="${dns_alias}$"
+	else
+		computer_account_name="$(hostname -s)$"
+	fi
+
+	if [[ "${computer_account_create_mode}" = "Pre-Created" ]] && [[ -n "$computer_account_name" ]]; then
+		if [[ -n "$computer_account_initial_password" ]]; then
+			debug_log "Using computer account '${computer_account_name}' to get ticket-granting ticket from KDC..."
+
+			set +e # Pause -e, because we do error handling manually (and NOT exit incase of error).
+			echo "${computer_account_initial_password}" | kinit "${computer_account_name}" 1> "$stdout_tmp" 2> "$stderr_tmp"
+			exitcode="$?"
+			set -e
+		else
+			debug_log "Initial password is empty, which means we are trying default machine password for computer account '${computer_account_name}'."
+			debug_log "Skipping trying to get ticket-granting ticket from KDC."
+			export LOGIN_RIGHTS="normal"
+			return 0
+		fi
+	elif [[ "${computer_account_create_mode}" = "Administrator" ]] && \
+		[[ -n "${kerberos_server_admin_principal}" ]]              && \
+		[[ -n "${kerberos_server_admin_password}"  ]]; then
+		debug_log "Using admin-privileged account '${kerberos_server_admin_principal}' to get ticket-granting ticket from KDC..."
+
+		set +e # Pause -e, because we do error handling manually (and NOT exit incase of error).
+		echo "${kerberos_server_admin_password}" | kinit "${kerberos_server_admin_principal}" 1> "$stdout_tmp" 2> "$stderr_tmp"
+		exitcode="$?"
+		set -e
+	else
+		error_log "Insufficient credentials given! Can't log in as admin-privileged nor computer account!"
+		return 1
+	fi
+
+	if cat "${stderr_tmp}" | grep -q "kinit: Password incorrect while getting initial credentials"; then
+		error_log "Could not get ticket-granting ticket from KDC, wrong password!"
+		error_log "Please reconfigure ${PRODUCTNAME_PLUGIN} and re-enter the password."
+	elif [[ -n "$(cat ${stderr_tmp})" || $exitcode -ne 0 ]]; then
+		error_log "Could not get ticket-granting ticket from KDC!"
+		error_log "Exit code of kinit: $exitcode."
+		error_log "Error output of kinit:"
+		cat "${stderr_tmp}"
+		error_log "Standard output of kinit:"
+		cat "${stdout_tmp}"
+	else
+		if [[ "${computer_account_create_mode}" = "Pre-Created" ]]; then
+			export LOGIN_RIGHTS="normal"
+		elif [[ "${computer_account_create_mode}" = "Administrator" ]]; then
+			export LOGIN_RIGHTS="privileged"
+		fi
+
+		debug_log "Successfully got TGT from KDC."
+		debug_log "We evoked ${LOGIN_RIGHTS} rights."
+		return 0
+	fi
+
+	# Maybe, just maybe we have a backup plan.
+	# Make sure we don't end up in a recursive never-ending loop.
+	if [[ -z "${FORCED_MODE}" ]] && [[ "${computer_account_create_mode}" = "Administrator" ]]; then
+		if [[ -n "$computer_account_initial_password" ]] && \
+		   [[ -n "$computer_account_name"             ]]; then
+			debug_log "Administrator credentials didn't work out, but we have credentials for computer account."
+			if kinit_against_microsoft_ad "Pre-Created"; then
+				return 0
+			fi
+		fi
+	elif [[ -z "${FORCED_MODE}" ]] && [[ "${computer_account_create_mode}" = "Pre-Created" ]]; then
+		if [[ -n "$kerberos_server_admin_principal" ]] && \
+		   [[ -n "$kerberos_server_admin_password"  ]]; then
+			debug_log "Computer account credentials didn't work out, but we have credentials for admin-privileged account."
+			if kinit_against_microsoft_ad "Administrator"; then
+				return 0
+			fi
+		fi
+	fi
+
+	return 1
+}
+
+function create_squid_service_principal_msktutil() {
+	if ! validate_working_kerberos_connection; then
+		return 0 # Do not crash and discard debconf questions, just exit gracefully instead.
+	fi
+
+	# We need to login as a admin-privileged user in order to create accounts.
+	# Or we need a pre-created account, which the password is known for.
+	if ! kinit_against_microsoft_ad; then
+		return 0 # Do not crash and discard debconf questions, just exit gracefully instead.
+	fi
+
+	# Be aware that Windows machines will, by default, automatically change their account
+	# password every 30 days, and thus many domains have a 90-day password expiry window,
+	# after which your keytab will stop working.
+	if [[ "${LOGIN_RIGHTS}" = "normal" ]]; then
+		toggle_computer_acc_watcher_service "true"
+	else
+		toggle_computer_acc_watcher_service ""
+	fi
+
+	export MSKTUTIL_KEYTAB="${KRB5_KTNAME}"
+	export MSKTUTIL_SERVER="${kerberos_server_admin_host}"
+
+	# Needs admin privileges:
+	# --description
+	# --dont-expire-password
+
+	local args_verbose=()
+	if [[ -n "$D_E_R_DEBUG" ]]; then
+		args_verbose=(--verbose)
+	fi
+
+	local args_password=()
+	if [[ "${LOGIN_RIGHTS}" = "privileged" ]]; then
+		args_password=("--dont-expire-password")
+	elif [[ -n "${computer_account_initial_password}" ]]; then
+		args_password=("--old-account-password" "${computer_account_initial_password}")
+	fi
+
+	local args_description=()
+	if [[ "${LOGIN_RIGHTS}" = "privileged" ]]; then
+		args_description=(--description "Used for content filter authentication. Maintained by ${PRODUCTNAME_PLUGIN}.")
+	fi
+
+	# FIXME: It could be beneficial to include HTTP/<hostname>:<port> too, for backwards-compatibility.
+	# This will be skipped though, as it will be / has been removed in the next .NET updates.
+	# Please see https://learn.microsoft.com/en-us/dotnet/core/compatibility/networking/6.0/httpclient-port-lookup.
+
+	# Pre-load SPNs with actual current hostname.
+	local hostname="$(hostname -f)"
+	local args_spns=(-s "HTTP/${hostname}")
+	local args_hostname=()
+	if [[ -n "$dns_alias" && -n "${kerberos_domain}" ]]; then
+		# Use DNS alias additionally
+		args_hostname=(-h "${dns_alias}.${kerberos_domain}")
+		notice_log "Using custom DNS alias '${dns_alias}.${kerberos_domain}' to create computer account."
+
+		# Use DNS alias additionally
+		args_spns+=(-s "HTTP/${dns_alias}" -s "HTTP/${dns_alias}.${kerberos_domain}")
+
+		# Also add short version of current hostname.
+		if [[ "${hostname}" != "$(hostname -s)" ]]; then
+			args_spns+=(-s "HTTP/$(hostname -s)")
+		fi
+
+		# Finally, change $hostname in the following context to DNS alias.
+		hostname="$dns_alias"
+	else
+		debug_log "Using default hostname '${hostname}' (not using DNS alias) to create computer account."
+	fi
+
+	debug_log "Installing at least the following SPNs into computer account:"
+	debug_log "  - ${args_spns[@]}"
+
+	local args_base_ou=()
+	if [[ -n "${computer_account_base_ou}" ]]; then
+		args_base_ou=(--base "${computer_account_base_ou}")
+	fi
+
+	###
+	local exitcode
+	local stdout_tmp="$(mktemp d-e-r-p.k-c.msktutil.stdout.XXXX)"
+	local stderr_tmp="$(mktemp d-e-r-p.k-c.msktutil.stderr.XXXX)"
+
+	set +e # Pause -e, because we do error handling manually (and NOT exit incase of error).
+	msktutil --create --realm "${kerberos_realm}" \
+		"${args_verbose[@]}"     \
+		"${args_password[@]}"    \
+		"${args_description[@]}" \
+		"${args_hostname[@]}"    \
+		"${args_spns[@]}"        \
+		"${args_base_ou[@]}"     \
+		2> "${stderr_tmp}" | tee "${stdout_tmp}"
+
+	exitcode="$?"
+	pid="$!"
+	set -e
+
+	wait "$pid"
+
+	if cat "${stdout_tmp}" | grep -q "No computer account for " | grep -q " found, creating a new one."; then
+		notice_log "New computer account for hostname '${hostname}' was created in AD."
+	elif cat "${stderr_tmp}" | grep -q "Error: Could not find any credentials to authenticate with."; then
+		error_log "Could not use Kerberos ticket authenticate to Microsoft AD!"
+
+		# The code down below should not be executed more than once.
+		if [[ -n "$FIRST_TRY" ]]; then
+			return 0 # Do not crash and discard debconf questions, just exit gracefully instead.
+		fi
+		FIRST_TRY="NOPE"
+
+		if ! kinit_against_microsoft_ad "Pre-Created"; then
+			return 0 # Do not crash and discard debconf questions, just exit gracefully instead.
+		fi
+
+		# Recursively call this function.
+		create_squid_service_principal_msktutil
+
+		return 0 # Do not crash and discard debconf questions, just exit gracefully instead.
+	elif cat "${stderr_tmp}" | grep -q "ldap_add_ext_s failed (Insufficient access)"; then
+		error_log "Insufficient permissions error while trying to create/update account ${hostname}."
+	elif cat "${stderr_tmp}" | grep -q "Error: The sAMAccountName" | grep -q "for this host is longer than the maximum of MAX_SAM_ACCOUNT_LEN characters"; then
+		if [[ -n "$dns_alias" && -n "${kerberos_domain}" ]]; then # Is dns_alias used/built?
+			error_log "DNS alias name is longer than the maximum of MAX_SAM_ACCOUNT_LEN characters!"
+		else
+			error_log "Hostname (hostname -f) is longer than the maximum of MAX_SAM_ACCOUNT_LEN characters!"
+			error_log "Maybe try using an DNS alias?"
+		fi
+		return 0 # Do not crash and discard debconf questions, just exit gracefully instead.
+	elif [[ $exitcode -ne 0 ]]; then
+		error_log "Could not create computer account for host '${hostname}'!"
+		error_log "Exit code of msktutil: $exitcode."
+		error_log "Error output of msktutil:"
+		cat "${stderr_tmp}"
+		error_log "Standard output of msktutil:"
+		cat "${stdout_tmp}"
+		return 0 # Do not crash and discard debconf questions, just exit gracefully instead.
+	else
+		notice_log "Computer account for host '${hostname}' was already created in AD."
+	fi
+	###
+}
+
+function validate_service_principal_installed() {
+	local exitcode
+	local stdout_tmp="$(mktemp d-e-r-p.k-c.kadmin.stdout.XXXX)"
+	local stderr_tmp="$(mktemp d-e-r-p.k-c.kadmin.stderr.XXXX)"
+
+	set +e # Pause -e, because we do error handling manually (and NOT exit incase of error).
+	# Maybe use 'expect' to avoid -w (password) flag? This is a security issue.
+	kadmin -w "${kerberos_server_admin_password}" -p "${kerberos_server_admin_principal}" \
+		-q "get_principal ${SERVICE_PRINCIPAL_NAME}" 1> "${stdout_tmp}" 2> "${stderr_tmp}"
+	exitcode="$?"
+	set -e
+
+	if cat "${stdout_tmp}" | grep "Principal does not exist while retrieving"; then
+		error_log "Principal could not be found on KRB admin-server."
+		return 1
+	fi
+
+	# FIXME: Maybe we should test fingerprints or something?
+	# Testing if (KVNO != KVNO), isn't saying that these are the same principals we are searching for.
+	# They just share the same principal name.
+
+	# This gets the kvno of the ticket on the admin-server.
+	local remote_kvnos=( $(kadmin -w "${kerberos_server_admin_password}" \
+		-p "${kerberos_server_admin_principal}" -q "get_principal ${SERVICE_PRINCIPAL_NAME}" \
+		| grep -e "^Key: vno" | awk '{print $3}' | tr -d , | sort -r) )
+
+	# This gets the kvno of the ticket on our local host.
+	local local_kvnos=( $(echo -e "rkt /etc/debian-edu-router/krb5.d/krb5.keytab.squid\nl" | ktutil \
+		| grep  ${SERVICE_PRINCIPAL_NAME} | awk '{print $2}' | sort -r) )
+
+	# We are only interrested in the newest ones.
+	local local_kvno="${local_kvnos[0]}"
+	local remote_kvno="${remote_kvnos[0]}"
+
+	# These must match! Or else we failed at updating the ticket.
+	if [[ -z "$remote_kvno" ]] || [[ -z "$local_kvno" ]] || [ $remote_kvno -ne $local_kvno ]; then
+		error_log "Remote Principal KVNO ${remote_kvno} does not match with local KVNO ${local_kvno}."
+		return 1
+	fi
+
+	return 0
+}
+
+function validate_keytab_non_empty() {
+	if ! [ -s "${KRB5_KTNAME}" ]; then
+		debug_log "Keytab file ${KRB5_KTNAME} does not exist."
+		return 1
+	fi
+
+	# ktutil always prints 5 lines at least.
+	if [[ -z "$(echo -e "rkt ${KRB5_KTNAME}\nl" | ktutil | tail -n +6)" ]]; then
+		debug_log "Keytab file ${KRB5_KTNAME} is empty!"
+
+		if [ -z "$FORCE_INSTALL_SERVICE_TICKET" ]; then
+			warning_log "The service principal ${SERVICE_PRINCIPAL_NAME} is not installed yet, $(
+			            )please install it using the loginmenu."
+		fi
+		return 1
+	fi
+
+	return 0
+}
+
+function create_squid_service_principal() {
+	export KRB5_KTNAME="/etc/debian-edu-router/krb5.d/krb5.keytab.squid"
+	export KRB5_CONFIG="/etc/debian-edu-router/krb5.d/krb5.conf.squid"
+
+	if ! validate_keytab_non_empty; then
+		debug_log "Creating dummy keytab file."
+
+		# Create dummy/empty/blank keytab file
+		echo -e "\0005\0002\c" > "${KRB5_KTNAME}"
+		chmod 0640               "${KRB5_KTNAME}"
+		chown root:proxy         "${KRB5_KTNAME}"
+	fi
+
+	# Do not do any network-related tasks while in postinst.
+	# Instead, the user must execute this step manually via loginmenu.
+	if [ -z "$FORCE_INSTALL_SERVICE_TICKET" ]; then
+		return
+	fi
+
+	if [ "${kerberos_server_admin_variant}" = "MIT" ] || [ "${kerberos_server_admin_variant}" = "Heimdall" ]; then
+		create_squid_service_principal_kadmin
+	elif [ "${kerberos_server_admin_variant}" = "Microsoft" ]; then
+		create_squid_service_principal_msktutil
+
+		# Reset password.
+		db_set debian-edu-router-plugin.krb5-connector/computer-account-initial-password ""
+	else
+		error_log "Kerberos admin-server variant '${kerberos_server_admin_variant}' is not supported!"
+		error_log "Please fix this issue by reconfiguring ${PRODUCTNAME_PLUGIN}."
+		exit 0
+	fi
+
+	chmod 0640               "${KRB5_KTNAME}"
+	chown root:proxy         "${KRB5_KTNAME}"
+
+	if [ "${kerberos_server_admin_variant}" != "Microsoft" ] && ! validate_service_principal_installed; then
+		error_log "Could not verify installation of service principal ${SERVICE_PRINCIPAL_NAME}."
+	fi
+}
+
+function check_plugin_enabled() {
+	if [ "$krb5_connector_enabled" = "false" ]; then
+		if [ "${D_E_R_LOGINMENU}" = "true" ] && [ "$CONFIGURE_ONLY" != "ONOFF" ]; then
+			error_log "$PRODUCTNAME_PLUGIN is turned off! Please re-enable it via 't', before retrying."
+			exit 0
+		fi
+
+		# Remove our config files.
+		rm -f /etc/debian-edu-router/squid-snippets.d/*d-e-r-p.k-c.conf || true
+
+		# /usr/lib/systemd/system/squid_d-e-r@.service.d/squid_d-e-r-p.k-c.conf won't do
+		# harm, reinstalling every time would be more hassle than benefit.
+
+		rm -f /var/lib/debian-edu-router/d-e-r-p.k-c/enabled
+
+		notice_log "Deactivating ${PRODUCTNAME_PLUGIN}..."
+		exit 0
+	else
+		echo "${PRODUCTNAME_PLUGIN} is enabled." > /var/lib/debian-edu-router/d-e-r-p.k-c/enabled
+	fi
+}
+
+function main() {
+	check_plugin_enabled # may never come back (exit 0)...
+
+	# Making sure temporary backup folder isn't accessible to others
+	if [ -n "${CONFIG_BACKUP_DIR}" ]; then
+		create_config_backup
+	else
+		error_log "\${CONFIG_BACKUP_DIR} is not initialized! Can't create backup!"
+		exit 1
+	fi
+
+	# process service settings and restart related services
+	process_services_answers
+
+	debug_log "Configuration of '$PRODUCTNAME_PLUGIN' finished."
+}
+
+configure_package=""
+if [[ "$1" == "triggered" ]]; then
+	debug_log "Reconfiguring since trigger '$2' got activated. This $(
+	          )probably means, the admin reconfigures d-e-r-c currently."
+	configure_package="true"
+fi
+
+if [[ "$1" == "configure" ]] || [[ "$configure_package" == "true" ]]; then
+	main
+else
+	error_log "postinst called with unknown argument \`$1'" >&2
+	exit 1
+fi
+
+# dh_installdeb will replace this with shell code automatically
+# generated by other debhelper scripts.
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'msktutil_d-e-r_refresh-computer-acc-pw.timer' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'msktutil_d-e-r_refresh-computer-acc-pw.timer'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'msktutil_d-e-r_refresh-computer-acc-pw.timer' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'msktutil_d-e-r_refresh-computer-acc-pw.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'msktutil_d-e-r_refresh-computer-acc-pw.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

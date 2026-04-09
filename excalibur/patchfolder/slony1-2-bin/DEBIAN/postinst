@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = configure ] && [ -z "$2" ]; then
+	chown postgres:postgres /var/log/slony1/
+	chmod u=rwx,g=rwx,o=rxt /var/log/slony1/
+fi
+
+# Automatically added by dh_installinit/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/slony1" ]; then
+		update-rc.d slony1 defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native slony1 $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+

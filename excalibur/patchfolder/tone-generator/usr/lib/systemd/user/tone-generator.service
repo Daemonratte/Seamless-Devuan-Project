@@ -1,0 +1,18 @@
+[Unit]
+Description=Tone generator daemon for call progress indication and DTMF
+Requires=pulseaudio.service pulseaudio.socket
+After=pulseaudio.socket
+After=graphical-session-pre.target
+
+[Service]
+Type=dbus
+BusName=com.Nokia.Telephony.Tones
+Environment=DTMF_VOLUME=8
+Environment=TONE_STANDARD="cept"
+Environment=PULSE_PROP="media.role=alert"
+Environment=IND_PROPS="media.role=phone"
+ExecStart=/usr/bin/tonegend -s $TONE_STANDARD -b 100 -r 20 --volume-dtmf $DTMF_VOLUME -I $IND_PROPS
+Restart=always
+
+[Install]
+WantedBy=graphical-session.target

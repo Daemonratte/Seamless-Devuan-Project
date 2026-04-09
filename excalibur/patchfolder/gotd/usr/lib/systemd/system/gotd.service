@@ -1,0 +1,11 @@
+[Unit]
+Description=Game of Trees Daemon
+Documentation=man:gotd(8)
+Requires=network-online.target
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/gotd
+
+[Install]
+WantedBy=multi-user.target

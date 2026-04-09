@@ -1,0 +1,128 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='getty-tty1' ENABLE='yes' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='getty-tty2' ENABLE='yes' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='getty-tty3' ENABLE='yes' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='getty-tty4' ENABLE='yes' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='getty-tty5' ENABLE='yes' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='getty-tty6' ENABLE='yes' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='getty-ttyv0' ENABLE='yes' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='getty-ttyS0' ENABLE='yes' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unlike postrm, I can be sure, that runit-helper is present on
+# postinst.
+#start: remove after trixie
+if  [ ! -e /usr/lib/runit-helper/runit-helper ]; then
+    #should not happen
+    echo "warning: can't find runit-helper, postinst action skipped!"
+    echo "warning: runit-helper: please report this bug"
+fi
+#end: remove after trixie
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ]; then
+    NAME='getty-hvc0' ENABLE='no' ONUPGRADE='nostop' /usr/lib/runit-helper/runit-helper postinst "$@"
+fi
+# End automatically added section

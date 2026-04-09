@@ -1,0 +1,11 @@
+[Unit]
+Description=ARC Resource-coupled EXecution service
+After=local-fs.target remote-fs.target
+
+[Service]
+Type=forking
+ExecStart=/usr/share/arc/arc-arex-start
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target

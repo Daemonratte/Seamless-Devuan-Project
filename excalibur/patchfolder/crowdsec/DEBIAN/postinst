@@ -1,0 +1,344 @@
+#!/bin/sh
+set -e
+
+# See README.Debian for the distinction between online and offline
+# hubs:
+OFFLINE_HUB=/usr/share/crowdsec/hub
+LIVE_HUB=/var/lib/crowdsec/hub
+ITEMS="blockers collections parsers postoverflows scenarios .index.json"
+
+# Offline hub = symlinks are in place, so that an updated Debian
+# package ships updated items from the hub:
+disable_online_hub() {
+  rm -rf "$LIVE_HUB"
+  mkdir "$LIVE_HUB"
+  for item in $ITEMS; do
+    ln -s "$OFFLINE_HUB/$item" "$LIVE_HUB"
+  done
+}
+
+# Online hub = we replace symlinks with a copy of the items they point
+# to, so that enabled items (symlinks from /etc) aren't disabled
+# because of dangling symlinks. Let `cscli hub upgrade` replace the
+# original copy as required:
+enable_online_hub() {
+  # Idempotence: once this function has been called once, .index.json
+  # should no longer be a symlink, so it can be called each time
+  # `cscli hub update` is called:
+  if [ -L "$LIVE_HUB/.index.json" ]; then
+    echo "I: Switching from offline hub to online hub (see README.Debian)" >&2
+    for item in $ITEMS; do
+      if [ -L "$LIVE_HUB/$item" ]; then
+        rm -f "$LIVE_HUB/$item"
+        cp -r "$OFFLINE_HUB/$item" "$LIVE_HUB"
+      fi
+    done
+  fi
+}
+
+# Only enable a few collections, as agreed with upstream:
+UPSTREAM_COLLECTIONS="crowdsecurity/linux crowdsecurity/apache2 crowdsecurity/nginx"
+
+# The following items are everything they need (including other collections), plus
+# the whitelists parser:
+UPSTREAM_ITEMS=$(cat <<EOF
+collections/crowdsecurity/apache2.yaml
+collections/crowdsecurity/base-http-scenarios.yaml
+collections/crowdsecurity/http-cve.yaml
+collections/crowdsecurity/linux.yaml
+collections/crowdsecurity/nginx.yaml
+collections/crowdsecurity/sshd.yaml
+parsers/s00-raw/crowdsecurity/syslog-logs.yaml
+parsers/s01-parse/crowdsecurity/apache2-logs.yaml
+parsers/s01-parse/crowdsecurity/nginx-logs.yaml
+parsers/s01-parse/crowdsecurity/sshd-logs.yaml
+parsers/s02-enrich/crowdsecurity/dateparse-enrich.yaml
+parsers/s02-enrich/crowdsecurity/http-logs.yaml
+scenarios/crowdsecurity/apache_log4j2_cve-2021-44228.yaml
+scenarios/crowdsecurity/CVE-2022-26134.yaml
+scenarios/crowdsecurity/CVE-2022-35914.yaml
+scenarios/crowdsecurity/CVE-2022-37042.yaml
+scenarios/crowdsecurity/CVE-2022-40684.yaml
+scenarios/crowdsecurity/CVE-2022-41082.yaml
+scenarios/crowdsecurity/CVE-2022-41697.yaml
+scenarios/crowdsecurity/CVE-2022-42889.yaml
+scenarios/crowdsecurity/CVE-2022-44877.yaml
+scenarios/crowdsecurity/CVE-2022-46169.yaml
+scenarios/crowdsecurity/f5-big-ip-cve-2020-5902.yaml
+scenarios/crowdsecurity/fortinet-cve-2018-13379.yaml
+scenarios/crowdsecurity/grafana-cve-2021-43798.yaml
+scenarios/crowdsecurity/http-backdoors-attempts.yaml
+scenarios/crowdsecurity/http-bad-user-agent.yaml
+scenarios/crowdsecurity/http-crawl-non_statics.yaml
+scenarios/crowdsecurity/http-cve-2021-41773.yaml
+scenarios/crowdsecurity/http-cve-2021-42013.yaml
+scenarios/crowdsecurity/http-generic-bf.yaml
+scenarios/crowdsecurity/http-open-proxy.yaml
+scenarios/crowdsecurity/http-path-traversal-probing.yaml
+scenarios/crowdsecurity/http-probing.yaml
+scenarios/crowdsecurity/http-sensitive-files.yaml
+scenarios/crowdsecurity/http-sqli-probing.yaml
+scenarios/crowdsecurity/http-xss-probing.yaml
+scenarios/crowdsecurity/jira_cve-2021-26086.yaml
+scenarios/crowdsecurity/nginx-req-limit-exceeded.yaml
+scenarios/crowdsecurity/pulse-secure-sslvpn-cve-2019-11510.yaml
+scenarios/crowdsecurity/spring4shell_cve-2022-22965.yaml
+scenarios/crowdsecurity/ssh-bf.yaml
+scenarios/crowdsecurity/ssh-slow-bf.yaml
+scenarios/crowdsecurity/thinkphp-cve-2018-20062.yaml
+scenarios/crowdsecurity/vmware-cve-2022-22954.yaml
+scenarios/crowdsecurity/vmware-vcenter-vmsa-2021-0027.yaml
+scenarios/ltsich/http-w00tw00t.yaml
+parsers/s02-enrich/crowdsecurity/whitelists.yaml
+EOF
+)
+
+CAPI=/etc/crowdsec/online_api_credentials.yaml
+LAPI=/etc/crowdsec/local_api_credentials.yaml
+
+if [ "$1" = configure ]; then
+  if [ ! -f "$LAPI" ]; then
+    echo "I: Registering to LAPI ($LAPI)" >&2
+    touch "$LAPI"
+    # This is required as of 1.0.8 at least:
+    touch "$CAPI"
+
+    # Minimal environments (e.g. piuparts):
+    if [ ! -f /etc/machine-id ]; then
+      echo "W: Missing /etc/machine-id, initializing" >&2
+      sed 's/-//g' < /proc/sys/kernel/random/uuid > /etc/machine-id
+    fi
+
+    cscli --error machines add --force "$(cat /etc/machine-id)" --password "$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 32 | head -n 1)"
+  fi
+
+  # Heuristics: if the file is empty, it's probably been just created
+  # by the touch call above, and we want to register. Otherwise,
+  # either the user has created a file in advance to disable CAPI
+  # registration, or we've already registered to CAPI in a previous
+  # configure run (in both cases, don't do anything):
+  if [ ! -s "$CAPI" ]; then
+    echo "I: Registering to CAPI ($CAPI)" >&2
+    cscli --error capi register
+  fi
+
+  # Missing index means initial install, let's go for setting up
+  # offline hub + enabling everything per upstream recommendation:
+  if [ ! -e /var/lib/crowdsec/hub/.index.json ]; then
+    echo "I: Setting up offline hub (see README.Debian)" >&2
+    disable_online_hub
+
+    # Symlinks:
+    echo "I: Enabling upstream-recommended items, first installation (via symlinks from /etc/crowdsec)" >&2
+    find /var/lib/crowdsec/hub/*/ -name '*yaml' | \
+      while read target; do
+        source=${target##/var/lib/crowdsec/hub/}
+        # Match upstream's recommendations:
+        if ! echo "$UPSTREAM_ITEMS" | grep -qs "^$source$"; then
+          continue
+        fi
+
+        # Code is picky about the number of (sub)directories, so the
+        # vendor must be stripped (seen in 1.0.*, 1.4.*):
+        source=$(dirname $(dirname "$source"))/$(basename "$source")
+        mkdir -p /etc/crowdsec/$(dirname "$source")
+        ln -s "$target" "/etc/crowdsec/$source"
+      done
+
+    # Initial copy of data files:
+    cp /usr/share/crowdsec/data/* /var/lib/crowdsec/data/
+  elif [ -L /var/lib/crowdsec/hub/.index.json ]; then
+    # Check whether upstream recommended collections are still all present. If
+    # they are, make sure their dependencies are deployed. If one of them is
+    # missing, the admin touched something, so don't touch anything:
+    found=0
+    n_collection=$(echo "$UPSTREAM_COLLECTIONS" | wc -w)
+    for collection in $UPSTREAM_COLLECTIONS; do
+      link=/etc/crowdsec/collections/$(basename $collection).yaml
+      if [ -f "$link" ] && readlink "$link" | grep -qs "$collection\.yaml$"; then
+        found=$((found+1))
+      fi
+    done
+    # When upgrading from 1.4.6-1(+bN) specifically, assume we need to fix
+    # enabling the upstream-recommended collections:
+    if [ "$found" = "$n_collection" ] || \
+      echo "$2" | grep -qs '^1\.4\.6-1\(\|+b[0-9][0-9]*\)$'; then
+      echo "I: All $n_collection upstream-recommended collections are active, updating their dependencies" >&2
+
+      find /var/lib/crowdsec/hub/*/ -name '*yaml' | \
+        while read target; do
+          source=${target##/var/lib/crowdsec/hub/}
+          # Match upstream's recommendations:
+          if ! echo "$UPSTREAM_ITEMS" | grep -qs "^$source$"; then
+            continue
+          fi
+
+          # Code is picky about the number of (sub)directories, so the
+          # vendor must be stripped (seen in 1.0.*, 1.4.*):
+          source=$(dirname $(dirname "$source"))/$(basename "$source")
+          mkdir -p /etc/crowdsec/$(dirname "$source")
+          ln -sf "$target" "/etc/crowdsec/$source"
+        done
+    else
+      echo "I: $found/$n_collection upstream-recommended collections are active, not touching collections" >&2
+    fi
+
+    # Refresh data files:
+    cp /usr/share/crowdsec/data/* /var/lib/crowdsec/data/
+  else
+    # Upgrade with online hub, leave everything up to the admin
+    :
+  fi
+fi
+
+# Best effort guess to avoid performance issues with SQLite and warnings:
+CONFIG=/etc/crowdsec/config.yaml
+
+if [ "$1" = configure ] && [ ! -f "$CONFIG.local" ]; then
+  db_type=$(cscli config show --key Config.DbConfig.Type)
+  db_path=$(cscli config show --key Config.DbConfig.DbPath)
+  db_wal=$(cscli config show --key Config.DbConfig.UseWal)
+  # Unconfigured is likely <nil> but let's focus on neither true nor false,
+  # which might be more stable across versions:
+  if [ "$db_type" = sqlite ] && [ "$db_wal" != true ] && [ "$db_wal" != false ]; then
+    path=$db_path
+    while [ -z "$fstype" ] && [ "$path" != / ]; do
+      path=$(dirname "$path")
+      fstype=$(findmnt --noheadings --output FSTYPE "$path" || true)
+    done
+    case "$fstype" in
+      nfs*)
+        echo "I: Disabling WAL for SQLite [fstype=$fstype] (see README.Debian)" >&2
+        use_wal=false
+        ;;
+      *)
+        echo "I: Enabling WAL for SQLite [fstype=$fstype] (see README.Debian)" >&2
+        use_wal=true
+        ;;
+    esac
+    cat > "$CONFIG.local" <<EOF
+# Optimization for sqlite, see README.Debian:
+db_config:
+  use_wal: $use_wal
+EOF
+  fi
+fi
+
+case "$1" in
+  disable-online-hub)
+    disable_online_hub
+    echo "I: Don't forget to inspect the config, and run 'systemctl restart crowdsec' afterward" >&2
+    ;;
+  enable-online-hub)
+    enable_online_hub
+    ;;
+esac
+
+# This is a workaround when upgrading from old versions (1.0.9* in bullseye),
+# which take a long time to shut down (#1031326), lowering the timeout from
+# the default 1m 30s to just 20s (the dh_installsystemd-generated code takes
+# cares of daemon-reload already):
+if [ "$1" = configure ] && [ -n "$2" ] && dpkg --compare-versions "$2" '<<' 1.4 && [ -d /run/systemd/system ]; then
+  echo "W: Lowering TimeoutStopSec to 20 seconds (#1031326)" >&2
+  mkdir -p /run/systemd/system/crowdsec.service.d
+  cat >/run/systemd/system/crowdsec.service.d/override.conf <<EOF
+[Service]
+TimeoutStopSec=20
+EOF
+  refresh_capi=1
+fi
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'crowdsec.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'crowdsec.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'crowdsec.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'crowdsec.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'crowdsec.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+# This is a workaround for missing decisions when upgrading from old versions,
+# since in-database storage changed (#1033138):
+if [ "$refresh_capi" = 1 ]; then
+  ids=$(cscli alerts list -a -o raw|awk -F',' '$2 == "Community blocklist" { print $1}')
+  n=0
+  for id in $ids; do
+    cscli alerts delete --id "$id"
+    n=$((n+1))
+  done
+  if [ "$n" -gt 0 ]; then
+    echo "W: Restarting crowdsec to refresh CAPI decisions (#1033138)" >&2
+    deb-systemd-invoke restart 'crowdsec.service' >/dev/null || true
+  fi
+fi
+
+# This is a workaround for race conditions during the first start-up, filed
+# upstream as <https://github.com/crowdsecurity/crowdsec/issues/2120>. The
+# systemd logic (/run/systemd/system and deb-systemd-invoke) is adapted from
+# dh_installsystemd-generated code:
+if [ "$1" = configure ] && [ -z "$2" ] && [ -d /run/systemd/system ]; then
+  # Exit early if the unit isn't active:
+  if ! systemctl is-active crowdsec.service >/dev/null 2>&1; then
+    exit 0
+  fi
+
+  LOG=/var/log/crowdsec.log
+  MAX=20
+  for _ in $(seq 1 $MAX); do
+    # Getting decisions means we can happily exit:
+    if grep -qs 'added [0-9][0-9]* entries, deleted [0-9][0-9]* entries' $LOG; then
+      break
+    fi
+    # Getting 0 new entries means we can happily trigger a restart then exit:
+    if grep -qs 'received 0 new entries (expected if you just installed crowdsec)' $LOG; then
+      echo "W: Restarting manually to force a CAPI pull (upstream #2120)" >&2
+      deb-systemd-invoke restart 'crowdsec.service' >/dev/null || true
+      break
+    fi
+    # Don't poll too aggressively:
+    sleep 1
+  done
+fi
+
+# Bouncer registration: they have crowdsec in Recommends only, so ordering isn't
+# guaranteed (#1035499, #1036985). Process pending registration if any, then
+# kick relevant systemd units once their ConditionPathExists is satisfied.
+PENDING=/var/lib/crowdsec/pending-registration
+if [ -f $PENDING ]; then
+  while read unit name key; do
+    units="${units:+$units }$unit"
+    bouncers="${bouncers:+$bouncers }$name"
+    # We don't need the API key to be echo'd back:
+    cscli --error -oraw bouncers add "$name" -k "$key" > /dev/null
+  done < $PENDING
+  rm -f $PENDING
+  echo "I: Registered bouncers: $bouncers" >&2
+
+  for unit in $units; do
+    deb-systemd-invoke start "$unit"
+  done
+  echo "I: Restarts units: $units" >&2
+fi

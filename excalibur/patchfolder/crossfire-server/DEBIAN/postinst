@@ -1,0 +1,88 @@
+#! /bin/sh -e
+
+case "$1" in
+  configure)
+    if [ ! -e /var/games/crossfire/clockdata ] ; then
+	echo -n 0 > /var/games/crossfire/clockdata
+	chmod 0644 /var/games/crossfire/clockdata
+	chown games:games /var/games/crossfire/clockdata
+    fi
+    if [ -n "$2" ] && dpkg --compare-versions '1.71.0+dfsg1-2' gt "$2"; then
+	chown games:games \
+	      /var/log/crossfire \
+	      /var/games/crossfire \
+	      /var/games/crossfire/datafiles \
+	      /var/games/crossfire/players \
+	      /var/games/crossfire/temp.maps \
+	      /var/games/crossfire/unique-items
+    fi
+    if [ -n "$2" ] && dpkg --compare-versions '1.75.0-1' gt "$2"; then
+	cd /var/games/crossfire
+	echo "Converting data files from Python 2 to Python 3"
+	runuser -u games -- /usr/libexec/crossfire/cfdb_convert --auto
+    fi
+    ;;
+
+  abort-upgrade)
+    # do nothing
+    ;;
+
+  abort-remove)
+    # do nothing
+    ;;
+
+  abort-deconfigure)
+    # do nothing
+    ;;
+
+  *)
+    echo "$0: incorrect arguments: $*" >&2
+    exit 1
+    ;;
+
+esac
+
+# Automatically added by dh_installinit/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/crossfire-server" ]; then
+		update-rc.d crossfire-server defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native crossfire-server $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'crossfire-server.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'crossfire-server.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'crossfire-server.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'crossfire-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'crossfire-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily mythtv-status health check of MythTV
+Documentation=man:mythtv-status(1)
+
+[Timer]
+OnCalendar=Daily
+OnBootSec=15min
+
+[Install]
+WantedBy=timers.target

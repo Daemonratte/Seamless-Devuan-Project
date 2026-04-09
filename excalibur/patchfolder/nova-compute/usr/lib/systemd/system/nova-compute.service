@@ -1,0 +1,22 @@
+[Unit]
+Description=OpenStack Nova Compute (nova-compute)
+After=libvirtd.service postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=libvirtd.service postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:nova-compute(1)
+
+[Service]
+User=nova
+Group=nova
+Type=notify
+WorkingDirectory=~
+RuntimeDirectory=nova lock/nova
+CacheDirectory=nova
+ExecStart=/etc/init.d/nova-compute systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target

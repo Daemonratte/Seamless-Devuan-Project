@@ -1,0 +1,10 @@
+[Unit]
+Description=tftp-proxy
+Documentation=man:tftp-proxy(8)
+
+[Service]
+EnvironmentFile=/etc/default/tftp-proxy
+ExecStart=/usr/bin/tftp-proxy -url=${url} -dir=${dir}
+
+[Install]
+WantedBy=multi-user.target

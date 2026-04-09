@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+if [ ! -f /.THIS_IS_THE_FAI_NFSROOT ]; then
+    echo "ERROR: The package fai-nfsroot can only be installed inside the nfsroot."
+    exit 1
+fi
+
+
+
+exit 0

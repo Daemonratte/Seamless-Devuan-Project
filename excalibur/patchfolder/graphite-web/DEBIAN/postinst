@@ -1,0 +1,66 @@
+#!/bin/sh
+
+set -e
+
+DIRS="/var/log/graphite /var/lib/graphite"
+CONFFILE="/etc/graphite/local_settings.py"
+
+if [ "$1" = "configure" ]; then
+	if ! getent passwd _graphite > /dev/null; then
+		adduser --system --quiet --home /var/lib/graphite --no-create-home \
+			--shell /bin/false --force-badname --group --gecos "Graphite User" _graphite
+	fi
+
+	for i in $DIRS; do
+		mkdir -m 0755 -p $i
+		if ! dpkg-statoverride --list $i >/dev/null 2>&1; then
+			dpkg-statoverride --update --add _graphite _graphite 0755 $i
+		fi
+	done
+
+	if ! dpkg-statoverride --list $CONFFILE >/dev/null 2>&1; then
+		dpkg-statoverride --update --add _graphite _graphite 0400 $CONFFILE
+	fi
+fi
+
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p graphite-web 
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p graphite-web  || true
+fi
+
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'graphite_build_search_index.timer' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'graphite_build_search_index.timer'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'graphite_build_search_index.timer' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'graphite_build_search_index.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'graphite_build_search_index.service' 'graphite_build_search_index.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

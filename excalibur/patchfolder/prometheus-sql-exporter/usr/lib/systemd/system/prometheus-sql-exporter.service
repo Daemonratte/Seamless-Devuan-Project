@@ -1,0 +1,16 @@
+[Unit]
+Description=Prometheus exporter for sql metrics
+Documentation=https://github.com/credativ/sql_exporter
+ConditionPathExists=/etc/prometheus-sql-exporter.yml
+
+[Service]
+Restart=always
+User=postgres
+EnvironmentFile=-/etc/default/prometheus-sql-exporter
+ExecStart=/usr/bin/prometheus-sql-exporter $ARGS
+ExecReload=/bin/kill -HUP $MAINPID
+TimeoutStopSec=20s
+SendSIGKILL=no
+
+[Install]
+WantedBy=multi-user.target

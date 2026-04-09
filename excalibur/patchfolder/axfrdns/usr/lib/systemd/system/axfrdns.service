@@ -1,0 +1,23 @@
+[Unit]
+Description=DNS zone-transfer server
+Documentation=man:axfrdns.8
+After=network.target
+
+[Service]
+WorkingDirectory=/etc/sv/axfrdns
+ExecStart=/usr/bin/chpst -e conf /bin/sh run
+SyslogIdentifier=axfrdns
+
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectSystem=strict
+PrivateDevices=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+
+[Install]
+WantedBy=multi-user.target

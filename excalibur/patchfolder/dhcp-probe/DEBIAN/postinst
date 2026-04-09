@@ -1,0 +1,139 @@
+#!/bin/sh
+# piston's script for dhcp-probe
+#
+# see: dh_installdeb(1)
+
+set -e
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <postinst> `abort-remove'
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see http://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+
+PACKAGE="dhcp-probe"
+CONF_DIR="/etc/$PACKAGE"
+CONF_FILE="/etc/dhcp_probe.cf"
+
+MSG="dhcp-probe: IP not configured on host, please see template file"
+MSG="$MSG /usr/share/doc/dhcp-probe/dhcp_probe.tpl.eth0 to configure !"
+
+#
+# Dynamic configuration procedure
+#
+if test -f /lib/lsb/init-functions
+then
+	. /lib/lsb/init-functions
+fi
+
+#
+# postinst script main
+#
+case "$1" in
+    configure)
+			DEST="/etc/$PACKAGE/$PACKAGE"
+			if [ -z "$(ls "$CONF_DIR")" ]
+			then # Configuration doesn't exist
+				ip address | awk '
+					/^[0-9]*:/ {
+						iface=$2
+						sub(/:/, "", iface)
+						ether=""
+						inet=0
+					}
+					/link\/ether/ {
+						ether=$2
+					}
+					/inet / && !inet {
+						inet=$2
+						sub(/\/.*/, "", inet)
+						if(iface && ether && inet) {
+							print iface
+							print ether
+							print inet
+						}
+					}
+				' | while read -r i && read -r ether && read -r inet; do
+					TMPDEST=$(mktemp -t "$PACKAGE.$i.XXXXXXXX")
+					{
+						echo "#"
+						echo "# Automaticaly generated file during dhcp-probe package install procedure"
+						echo "#"
+						echo "INTERFACE=\"$i\""
+						echo "MAC=\"$ether\""
+						echo "IPV4=\"$inet\""
+					} > "$TMPDEST"
+					ucf "$TMPDEST" "$DEST.$i"
+					logger -i -p daemon.crit "$TMPDEST installed."
+					rm -f "$TMPDEST"
+				done
+			fi
+			if test ! -f "$CONF_FILE"; then
+				DHCP_PROBE_CF=$(mktemp -t $PACKAGE.XXXXXXXX)
+				ucf "$DHCP_PROBE_CF" "$CONF_FILE"
+				rm -f "$DHCP_PROBE_CF"
+			fi
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installinit/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/dhcp-probe" ]; then
+		update-rc.d dhcp-probe defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native dhcp-probe $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'dhcp-probe.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'dhcp-probe.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'dhcp-probe.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'dhcp-probe.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'dhcp-probe.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,22 @@
+[Unit]
+Description=chkrootkit
+Documentation=man:chkrootkit(8)
+#ConditionACPower=true
+
+[Service]
+Type=oneshot
+Nice=10
+Environment=STARTED_BY_SYSTEMD=true
+
+# read-only system, with /run/chkrootkit as TMPDIR
+ProtectSystem=strict
+ReadWritePaths=-/var/spool -/var/mail -/var/log
+RuntimeDirectory=chkrootkit
+Environment=TMPDIR=/run/chkrootkit
+
+ExecStart=chkrootkit-daily
+
+# The next line needed to ensure exim does not freeze the mail
+ExecStart=sleep 0.5s
+
+LogsDirectory=chkrootkit

@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/default/varnish 7.1.1-1.2\~ varnish -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/default/varnishncsa 7.1.1-1.2\~ varnish -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/varnish 7.1.1-1.2\~ varnish -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/varnishncsa 7.1.1-1.2\~ varnish -- "$@"
+# End automatically added section

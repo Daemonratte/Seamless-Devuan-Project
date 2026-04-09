@@ -1,0 +1,22 @@
+[Unit]
+Description=Icinga Director - Monitoring Configuration
+Documentation=https://icinga.com/docs/director/latest/
+Wants=network.target
+ConditionPathExists=/usr/share/icingaweb2/modules/director/
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/icinga-director
+ExecStart=/usr/bin/icingacli director daemon run
+ExecReload=/bin/kill -HUP ${MAINPID}
+User=_director
+Group=icingaweb2
+SyslogIdentifier=icingadirector
+Type=notify
+
+NotifyAccess=main
+WatchdogSec=10
+RestartSec=30
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

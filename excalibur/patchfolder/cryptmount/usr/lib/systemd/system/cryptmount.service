@@ -1,0 +1,16 @@
+# systemd definition for 'cryptmount'
+
+[Unit]
+Description=cryptmount startup
+Documentation=man:cryptmount https://github.com/rwpenney/cryptmount/
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/cryptmount --system-boot
+ExecStop=/usr/bin/cryptmount --system-shutdown
+ExecStopPost=/usr/bin/cryptmount --safetynet
+
+[Install]
+WantedBy=sysinit.target

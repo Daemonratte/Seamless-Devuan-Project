@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/virtuoso-opensource-7/virtuoso.ini 7.2.5.1\+dfsg-1\~ virtuoso-opensource-7 -- "$@"
+# End automatically added section

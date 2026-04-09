@@ -1,0 +1,19 @@
+[Unit]
+Description=Atheme IRC Services
+Documentation=file:/usr/share/doc/atheme-services/examples/atheme.conf.example
+After=network.target
+
+[Service]
+User=irc
+Group=irc
+RuntimeDirectory=atheme
+PIDFile=/run/atheme/atheme.pid
+ExecStart=/usr/bin/atheme-services -n
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+
+ProtectSystem=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

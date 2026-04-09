@@ -1,0 +1,42 @@
+#!/bin/sh
+# postrm script for prometheus-homeplug-exporter
+# Script executed after the package is removed.
+
+set -e
+
+case "$1" in
+  purge)
+        rm -rf /var/log/prometheus/prometheus-homeplug-exporter.log \
+            /var/log/prometheus/prometheus-homeplug-exporter.log.* \
+            /var/run/prometheus/prometheus-homeplug-exporter.pid
+	# We do NOT remove the system user.
+	;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/prometheus-homeplug-exporter" ] ; then
+	chmod -x "/etc/init.d/prometheus-homeplug-exporter" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d prometheus-homeplug-exporter remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'prometheus-homeplug-exporter.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+

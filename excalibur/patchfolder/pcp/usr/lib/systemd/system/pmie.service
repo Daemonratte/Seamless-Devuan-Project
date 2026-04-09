@@ -1,0 +1,25 @@
+[Unit]
+Description=Performance Metrics Inference Engine
+Documentation=man:pmie(1)
+After=network-online.target pmcd.service
+Before=pmie_farm.service pmie_check.timer pmie_daily.timer
+BindsTo=pmie_farm.service pmie_check.timer pmie_daily.timer
+Wants=pmcd.service
+
+[Service]
+Type=notify
+NotifyAccess=all
+# The pmie service manages the primary pmie (only)
+Environment="PMIE_CHECK_PARAMS=--only-primary"
+EnvironmentFile=-/etc/default/pmie
+TimeoutStartSec=120
+TimeoutStopSec=120
+Restart=always
+ExecStart=/etc/pcp/pmie/rc start-systemd
+ExecStop=/etc/pcp/pmie/rc stop-systemd
+PIDFile=/run/pcp/pmie.pid
+Group=pcp
+User=pcp
+
+[Install]
+WantedBy=multi-user.target

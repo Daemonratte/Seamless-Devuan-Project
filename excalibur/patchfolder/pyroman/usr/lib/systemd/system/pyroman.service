@@ -1,0 +1,18 @@
+#
+# Pyroman firewall
+#
+[Unit]
+Description=Pyroman firewall
+DefaultDependencies=no
+After=systemd-modules-load.service network-pre.target
+Before=network.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+StandardOutput=syslog
+ExecStart=/usr/sbin/pyroman --init
+
+[Install]
+WantedBy=multi-user.target

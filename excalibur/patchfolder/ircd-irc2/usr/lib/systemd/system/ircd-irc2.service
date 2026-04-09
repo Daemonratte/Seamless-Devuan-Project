@@ -1,0 +1,19 @@
+[Unit]
+Documentation=man:chkconf(8)
+Documentation=http://www.irc.org/tech_docs/ircnet/INSTALL-4.html
+Description=The IRC2 IRCd server
+After=network.target
+
+[Service]
+User=irc
+Group=irc
+ExecStart=/usr/sbin/ircd
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+PIDFile=/run/ircd/ircd.pid
+RuntimeDirectory=ircd
+
+[Install]
+WantedBy=multi-user.target
+Alias=ircd.service
+

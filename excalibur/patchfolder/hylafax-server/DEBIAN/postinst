@@ -1,0 +1,183 @@
+#! /bin/sh -e
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "/etc/init.d/hylafax" ]; then
+		update-rc.d hylafax defaults >/dev/null || exit 1
+	fi
+fi
+# End automatically added section
+
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+db_title HylaFAX Server
+
+	# Create the faxmaster account if it doesn't exist already
+	if ! id faxmaster >/dev/null 2>&1; then
+    		adduser --system --group --home /var/spool/hylafax --no-create-home --disabled-password \
+			--gecos "HylaFAX administrative mailbox" faxmaster
+	fi
+
+# Those dirs may have been created by the client, but we need to make sure they exist
+mkdir -p /etc/hylafax
+mkdir -p /var/spool/hylafax/etc
+
+# We need to bind mount them, so changes go to /etc/hylafax
+mount --bind /etc/hylafax /var/spool/hylafax/etc
+
+	# recover from an old install error
+	if [ -f /etc/hylafax/hosts -a ! -f /etc/hylafax/hosts.hfaxd ]; then
+    		mv /etc/hylafax/hosts /etc/hylafax/hosts.hfaxd
+	fi
+
+	# Add getty symlinks
+	if [ -e /sbin/mgetty ]; then
+    	[ -e /etc/hylafax/getty-link ] \
+		|| ln -s /sbin/mgetty /etc/hylafax/getty-link
+    	[ -e /etc/hylafax/egetty-link ] \
+		|| ln -s /sbin/mgetty /etc/hylafax/egetty-link
+	fi
+	if [ -e /usr/sbin/vgetty ]; then
+    	[ -e /etc/hylafax/vgetty-link ] \
+		|| ln -s /usr/sbin/vgetty /etc/hylafax/vgetty-link
+	fi
+
+	# Change owner and group to uucp so that the FIFO pipes could be created.
+	chown uucp:uucp /var/spool/hylafax
+
+	if [ ! -e /etc/hylafax/setup.cache ]
+	then
+
+# if we are installing from scratch, there is no config file and the rest of this
+# script will fail. So we have to create one.
+if [ ! -e /etc/hylafax/config ]; then
+cat > /etc/hylafax/config << EOF
+LogFacility:		daemon
+CountryCode:		1
+AeraCode:		408
+LongDistancePrefix:	0
+DialStringRules:	"etc/dialrules"
+ServerTracing:		1
+EOF
+
+fi
+
+		(echo ; echo no; echo no) | faxsetup -server
+		#
+		# Check if faxsetup worked correctly
+		#
+		if [ ! -f /etc/hylafax/setup.cache ]
+		then
+			db_input critical hylafax-server/setup_failed || true
+			db_go
+			exit 1
+		fi
+	else
+		#
+		# These links are normally created via faxsetup during the first
+		# installation. If we are upgrading from an earlier version (and not
+		# installing for the first time) we have to create them by hand.
+		# 4.2.1-5
+		if [ ! -e /var/spool/hylafax/bin/pdf2fax ]
+		then
+			(cd /var/spool/hylafax/bin && ln -s pdf2fax.gs pdf2fax)
+		fi
+		if [ ! -e /var/spool/hylafax/bin/ps2fax ]
+		then
+			(cd /var/spool/hylafax/bin && ln -s ps2fax.gs ps2fax)
+		fi
+	fi
+
+	setupcache=/etc/hylafax/setup.cache
+	sed -i -e 's@^DPSRIP=.*$@DPSRIP=@' $setupcache
+	sed -i -e "s@^AWK='/bin/awk'@AWK='/usr/bin/awk'@" $setupcache
+	sed -i -e "s@^ENCODING=''@ENCODING='base64'@" $setupcache
+	sed -i -e "s@^MANDIR='/usr/local/man'@MANDIR='/usr/share/man'@" $setupcache
+	sed -i -e "s@^FONTPATH='/usr/local/lib/ghostscript/common:/usr/local/lib/ghostscript/7.07:/usr/local/lib/ghostscript/fonts:/usr/local/share/ghostscript/common:/usr/local/share/ghostscript/7.07:/usr/local/share/ghostscript/fonts:/var/lib/defoma/gs.d/dirs/fonts:/usr/share/ghostscript/common:/usr/share/gs/7.07'@FONTPATH='/usr/share/enscript/afm:/usr/share/fonts/afms/adobe:/usr/share/fonts/type1/gsfonts'@" $setupcache
+
+	# When upgrading to 4.2.1, be sure that all fields are present in the configuration.
+	if [ -x /usr/bin/uuencode ]
+	then
+		grep -q '^UUENCODE=' $setupcache || echo "UUENCODE='/usr/bin/uuencode'" >> $setupcache
+		grep -q '^ENCODING=' $setupcache || echo "ENCODING='base64'" >> $setupcache
+
+		# if uuencode was specified without complete PATH then add it
+		# see bug #377914
+		if grep -q "^UUENCODE='uuencode'" $setupcache
+		then
+			sed -i -e "s@^UUENCODE='uuencode'@UUENCODE='/usr/bin/uuencode'@" $setupcache
+		fi
+	fi
+
+	# bug #429614
+	# check for uuencode used for base64encoding. Change it to use mimencode
+	if [ -x /usr/bin/mimencode ]
+	then
+		sed -i -e "s@BASE64ENCODE='/usr/bin/uuencode'@BASE64ENCODE='/usr/bin/mimencode'@" $setupcache
+		sed -i -e "s@BASE64ENCODE='/usr/bin/uuencode -m ===='@BASE64ENCODE='/usr/bin/mimencode'@" $setupcache
+	fi
+
+	# bug #425191
+	# Update psrip path
+	if [ -x /usr/bin/psrip ]
+	then
+		sed -i -e "s@IMPRIP='/usr/lib/print/psrip'@IMPRIP='/usr/bin/psrip'@" $setupcache
+	fi
+
+	[ -x /usr/bin/tty ] && grep -q '^TTYCMD=' $setupcache || echo "TTYCMD='/usr/bin/tty'" >> $setupcache
+
+	restart=false
+	active=false
+
+	# disable hfaxd from inetd since it requires file system binding
+	# as the one done in hfaxd.service unit file
+	update-inetd --disable hylafax || true
+
+	# fix default values set by faxsetup without check on the real presence
+	# of the binary executable
+
+	uuenc=$(grep '^UUENCODE=' $setupcache | sed -e "s/^UUENCODE='\(.*\)'$/\1/" | (read a b; echo $a))
+	mmenc=$(grep '^MIMENCODE=' $setupcache | sed -e "s/^MIMENCODE='\(.*\)'$/\1/" | (read a b; echo $a))
+	baenc=$(grep '^BASE64ENCODE=' $setupcache | sed -e "s/^BASE64ENCODE='\(.*\)'$/\1/" | (read a b; echo $a))
+
+	if [ ! -x "$uuenc" ]
+	then
+		sed -i -e "s@UUENCODE='.*'@UUENCODE=''@" $setupcache
+	fi
+
+	if [ ! -x "$mmenc" ]
+	then
+		sed -i -e "s@MIMENCODE='.*'@MIMENCODE=''@" $setupcache
+	fi
+
+	if [ ! -x "$baenc" ]
+	then
+		sed -i -e "s@BASE64ENCODE='.*'@BASE64ENCODE=''@" $setupcache
+	fi
+
+	# enable faxgetty for already present configs
+	enablefaxq=false
+	for c in /etc/hylafax/config.*
+	do
+		if [ ! -f "$c" ]
+		then
+			continue
+		fi
+		devname=$(echo $(basename "$c") | sed -e 's@^config\.\(.*\)$@\1@')
+		enablefaxq=true
+		restart=true
+	done
+
+	if [ $restart = true ]; then
+		invoke-rc.d hylafax restart
+	fi
+
+	# manually fix permissione when upgrading from old package
+	if [ "$1" = configure ] && dpkg --compare-versions "$2" lt 3:6.0.6-4
+	then
+		chmod o+t /var/spool/hylafax/tmp
+	fi
+
+db_stop
+

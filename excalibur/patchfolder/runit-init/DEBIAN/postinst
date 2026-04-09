@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+
+# begin-remove-after: released:trixie
+if [ "$1" = "configure" ]; then
+	for n in halt poweroff reboot shutdown; do
+		fn=$(dpkg-divert --truename "/usr/sbin/$n")
+		if ! test -h "$fn"; then
+			if test "$fn" = "/usr/sbin/$n"; then
+				echo "/usr/sbin/$n vanished in /usr-merge upgrade. Restoring."
+			else
+				echo "/usr/sbin/$n (diverted to $fn) vanished in /usr-merge upgrade. Restoring."
+			fi
+			ln -sf  /usr/lib/runit/shutdown "$fn"
+		fi
+	done
+fi
+# end-remove-after
+
+
+

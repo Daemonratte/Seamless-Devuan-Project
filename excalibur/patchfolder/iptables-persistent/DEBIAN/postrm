@@ -1,0 +1,35 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+purge)
+  rm -rf /etc/iptables/rules \
+    /etc/iptables/rules.v4 \
+    /etc/iptables/rules.v6
+  ;;
+esac
+
+# To register the drop-in's removal
+if [ "$1" = "remove" ] && [ -d /run/systemd/system ]; then
+  systemctl --system daemon-reload >/dev/null || true
+fi
+
+if [ -L /etc/systemd/system/iptables.service ]; then
+  rm /etc/systemd/system/iptables.service
+fi
+
+if [ -L /etc/systemd/system/ip6tables.service ]; then
+  rm /etc/systemd/system/ip6tables.service
+fi
+
+# Automatically added by dh_installdeb/13.24.1
+dpkg-maintscript-helper rm_conffile /etc/systemd/system/netfilter-persistent.service.d/iptables.conf -- "$@"
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.1
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+

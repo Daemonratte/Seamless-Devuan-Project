@@ -1,0 +1,36 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    remove)
+        # Calling the init script during removal
+	if systemctl list-unit-files -q enable-nat >/dev/null 2>&1 || \
+	    [ -x "/etc/init.d/enable-nat" ] ; then
+	    if command -v invoke-rc.d >/dev/null ; then
+		invoke-rc.d enable-nat stop || exit $?
+	    else
+		/etc/init.d/enable-nat stop || exit $?
+	    fi
+	fi
+	if [ remove = "$1" ] && [ -e /usr/share/pam-configs/edu-nopwdchange ]; then
+	    rm /usr/share/pam-configs/edu-nopwdchange
+	fi
+	pam-auth-update --package --remove edu-group edu-umask
+
+	# drop /etc/debian-edu/host-keytabs symlink
+	if [ -h /etc/debian-edu/host-keytabs ]; then
+		rm /etc/debian-edu/host-keytabs
+	fi
+	;;
+esac
+
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /share/debian-edu-config/debian-edu.addmachine.template 2.12.6\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /share/debian-edu-config/debian-edu.ldapscripts.passwd 2.12.6\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cfengine3/debian-edu/cf.ldapscripts 2.12.6\~ -- "$@"
+dpkg-maintscript-helper dir_to_symlink /etc/debian-edu/host-keytabs /var/lib/debian-edu/host-keytabs 2.12.18\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/fetch-ldap-cert 2.12.34\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/dhcp/dhclient-exit-hooks.d/fetch-ldap-cert 2.12.44\~ -- "$@"
+# End automatically added section
+

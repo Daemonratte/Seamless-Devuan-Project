@@ -1,0 +1,12 @@
+[Unit]
+Description=sms4you daemon
+Wants=ModemManager.service prosody.service
+
+[Service]
+ExecStart=/usr/bin/sms4you
+Restart=always
+Type=notify
+User=_sms4you
+
+[Install]
+WantedBy=multi-user.target

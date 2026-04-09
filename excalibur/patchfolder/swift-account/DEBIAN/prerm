@@ -1,0 +1,42 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'swift-account.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'swift-account-replicator.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'swift-account-reaper.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'swift-account-auditor.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/swift-account" ] ; then
+	invoke-rc.d --skip-systemd-native swift-account stop || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/swift-account-replicator" ] ; then
+	invoke-rc.d --skip-systemd-native swift-account-replicator stop || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/swift-account-reaper" ] ; then
+	invoke-rc.d --skip-systemd-native swift-account-reaper stop || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/swift-account-auditor" ] ; then
+	invoke-rc.d --skip-systemd-native swift-account-auditor stop || true
+fi
+# End automatically added section

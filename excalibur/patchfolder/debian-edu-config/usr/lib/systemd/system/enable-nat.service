@@ -1,0 +1,14 @@
+[Unit]
+Description=Enables NAT for clients in the thin clients network
+After=remote-fs.target network-online.target
+Wants=remote-fs.target
+ConditionFileIsExecutable=/usr/sbin/iptables
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/debian-edu-config/tools/nat enable
+ExecStop=/usr/share/debian-edu-config/tools/nat disable
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

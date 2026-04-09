@@ -1,0 +1,15 @@
+[Unit]
+Description=Switchconf configuration files during boot
+DefaultDependencies=no
+After=local-fs.target
+Wants=network-pre.target
+Before=network-pre.target
+RequiresMountsFor=/var/lock /var/lib
+ConditionKernelCommandLine=switchconf
+
+[Service]
+Type=oneshot
+ExecStart=/etc/init.d/switchconf start
+
+[Install]
+WantedBy=sysinit.target

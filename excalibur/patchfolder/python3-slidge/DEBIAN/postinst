@@ -1,0 +1,59 @@
+#!/bin/sh
+
+SLIDGE_CONF=/etc/slidge
+SLIDGE_HOME=/var/lib/slidge
+
+case "$1" in
+    configure)
+	if ! getent passwd _slidge >/dev/null; then
+	    adduser --disabled-password --quiet --system \
+		    --home "$SLIDGE_HOME" --no-create-home \
+		    --gecos "Slidge XMPP Gateway" --group _slidge
+	fi
+
+	if [ ! -d "$SLIDGE_HOME" ]; then
+	    install -d -o _slidge -g _slidge -m 750 "$SLIDGE_HOME"
+	fi
+
+	if ! dpkg-statoverride --list "$SLIDGE_HOME" >/dev/null; then
+	    chown _slidge:_slidge "$SLIDGE_HOME"
+	    chmod 750 "$SLIDGE_HOME"
+	fi
+
+	if [ ! -d "$SLIDGE_CONF" ]; then
+	    install -d -o root -g _slidge -m 754 "$SLIDGE_CONF"
+	fi
+
+	if ! dpkg-statoverride --list "$SLIDGE_CONF" >/dev/null; then
+	    chown root:_slidge "$SLIDGE_CONF"
+	    chmod 750 "$SLIDGE_CONF"
+	fi
+
+	if [ ! -d "$SLIDGE_CONF/conf.d" ]; then
+	    install -d -o root -g _slidge -m 754 "$SLIDGE_CONF/conf.d"
+	fi
+
+	if ! dpkg-statoverride --list "$SLIDGE_CONF/conf.d" >/dev/null; then
+	    chown root:_slidge "$SLIDGE_CONF/conf.d"
+	    chmod 750 "$SLIDGE_CONF/conf.d"
+	fi
+	;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+	;;
+    *)
+	echo "postinst called with unknown argument \`$1'" >&2
+	exit 1
+	;;
+esac
+
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p python3-slidge 
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p python3-slidge  || true
+fi
+
+# End automatically added section
+

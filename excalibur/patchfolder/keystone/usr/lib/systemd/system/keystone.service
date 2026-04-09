@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Keystone API (keystone)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:keystone(1)
+
+[Service]
+User=keystone
+Group=keystone
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=keystone lock/keystone
+CacheDirectory=keystone
+ExecStart=/etc/init.d/keystone systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

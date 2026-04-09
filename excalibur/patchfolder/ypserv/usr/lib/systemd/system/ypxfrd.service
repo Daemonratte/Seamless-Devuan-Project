@@ -1,0 +1,15 @@
+[Unit]
+Description=NIS Maps Transferring Accelerator
+Requires=rpcbind.service
+After=network-online.target rpcbind.service
+
+[Service]
+Type=forking
+PIDFile=/run/ypxfrd.pid
+Environment=YPXFRDARGS=
+EnvironmentFile=-/etc/default/nis
+ExecStartPre=/bin/domainname -F /etc/defaultdomain
+ExecStart=/usr/sbin/rpc.ypxfrd $YPXFRDARGS
+
+[Install]
+WantedBy=multi-user.target

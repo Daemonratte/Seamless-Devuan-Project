@@ -1,0 +1,11 @@
+[Unit]
+Description=BOSixNet client
+Documentation=man:bosixnet_daemon(1)
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/lib/bosixnet/daemon_launcher
+
+[Install]
+WantedBy=multi-user.target

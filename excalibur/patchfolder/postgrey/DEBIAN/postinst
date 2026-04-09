@@ -1,0 +1,78 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure)
+        DBDIR='/var/lib/postgrey'
+
+        getent passwd postgrey > /dev/null || \
+            adduser --system --home "$DBDIR" --no-create-home \
+                    --disabled-password --group postgrey
+
+	chown postgrey:postgrey $DBDIR
+    ;;
+esac
+
+# Automatically added by dh_ucf/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ]; then
+	ucf "usr/share/postgrey/postgrey-default" "/etc/default/postgrey"
+	ucfr postgrey "/etc/default/postgrey"
+fi
+# End automatically added section
+# Automatically added by dh_ucf/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ]; then
+	ucf "usr/share/postgrey/whitelist_clients" "/etc/postgrey/whitelist_clients"
+	ucfr postgrey "/etc/postgrey/whitelist_clients"
+fi
+# End automatically added section
+# Automatically added by dh_ucf/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ]; then
+	ucf "usr/share/postgrey/whitelist_recipients" "/etc/postgrey/whitelist_recipients"
+	ucfr postgrey "/etc/postgrey/whitelist_recipients"
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/postgrey" ]; then
+		update-rc.d postgrey defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native postgrey $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'postgrey.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'postgrey.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'postgrey.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'postgrey.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'postgrey.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

@@ -1,0 +1,12 @@
+[Unit]
+Description=OCI Report Status
+After=frr.service networking.service chrony.service
+
+[Service]
+User=root
+Group=root
+ExecStart=/usr/bin/oci-report-status
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

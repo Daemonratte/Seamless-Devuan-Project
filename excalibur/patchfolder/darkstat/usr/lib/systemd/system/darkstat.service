@@ -1,0 +1,12 @@
+[Unit]
+Description=darkstat monitoring system
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Environment="DB=--import darkstat.db --export darkstat.db" "DIR=/var/lib/darkstat"
+EnvironmentFile=/etc/darkstat/init.cfg
+ExecStart=/usr/sbin/darkstat --no-daemon $INTERFACE $PORT --chroot $DIR $BINDIP $LOCAL $FIP $DNS $DAYLOG $DB $OPTIONS -f ${FILTER}
+
+[Install]
+WantedBy=multi-user.target

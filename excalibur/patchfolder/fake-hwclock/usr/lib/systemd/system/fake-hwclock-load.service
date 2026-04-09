@@ -1,0 +1,12 @@
+[Unit]
+Description=Restore the current clock
+Documentation=man:fake-hwclock(8)
+DefaultDependencies=no
+Before=systemd-fsck-root.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/fake-hwclock load
+
+[Install]
+WantedBy=sysinit.target

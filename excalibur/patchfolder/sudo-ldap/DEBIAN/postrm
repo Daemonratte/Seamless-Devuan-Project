@@ -1,0 +1,55 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+  purge)
+	rm -f /etc/sudo-ldap.conf
+	rm -rf /var/lib/sudo
+	rm -rf /run/sudo
+  ;;
+
+  remove|upgrade|deconfigure)
+  ;;
+
+  abort-upgrade|failed-upgrade)
+    if [ -e "/etc/sudoers.pre-conffile" ]; then
+        mv /etc/sudoers.pre-conffile /etc/sudoers
+    fi
+  ;;
+
+
+  *)
+        echo "unknown argument --> $1" >&2
+        exit 0
+  ;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/sudo-ldap" ] ; then
+	chmod -x "/etc/init.d/sudo-ldap" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d sudo-ldap remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/init.d/sudo 1.8.21p2-2\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+# Automatically added by dh_installnss/1.7
+: "${DPKG_MAINTSCRIPT_PACKAGE_INSTCOUNT:=$(dpkg-query -f '${db:Status-Abbrev}\n' -W "$DPKG_MAINTSCRIPT_PACKAGE" | grep -c '^i')}"
+if { [ "$1" = "remove" ] || [ "$1" = "purge" ] ; } && [ -e "${DPKG_ROOT}/etc/nsswitch.conf" ] && [ "$DPKG_MAINTSCRIPT_PACKAGE_INSTCOUNT" -eq 0 ] ; then
+	sed -E -i "${DPKG_ROOT}/etc/nsswitch.conf" \
+		-e ':a /^sudoers:\s.*#/ s/(^[^#]+)\s(ldap)\s+\[!?[A-Za-z]+=[A-Za-z]+\](\s|#)/\1\3/g ; t a' \
+		-e ':b /^sudoers:\s.*#/ s/(^[^#]+)\s(ldap)(\s|#)/\1\3/g ; t b' \
+		-e ':c /^sudoers:\s[^#]*$/ s/\s(ldap)\s+\[!?[A-Za-z]+=[A-Za-z]+\](\s|$)/\2/g ; t c' \
+		-e ':d /^sudoers:\s[^#]*$/ s/\s(ldap)(\s|$)/\2/g ; t d'
+fi
+# End automatically added section
+

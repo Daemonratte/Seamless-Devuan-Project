@@ -1,0 +1,144 @@
+#!/bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+TRYTON_CONFDIR="/etc/tryton"
+TRYTON_SHAREDIR="/usr/share/tryton-server"
+TRYTON_CONFFILE="${TRYTON_CONFDIR}/trytond.conf"
+TRYTON_CONFTEMPLATE="${TRYTON_SHAREDIR}/default/trytond.conf"
+TRYTON_UWSGI_INI="${TRYTON_CONFDIR}/uwsgi.ini"
+TRYTON_UWSGI_INI_TEMPLATE="${TRYTON_SHAREDIR}/default/uwsgi.ini"
+TRYTON_CONFNEW=
+TRYTON_UWSGI_INI_NEW=
+
+# POSIX-compliant shell function to check for the existence of a command
+# s. developers-reference 6.4
+pathfind() {
+    OLDIFS="$IFS"
+    IFS=:
+    for p in $PATH; do
+        if [ -x "$p/$*" ]; then
+            IFS="$OLDIFS"
+            return 0
+        fi
+    done
+    IFS="$OLDIFS"
+    return 1
+}
+
+cleanup () {
+    [ "$TRYTON_UWSGI_INI_NEW" ] && rm -f "$TRYTON_UWSGI_INI_NEW"
+    [ "$TRYTON_CONFNEW" ] && rm -f "$TRYTON_CONFNEW"
+}
+
+create_config () {
+    trap cleanup EXIT
+    TRYTON_UWSGI_INI_NEW=$(mktemp)
+    cp -a "$TRYTON_UWSGI_INI_TEMPLATE" "$TRYTON_UWSGI_INI_NEW"
+    TRYTON_CONFNEW=$(mktemp)
+    cp -a "$TRYTON_CONFFILE" "$TRYTON_CONFNEW"
+    
+    db_name="tryton"
+    db_uri="$(sed -n '/^\[database\]$/,/^\[.*\]$/s/^uri\s*=\s*//p' "$TRYTON_CONFFILE")"
+    # if no uri is configured we use the default sqlite connection
+    if [ -z "$db_uri" ]; then
+        db_uri=sqlite://
+    fi
+
+    # get database settings from dbconfig-common if available
+    if [ -f /etc/dbconfig-common/tryton-server-postgresql.conf ]; then
+        . /etc/dbconfig-common/tryton-server-postgresql.conf
+    fi
+
+    if [ ! -z "$dbc_dbname" ]; then
+        db_name=$dbc_dbname
+    fi
+
+    db_uri="$db_uri/$db_name/"
+    # insert the active database uri into the uwsgi ini
+    sed -i -e "s|^\(env=TRYTOND_DATABASE_URI=\)|\1$db_uri|" "$TRYTON_UWSGI_INI_NEW"
+    # insert the active database name into the uwsgi ini
+    sed -i -e "s|^\(#attach-daemon = /usr/bin/trytond-worker .*\)|\1 $db_name|" "$TRYTON_UWSGI_INI_NEW"
+    sed -i -e "s|^\(#attach-daemon = /usr/bin/trytond-cron .*\)|\1 $db_name|" "$TRYTON_UWSGI_INI_NEW"
+
+    # configure workers
+    db_get tryton-server-uwsgi/enable-workers
+    if [ "$RET" != "false" ]; then
+        # uncomment the worker daemon
+        sed -i -e "s|^#\s*\(attach-daemon = /usr/bin/trytond-worker .*\)|\1|" "$TRYTON_UWSGI_INI_NEW"
+        # configure workers in the server configuration (uncomment the existing worker sample line)
+        sed -i -e '/^\[queue\]$/,/^\[.*\]$/s|^#\s*\(worker\s*=\s*False\)|\1|' "$TRYTON_CONFNEW"
+        sed -i '/^\[queue\]$/,/^\[.*\]$/s|^worker\s*=\s*False|worker = True|' "$TRYTON_CONFNEW"
+    else
+        # when reconfiguring reset the server configuration
+        sed -i '/^\[queue\]$/,/^\[.*\]$/s|^worker\s*=\s*True|#worker = False|' "$TRYTON_CONFNEW"
+    fi
+    # register the updated server config file
+    if pathfind ucf; then
+        ucf --debconf-ok --src-dir "$TRYTON_SHAREDIR/default/" "$TRYTON_CONFNEW" "$TRYTON_CONFFILE"
+    fi
+
+    # configure cron
+    db_get tryton-server-uwsgi/enable-cron
+    if [ "$RET" != "false" ]; then
+        # uncomment the cron daemon
+        sed -i -e "s|^#\s*\(attach-daemon = /usr/bin/trytond-cron .*\)|\1|" "$TRYTON_UWSGI_INI_NEW"
+    fi
+
+    # register new config file
+    if pathfind ucfr; then
+        ucf --debconf-ok --src-dir "$TRYTON_SHAREDIR/default/" "$TRYTON_UWSGI_INI_NEW" "$TRYTON_UWSGI_INI"
+        ucfr tryton-server-uwsgi "${TRYTON_UWSGI_INI}"
+    fi
+    cleanup
+
+    # enable a uwsgi service for the given database
+    service_name=tryton-server-uwsgi@"$db_name".service
+    deb-systemd-helper enable "$service_name" >/dev/null || true
+    if [ -d /run/systemd/system ]; then
+        systemctl --system daemon-reload >/dev/null || true
+    fi
+}
+
+restart () {
+    db_name="tryton"
+    # get database settings from dbconfig-common if available
+    if [ -f /etc/dbconfig-common/tryton-server-postgresql.conf ]; then
+        . /etc/dbconfig-common/tryton-server-postgresql.conf
+    fi
+
+    if [ ! -z "$dbc_dbname" ]; then
+        db_name=$dbc_dbname
+    fi
+
+    service_name=tryton-server-uwsgi@"$db_name".service
+    if [ -d /run/systemd/system ]; then
+        deb-systemd-invoke restart "$service_name" >/dev/null || true
+    fi
+}
+
+case "$1" in
+    configure)
+        create_config
+        restart
+    ;;
+
+    triggered)
+        restart
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+
+
+exit 0
+

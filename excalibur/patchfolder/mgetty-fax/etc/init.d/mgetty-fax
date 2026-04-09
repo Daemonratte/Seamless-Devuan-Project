@@ -1,0 +1,88 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          mgetty-fax
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/faxrunqd
+NAME=faxrunqd
+DESC="Fax Queue Daemon"
+
+test -f $DAEMON || exit 0
+
+check_for_no_start() {
+    # (function copied from ssh init script)
+    # exit if we're trying to start and /etc/mgetty/.faxrunqd_not_to_be_run exists
+    if [ -e /etc/mgetty/.faxrunqd_not_to_be_run ]; then 
+	exit 0
+    fi
+}
+
+if [ ! -d /var/lock/fax ]; then
+	mkdir /var/lock/fax
+	chown uucp:root /var/lock/fax
+fi
+if [ ! -d /var/run/mgetty-fax ]; then
+	mkdir /var/run/mgetty-fax
+	chown uucp:root /var/run/mgetty-fax
+fi
+
+case "$1" in
+  start)
+	check_for_no_start
+	if grep -q "^fax-devices" /etc/mgetty/faxrunq.config; then
+	  echo -n "Starting $DESC: "
+	  start-stop-daemon --start --quiet --pidfile /var/run/mgetty-fax/$NAME.pid \
+		--exec $DAEMON -- -D -u uucp -g dialout
+	  echo "$NAME."
+	else
+	  echo "$DESC not yet configured while configured for starting within the debconf database."
+	  echo "Please either edit /etc/mgetty/faxrunq.config or run \"dpkg-reconfigure mgetty-fax\" to fix this problem."
+	  exit 0
+	fi
+	;;
+  stop)
+	echo -n "Stopping $DESC: $NAME."
+	[ -f /var/run/mgetty-fax/$NAME.pid ] && echo || echo " (not running)"
+	start-stop-daemon --stop --quiet \
+		--retry -HUP/60/-TERM \
+		--pidfile /var/run/mgetty-fax/$NAME.pid \
+		--oknodo --name $NAME --signal HUP
+	;;
+  #reload)
+	#
+	#	If the daemon can reload its config files on the fly
+	#	for example by sending it SIGHUP, do it here.
+	#
+	#	If the daemon responds to changes in its config file
+	#	directly anyway, make this a do-nothing entry.
+	#
+	# echo "Reloading $DESC configuration files."
+	# start-stop-daemon --stop --signal 1 --quiet --pidfile \
+	#	/var/run/$NAME.pid --exec $DAEMON
+  #;;
+  restart|force-reload)
+	#
+	#	If the "reload" option is implemented, move the "force-reload"
+	#	option to the "reload" entry above. If not, "force-reload" is
+	#	just the same as "restart".
+	#
+	echo -n "Restarting $DESC: "
+	$0 stop
+	sleep 1
+	$0 start
+	echo "$NAME."
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	# echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+	echo "Usage: $N {start|stop|restart|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

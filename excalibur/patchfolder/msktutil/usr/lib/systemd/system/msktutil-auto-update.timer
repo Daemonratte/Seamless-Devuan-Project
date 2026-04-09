@@ -1,0 +1,10 @@
+[Unit]
+Description=Run msktutil-auto-update service daily
+
+[Timer]
+OnCalendar=Mon..Sun *-*-* 06:25:00
+Persistent=true
+Unit=msktutil-auto-update.service
+
+[Install]
+WantedBy=timers.target

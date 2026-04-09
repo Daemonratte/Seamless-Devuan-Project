@@ -1,0 +1,207 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    remove)
+        # Calling the init script during removal
+	if systemctl list-unit-files -q enable-nat >/dev/null 2>&1 || \
+	    [ -x "/etc/init.d/enable-nat" ] ; then
+	    if command -v invoke-rc.d >/dev/null ; then
+		invoke-rc.d enable-nat stop || exit $?
+	    else
+		/etc/init.d/enable-nat stop || exit $?
+	    fi
+	fi
+	if [ -e /var/lib/cfengine3/inputs/debian-edu ] ; then
+	    rm -rf /var/lib/cfengine3/inputs/debian-edu
+	    rm -rf /var/lib/cfengine3/inputs/
+	    mkdir /var/lib/cfengine3/inputs/
+	fi
+
+	# Update dconf databases
+	command -v dconf >/dev/null && dconf update
+	;;
+    purge)
+	# remove user/group debian-edu from system
+	getent passwd debian-edu 1>/dev/null && deluser debian-edu
+	getent group debian-edu 1>/dev/null && delgroup debian-edu
+	rm -Rf /var/lib/debian-edu
+
+	# Generated in the postinst
+	rm -f /etc/default/enable-nat
+	if [ ! -s /var/lib/dovecot/auth_success ] ; then
+	    rm -f /var/lib/dovecot/auth_success
+	fi
+
+        # Don't leave Cfengine3 log files behind
+	if [ -e /var/log/cfengine3/promise_summary.log ] ; then
+	    rm /var/log/cfengine3/*.log
+	fi
+
+        # Cfengine3 setup files copied / generated at installation time
+        # via '/usr/share/debian-edu-config/tools/setup-cfengine3'
+	if [ -e /var/lib/cfengine3/inputs/debian-edu ] ; then
+	    rm -rf /var/lib/cfengine3/inputs/debian-edu
+	    rm -rf /var/lib/cfengine3/inputs/
+	    mkdir /var/lib/cfengine3/inputs/
+	fi
+	if [ -e /var/lib/cfengine3/policy_server.dat ] ; then
+	    rm /var/lib/cfengine3/policy_server.dat
+	fi
+
+        # Don't leave copied gosa file behind
+	if [ -e /etc/gosa/gosa.conf ] && grep -q Managed-by /etc/gosa/gosa.conf ; then
+	    rm /etc/gosa/gosa.conf
+	fi
+
+	# remove /var/lib/dovecot directory (this does not
+	# interfere with dovecot-core, if installed)
+	if [ -e /var/lib/dovecot ] ; then
+	    rmdir --ignore-fail-on-non-empty /var/lib/dovecot
+	fi
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/enable-nat" ] ; then
+	chmod -x "/etc/init.d/enable-nat" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d enable-nat remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/chromium-ldapconf" ] ; then
+	chmod -x "/etc/init.d/chromium-ldapconf" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d chromium-ldapconf remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/firefox-ldapconf" ] ; then
+	chmod -x "/etc/init.d/firefox-ldapconf" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d firefox-ldapconf remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/fetch-rootca-cert" ] ; then
+	chmod -x "/etc/init.d/fetch-rootca-cert" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d fetch-rootca-cert remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /share/debian-edu-config/debian-edu.addmachine.template 2.12.6\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /share/debian-edu-config/debian-edu.ldapscripts.passwd 2.12.6\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cfengine3/debian-edu/cf.ldapscripts 2.12.6\~ -- "$@"
+dpkg-maintscript-helper dir_to_symlink /etc/debian-edu/host-keytabs /var/lib/debian-edu/host-keytabs 2.12.18\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/fetch-ldap-cert 2.12.34\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/dhcp/dhclient-exit-hooks.d/fetch-ldap-cert 2.12.44\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'debian-edu-cups-queue-autoreenable.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'debian-edu-cups-queue-autoflush.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'debian-edu-update-netblock.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'debian-edu-fsautoresize.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'firefox-ldapconf.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'fetch-rootca-cert.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'enable-nat.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'chromium-ldapconf.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+

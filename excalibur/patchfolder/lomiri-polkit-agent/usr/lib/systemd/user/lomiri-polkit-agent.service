@@ -1,0 +1,13 @@
+[Unit]
+Description=Lomiri Polkit agent
+After=ubuntu-touch-session.target lomiri.service
+PartOf=ubuntu-touch-session.target lomiri.service
+
+[Service]
+Type=simple
+Restart=always
+ExecStartPre=/usr/bin/sleep 3
+ExecStart=/usr/libexec/lomiri-polkit-agent/policykit-agent
+
+[Install]
+WantedBy=ubuntu-touch-session.target lomiri.service

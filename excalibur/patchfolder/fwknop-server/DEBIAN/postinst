@@ -1,0 +1,55 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installtmpfiles/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create fwknop-server.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.20
+dpkg-maintscript-helper rm_conffile /etc/init/fwknop-server.conf 2.6.9-2\~ fwknop-server -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/fwknop-server" ]; then
+		update-rc.d fwknop-server defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native fwknop-server $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'fwknop-server.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'fwknop-server.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'fwknop-server.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'fwknop-server.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'fwknop-server.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'fwknop-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section

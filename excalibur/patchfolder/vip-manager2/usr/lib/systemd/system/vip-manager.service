@@ -1,0 +1,20 @@
+# This is an example of a systemD config file for vip-manager.
+# You can copy it to "/etc/systemd/system/vip-manager.service", adjust as necessary and then call
+# systemctl daemon-reload && systemctl start vip-manager && systemctl enable vip-manager
+# to start and also enable auto-start after reboot.
+
+[Unit]
+Description=Manages Virtual IP for Patroni
+After=network-online.target
+Before=patroni.service
+
+[Service]
+Type=simple
+
+EnvironmentFile=-/etc/default/vip-manager
+ExecStart=/usr/bin/vip-manager --ip="${VIP_IP}" --interface="${VIP_IFACE}" --trigger-key="${VIP_KEY}" --trigger-value="${VIP_HOST}" --dcs-type="${VIP_TYPE}" --dcs-endpoints="${VIP_ENDPOINT}" --netmask="${VIP_MASK}"
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

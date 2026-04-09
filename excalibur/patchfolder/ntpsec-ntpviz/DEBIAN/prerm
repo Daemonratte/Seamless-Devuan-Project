@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'ntploggps.timer' 'ntplogtemp.timer' 'ntpviz-daily.timer' 'ntpviz-weekly.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_apache2/UNDECLARED
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ] ; then
+	if true; then
+		if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
+			. /usr/share/apache2/apache2-maintscript-helper
+
+			for conf in ntpsec-ntpviz  ; do
+				apache2_invoke disconf $conf  || exit 1
+			done
+		fi
+	fi
+fi
+# End automatically added section

@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Blazar Manager (blazar-manager)
+After=network-online.target local-fs.target remote-fs.target 
+Wants=network-online.target 
+
+Documentation=man:blazar-manager(1)
+
+[Service]
+User=blazar
+Group=blazar
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=blazar lock/blazar
+CacheDirectory=blazar
+ExecStart=/etc/init.d/blazar-manager systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

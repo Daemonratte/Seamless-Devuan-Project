@@ -1,0 +1,27 @@
+[Unit]
+Description=High performance HTTP 1.1 webserver written in Erlang
+After=network.target remote-fs.target
+
+[Service]
+Type=forking
+GuessMainPID=no
+User=yaws
+
+Environment="YAWS_CONF=/etc/yaws/yaws.conf"
+Environment="YAWS_ID=debian_yaws"
+Environment="DAEMON_OPTS=--heart"
+EnvironmentFile=/etc/default/yaws
+
+ExecStart=/usr/bin/yaws --conf $YAWS_CONF --id $YAWS_ID --daemon $DAEMON_OPTS
+ExecStartPost=/usr/bin/yaws --id $YAWS_ID --wait-started=10
+
+ExecReload=/usr/bin/yaws --id $YAWS_ID --hup
+
+ExecStop=/usr/bin/yaws --id $YAWS_ID --stop
+ExecStopPost=/usr/bin/yaws --id $YAWS_ID --wait-stopped=10
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# myproxy-server - Server for X.509 Public Key Infrastructure (PKI) credentials
+#
+# chkconfig: 2345 55 25
+# description: Server for X.509 Public Key Infrastructure (PKI) credentials
+#
+### BEGIN INIT INFO
+# Provides: myproxy-server
+# Required-Start: $local_fs $network $syslog
+# Required-Stop: $local_fs $syslog
+# Should-Start: $syslog
+# Should-Stop: $network $syslog
+# Default-Stop: 0 1 6
+# Default-Start: 2 3 4 5
+# Short-Description: Startup the MyProxy server daemon
+# Description: Server for X.509 Public Key Infrastructure (PKI) credentials
+### END INIT INFO
+
+# Source function library.
+. /lib/lsb/init-functions
+
+exec="/usr/sbin/myproxy-server"
+prog=$(basename $exec)
+
+# Defaults
+MYPROXY_USER=myproxy
+MYPROXY_OPTIONS="-s /var/lib/myproxy"
+X509_USER_CERT=/etc/grid-security/myproxy/hostcert.pem
+X509_USER_KEY=/etc/grid-security/myproxy/hostkey.pem
+
+# Override defaults here.
+[ -r /etc/default/$prog ] && . /etc/default/$prog
+
+# A few sanity checks
+[ ! -r $X509_USER_KEY ]  && echo -n "$prog: No hostkey file"  && log_failure_msg && echo && exit 0
+[ ! -r $X509_USER_CERT ] && echo -n "$prog: No hostcert file" && log_failure_msg && echo && exit 0
+
+lockfile=/var/lock/$prog
+
+start() {
+    echo Starting myproxy server
+    export X509_USER_CERT X509_USER_KEY
+    start-stop-daemon --start --oknodo -c $MYPROXY_USER --exec $exec -- $MYPROXY_OPTIONS
+    retval=$?
+    [ $retval -eq 0 ] && touch $lockfile
+    [ $retval -eq 0 ] && log_success_msg || log_failure_msg
+    return $retval
+}
+
+stop() {
+    echo Stopping myproxy server
+    start-stop-daemon --stop --oknodo --exec $exec
+    retval=$?
+    [ $retval -eq 0 ] && rm -f $lockfile
+    [ $retval -eq 0 ] && log_success_msg || log_failure_msg
+    return $retval
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    force-reload|restart)
+        restart
+        ;;
+    status)
+        status_of_proc $prog
+        ;;
+    try-restart|condrestart)
+        [ -r $lockfile ] && restart
+        ;;
+    reload)
+        start-stop-daemon --stop --oknodo --signal HUP --exec $exec
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart|reload|try-restart|force-reload}"
+        exit 2
+esac

@@ -1,0 +1,30 @@
+[Unit]
+Description=System Security Services Daemon
+# SSSD must be running before we permit user sessions
+Before=systemd-user-sessions.service nss-user-lookup.target
+Wants=nss-user-lookup.target
+StartLimitIntervalSec=50s
+StartLimitBurst=5
+ConditionPathExists=|/etc/sssd/sssd.conf
+ConditionDirectoryNotEmpty=|/etc/sssd/conf.d/
+
+[Service]
+Environment=DEBUG_LOGGER=--logger=files
+EnvironmentFile=-/etc/default/sssd
+ExecStartPre=+-/bin/chown -f -R root:root /etc/sssd
+ExecStartPre=+-/bin/chmod -f -R g+r /etc/sssd
+ExecStartPre=+-/bin/sh -c "/bin/chown -f root:root /var/lib/sss/db/*.ldb"
+ExecStartPre=+-/bin/chown -f -R root:root /var/lib/sss/gpo_cache
+ExecStartPre=+-/bin/sh -c "/bin/chown -f root:root /var/log/sssd/*.log"
+ExecStart=/usr/sbin/sssd -i ${DEBUG_LOGGER}
+Type=notify
+NotifyAccess=main
+Restart=on-abnormal
+CapabilityBoundingSet= CAP_SETGID CAP_SETUID CAP_DAC_READ_SEARCH 
+SecureBits=noroot noroot-locked
+User=root
+Group=root
+# Note: SSSD package was built without support of running as non-privileged user
+
+[Install]
+WantedBy=multi-user.target

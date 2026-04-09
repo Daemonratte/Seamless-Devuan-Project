@@ -1,0 +1,19 @@
+[Unit]
+Description=SABnzbd+ binary newsreader for user %I
+Documentation=man:sabnzbdplus(1)
+Documentation=https://sabnzbd.org/wiki/
+PartOf=sabnzbdplus.service
+After=remote-fs.target network-online.target nss-lookup.target
+Wants=network-online.target
+ConditionFileIsExecutable=/usr/bin/sabnzbdplus
+
+[Service]
+Type=simple
+Environment="PYTHONIOENCODING=utf-8"
+User=%I
+ExecStart=/bin/sh -c 'exec /usr/bin/sabnzbdplus --disable-file-log --browser 0 ${SABNZBD_OPTIONS}'
+ProtectSystem=full
+DeviceAllow=/dev/null rw
+DeviceAllow=/dev/urandom r
+DevicePolicy=strict
+NoNewPrivileges=yes

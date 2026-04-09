@@ -1,0 +1,19 @@
+[Unit]
+Description=Zabbix Web Service
+Documentation=man:zabbix_web_service
+After=network.target
+
+[Service]
+Environment="DAEMON_ARGS= -c /etc/zabbix/zabbix_web_service.conf"
+EnvironmentFile=-/etc/default/%p
+Type=simple
+KillMode=control-group
+ExecStart=/usr/sbin/zabbix_web_service -c $DAEMON_ARGS
+ExecStop=/bin/sh -c '[ -n "$1" ] && kill -s TERM "$1"' -- "$MAINPID"
+RestartSec=10s
+User=zabbix
+Group=zabbix
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

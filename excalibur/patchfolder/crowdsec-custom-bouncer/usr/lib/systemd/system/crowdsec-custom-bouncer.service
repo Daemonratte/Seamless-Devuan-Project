@@ -1,0 +1,12 @@
+[Unit]
+Description=The custom bouncer for CrowdSec
+After=network.target remote-fs.target nss-lookup.target crowdsec.service
+ConditionPathExists=!/var/lib/crowdsec/pending-registration
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/crowdsec-custom-bouncer -c /etc/crowdsec/bouncers/crowdsec-custom-bouncer.yaml
+ExecStartPost=/bin/sleep 0.1
+
+[Install]
+WantedBy=multi-user.target

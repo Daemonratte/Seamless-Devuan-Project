@@ -1,0 +1,16 @@
+[Unit]
+Description=CFEngine Execution Scheduler
+After=syslog.target
+ConditionPathExists=/usr/bin/cf-execd
+ConditionPathExists=/var/lib/cfengine3/inputs/promises.cf
+PartOf=cfengine3.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cf-execd --no-fork
+Restart=always
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

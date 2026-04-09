@@ -1,0 +1,24 @@
+[Unit]
+Description=Kea Control Agent
+Documentation=man:kea-ctrl-agent(8)
+After=network-online.target time-sync.target
+ConditionFileNotEmpty=/etc/kea/kea-api-password
+
+[Service]
+User=_kea
+Environment="KEA_LOCKFILE_DIR=/run/lock/kea"
+ConfigurationDirectory=kea
+RuntimeDirectory=kea lock/kea
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+LogsDirectory=kea
+LogsDirectoryMode=0750
+StateDirectory=kea
+StateDirectoryMode=0750
+ExecStart=/usr/sbin/kea-ctrl-agent -c /etc/kea/kea-ctrl-agent.conf
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

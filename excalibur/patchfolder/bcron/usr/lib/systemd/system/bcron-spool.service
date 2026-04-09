@@ -1,0 +1,12 @@
+# this is /usr/lib/systemd/system/bcron-spool.service
+[Unit]
+Description=manage user crontab submission
+
+[Service]
+# see man systemd.service 
+ExecStart=/usr/sbin/bcron-spool-start
+ExecStop=/usr/sbin/bcron-spool-stop
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target 

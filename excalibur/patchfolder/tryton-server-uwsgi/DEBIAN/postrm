@@ -1,0 +1,77 @@
+#!/bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+TRYTON_CONFDIR="/etc/tryton"
+TRYTON_CONFFILE="${TRYTON_CONFDIR}/trytond.conf"
+TRYTON_UWSGI_INI="${TRYTON_CONFDIR}/uwsgi.ini"
+TRYTON_CONFNEW=
+
+# POSIX-compliant shell function to check for the existence of a command
+# s. developers-reference 6.4
+pathfind() {
+    OLDIFS="$IFS"
+    IFS=:
+    for p in $PATH; do
+        if [ -x "$p/$*" ]; then
+            IFS="$OLDIFS"
+            return 0
+        fi
+    done
+    IFS="$OLDIFS"
+    return 1
+}
+
+case "$1" in
+    remove)
+        # disable services depending on the service unit of this package
+        service_name="tryton-server-uwsgi@*.service"
+        if [ -d /run/systemd/system ]; then
+            deb-systemd-invoke stop "$service_name" >/dev/null || true
+        fi
+        deb-systemd-helper disable "$service_name"  >/dev/null || true
+        deb-systemd-helper update-state "$service_name"  >/dev/null || true
+
+        # deconfigure workers if enabled by this package
+        db_get tryton-server-uwsgi/enable-workers
+        if [ "$RET" != "false" ]; then
+            TRYTON_CONFNEW=$(mktemp)
+            cp -a "$TRYTON_CONFFILE" "$TRYTON_CONFNEW"
+            sed -i -e '/^\[queue\]$/,/^\[.*\]$/s|^worker = True|#worker = False|' "$TRYTON_CONFNEW"
+            # register new config file
+            if pathfind ucf; then
+                ucf --debconf-ok --src-dir "$TRYTON_SHAREDIR/default/" "$TRYTON_CONFNEW" "$TRYTON_CONFFILE"
+            fi
+        fi
+        ;;
+    
+    purge)
+        # remove the configuration file and backups
+        rm -f $TRYTON_UWSGI_INI
+        for ext in '~' '%' .bak .ucf-new .ucf-old .ucf-dist;  do
+            rm -f $TRYTON_UWSGI_INI$ext
+        done
+
+        # and finally clear it out from the ucf database
+        if pathfind ucf; then
+            ucf --purge "$TRYTON_UWSGI_INI"
+        fi    
+        if pathfind ucfr; then
+            ucfr --purge tryton-server-uwsgi "$TRYTON_UWSGI_INI"
+        fi    
+        ;;
+esac
+
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+exit 0
+
+

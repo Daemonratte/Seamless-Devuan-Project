@@ -1,0 +1,7 @@
+[Unit]
+Description=Configure systemd timer schedule according to /etc/default/btrfsmaintenance
+Documentation=man:btrfsmaintenance(8)
+
+[Service]
+ExecStart=/usr/share/btrfsmaintenance/btrfsmaintenance-refresh-cron.sh systemd-timer
+Type=oneshot

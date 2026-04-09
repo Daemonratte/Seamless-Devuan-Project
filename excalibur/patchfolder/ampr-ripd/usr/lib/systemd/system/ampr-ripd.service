@@ -1,0 +1,9 @@
+[Unit]
+Description=Amprnet routing daemon
+Documentation=man:ampr-ripd(8)
+
+[Service]
+ExecStart=/usr/sbin/ampr-ripd -t 44 -i ampr0 -d
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,133 @@
+#!/bin/sh
+
+set -e
+
+rm_conffile() {
+    PKGNAME="$1"
+    CONFFILE="$2"
+
+    if [ -e "$CONFFILE" ]; then
+        md5sum="`md5sum \"$CONFFILE\" | sed -e \"s/ .*//\"`"
+        old_md5sum="`dpkg-query -W -f='${Conffiles}' $PKGNAME | sed -n -e \"\\\\' $CONFFILE's/.* //p\"`"
+        if [ "$md5sum" != "$old_md5sum" ]; then
+            echo "Obsolete conffile $CONFFILE has been modified by you."
+            echo "Saving as $CONFFILE.dpkg-old ..."
+            mv -f "$CONFFILE" "$CONFFILE".dpkg-old
+        else
+            echo "Removing obsolete conffile $CONFFILE ..."
+            rm -f "$CONFFILE"
+        fi
+    fi
+}
+# Prepare to move a conffile without triggering a dpkg question.  From
+# http://wiki.debian.org/DpkgConffileHandling
+prep_mv_conffile() {
+    local PKGNAME="$1"
+    local CONFFILE="$2"
+
+    [ -e "$CONFFILE" ] || return 0
+
+    local md5sum="$(md5sum $CONFFILE | sed -e 's/ .*//')"
+    local old_md5sum="$(dpkg-query -W -f='${Conffiles}' $PKGNAME | \
+            sed -n -e "\' $CONFFILE ' { s/ obsolete$//; s/.* //; p }")"
+    if [ "$md5sum" = "$old_md5sum" ]; then
+        rm -f "$CONFFILE"
+    fi
+}
+
+case "$1" in
+install)
+    ;;
+upgrade)
+
+    # Remove leftover directory from LTSP5 configuration
+    if dpkg --compare-versions "$2" le "2.11.16" ; then
+        rm -rf /etc/ltspfs
+    fi
+
+    # Move .keytab files from /etc/debian-edu/host-keytabs to
+    # /var/lib/debian-edu/host-keytabs before dpkg-maintscript-helper moves
+    # the /etc/debian-edu/host-keytabs dir and replaces it by a symlink...
+    # We have to move the .keytab files manually, because they are not owned
+    # by debian-edu-config.
+    if dpkg --compare-versions "$2" le "2.12.17"; then
+        if [ -d /etc/debian-edu/host-keytabs ] && \
+           [ ! -h /etc/debian-edu/host-keytabs ] && \
+           find /etc/debian-edu/host-keytabs/* 1>/dev/null 2>/dev/null; then
+            mkdir -p /var/lib/debian-edu/host-keytabs/
+            mv /etc/debian-edu/host-keytabs/*.keytab /var/lib/debian-edu/host-keytabs/
+        fi
+    fi
+
+    ;;
+esac
+
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /share/debian-edu-config/debian-edu.addmachine.template 2.12.6\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /share/debian-edu-config/debian-edu.ldapscripts.passwd 2.12.6\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cfengine3/debian-edu/cf.ldapscripts 2.12.6\~ -- "$@"
+dpkg-maintscript-helper dir_to_symlink /etc/debian-edu/host-keytabs /var/lib/debian-edu/host-keytabs 2.12.18\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/fetch-ldap-cert 2.12.34\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/dhcp/dhclient-exit-hooks.d/fetch-ldap-cert 2.12.44\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/fetch-rootca-cert" ] ; then
+	chmod +x "/etc/init.d/fetch-rootca-cert" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/firefox-ldapconf" ] ; then
+	chmod +x "/etc/init.d/firefox-ldapconf" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/chromium-ldapconf" ] ; then
+	chmod +x "/etc/init.d/chromium-ldapconf" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/enable-nat" ] ; then
+	chmod +x "/etc/init.d/enable-nat" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'chromium-ldapconf.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'enable-nat.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'fetch-rootca-cert.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'firefox-ldapconf.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'debian-edu-fsautoresize.service' 'debian-edu-fsautoresize.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'debian-edu-update-netblock.service' 'debian-edu-update-netblock.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'debian-edu-cups-queue-autoflush.service' 'debian-edu-cups-queue-autoflush.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'debian-edu-cups-queue-autoreenable.service' 'debian-edu-cups-queue-autoreenable.timer' >/dev/null || true
+fi
+# End automatically added section
+

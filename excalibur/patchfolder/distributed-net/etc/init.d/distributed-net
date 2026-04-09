@@ -1,0 +1,170 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          distributed-net
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Should-Start:      $network
+# Should-Stop:       $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start the distributed.net client at boot time.
+# Description:       Execute the distributed.net client as a background daemon during boot
+#                    and provide an interface for controlling it which is consistent with
+#                    other system services.
+### END INIT INFO
+#
+# Notes:
+#   - distributed.net does not like to play nicely with init scripts.  It needs to be run
+#     without the -quiet option.  Otherwise it will detach from the shell and there will
+#     be no way to determine its PID.  
+#
+# This script was originally written by: Noel@debian.org, 2001-12-16.
+# James Stark <jstark@ieee.org>, 2014-02-23
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="distributed.net client"
+NAME=distributed-net
+DAEMON="/usr/bin/dnetc"
+DAEMON_ARGS=""
+PIDFILE="/var/run/$NAME.pid"
+LOGFILE="/var/log/$NAME.log"
+CONFFILE="/etc/$NAME.conf"
+SCRIPTNAME="/etc/init.d/$NAME"
+BUFFIN="/var/lib/distributed-net/buff-in"
+BUFFOUT="/var/lib/distributed-net/buff-out"
+
+dnetc_opts=""
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions
+. /lib/lsb/init-functions
+
+# Build up the full list of arguments to the distributed.net client
+DAEMON_ARGS="$DAEMON_ARGS -ini $CONFFILE -l $LOGFILE -inbase $BUFFIN -outbase $BUFFOUT $dnetc_opts"
+
+#
+# Attempt to start the distributed-net client.  The client will only be started
+# if the configuration file is present and it is not already running.  Once the
+# client has been successfully started set the scheduling priority to
+# SCHED_IDLE for the client and all of its sub-processes.
+#
+do_start ()
+{
+	result=0 
+
+	if [ -e /etc/distributed-net.conf ]; then
+		if start-stop-daemon --start --quiet --user daemon --group daemon --pidfile $PIDFILE --exec $DAEMON --test > /dev/null; then
+			chrt -i -p 0 $$
+			start-stop-daemon --start --quiet --user daemon --group daemon --pidfile $PIDFILE --exec $DAEMON --chuid daemon:daemon --chdir /var/lib/$NAME/ --background --make-pidfile -- $DAEMON_ARGS || retval=2
+		else
+			result=1
+		fi
+	else
+		log_failure_msg "distributed-net is not configured please run:  dpkg-reconfigure distributed-net"
+		result=2
+	fi
+
+	return $result
+}
+
+#
+# Shutdown the distributed.net client. It should clean up all of this children.
+#
+do_stop ()
+{
+	start-stop-daemon --stop --quiet --user daemon --group daemon --pidfile $PIDFILE --name "dnetc" --retry=TERM/30/KILL/5
+	rm $PIDFILE
+
+	return $?
+}
+
+#
+# Perform various client actions like updating buffers.  The name of the client
+# option is passed as an argument.  Since the distributed.net client is its own
+# control program, start-stop-daemon will refuse to execute any of these actions
+# as the client will already be running.  Therefore the action will be performed
+# using su.
+#
+do_action ()
+{
+	result=0
+
+	if cd /var/lib/distributed-net; then
+		if start-stop-daemon --stop --quiet --signal 0 --user daemon --group daemon --name "dnetc" 2> /dev/null; then
+			su daemon -s /bin/sh -c "$DAEMON $DAEMON_ARGS -$1"
+		else
+			result=2
+		fi
+	else
+		result=2
+	fi
+
+	return $result
+}
+
+case "$1" in
+	start)
+		[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+		do_start
+		case "$?" in
+			0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+			2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+		esac
+		;;
+	stop)
+		[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+		do_stop
+		case "$?" in
+			0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+			2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+		esac
+		;;
+	status)
+		status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+		;;
+	restart|force-reload|reload)
+		log_daemon_msg "Restarting $DESC" "$NAME"
+		do_stop
+		case "$?" in
+			0|1)
+				do_start
+				case "$?" in
+					0) log_end_msg 0 ;;
+					1) log_end_msg 1 ;; # Old process is still running
+					*) log_end_msg 1 ;; # Failed to start
+				esac
+				;;
+			*)
+				log_end_msg 1 ;; # Failed to stop
+		esac
+		;;
+	fetch)
+		log_daemon_msg "$DESC Fetching blocks"
+		do_action "fetch"
+		log_end_msg 0
+		;;
+	flush)
+		log_daemon_msg "$DESC Flushing blocks"
+		do_action "flush"
+		log_end_msg 0
+		;;
+	update)
+		log_daemon_msg "$DESC Updating blocks"
+		do_action "update"
+		log_end_msg 0
+		;;
+	*)
+		echo "Usage: $SCRIPTNAME {start|stop|status|restart|reload|force-reload|fetch|flush|update}" >&3
+		exit 3
+		;;
+esac
+
+exit 0

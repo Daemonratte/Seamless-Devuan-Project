@@ -1,0 +1,17 @@
+[Unit]
+Description=Biboumi, XMPP to IRC gateway
+Documentation=man:biboumi(1) https://biboumi.louiz.org
+After=network.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/biboumi /etc/biboumi/biboumi.cfg
+ExecReload=/bin/kill -s USR1 $MAINPID
+WatchdogSec=0
+Restart=always
+User=_biboumi
+Group=_biboumi
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

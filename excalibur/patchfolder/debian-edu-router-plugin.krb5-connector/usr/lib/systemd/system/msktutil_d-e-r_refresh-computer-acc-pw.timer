@@ -1,0 +1,33 @@
+# Debian Edu Router Plugin: Content filter.
+# Documentation can be found under: /usr/share/doc/debian-edu-router*/
+#
+# Copyright (C) 2024 Pädagogisches Landesinstitut Rheinland-Pfalz
+# Copyright (C) 2024 Daniel Teichmann <daniel.teichmann@das-netzwerkteam.de>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+# Dear developer, if you modify this file, please also keep the backup cron job in mind while editing.
+
+[Unit]
+Description=Periodically refreshes the password of computer accounts maintained by D-E-R-P.K-C
+Requires=msktutil_d-e-r_refresh-computer-acc-pw.service
+
+[Timer]
+Unit=msktutil_d-e-r_refresh-computer-acc-pw.service
+OnCalendar=*-*-* 05:00:00
+
+[Install]
+WantedBy=multi-user.target

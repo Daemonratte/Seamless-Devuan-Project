@@ -1,0 +1,104 @@
+#!/bin/sh
+set -e
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+
+# In Debian, this should be upgrade from 3-to-5, but the following code
+# and the upgrade-4-to-5.lua file come from upstream. So I keep it like
+# this for uniformity. Also, the issue relies on the lack of support on
+# systemd sockets since 5.x.
+# upgrade-4-to-5
+export UPG_DIR=/var/lib/knot-resolver/.upgrade-4-to-5
+if [ -f ${UPG_DIR}/.unfinished ] ; then
+       rm -f ${UPG_DIR}/.unfinished
+       kresd -c /usr/lib/x86_64-linux-gnu/knot-resolver/upgrade-4-to-5.lua >/dev/null 2>/dev/null
+       db_input high knot-resolver/upgrade-buster-to-bullseye || true
+       db_go || true
+       cat ${UPG_DIR}/kresd.conf.net 2>/dev/null
+fi
+
+if [ "$1" = "configure" ]; then
+    adduser --quiet --system --group --no-create-home --home /var/cache/knot-resolver knot-resolver
+fi
+
+# Restart any running kresd instances if the root key is updated.
+# Note: if knot-resolver upstream watches this file and reloads it
+# upon a change, we can and should remove this trigger.
+if [ "$1" = "triggered" ]; then
+    if [ "$2" = "/usr/share/dns/root.key" ]; then
+        # systemctl of the sub-services is the preferred method to restart
+        deb-systemd-invoke try-restart 'kresd@*.service' || true
+        # but if we are running sysvinit, we can try to restart that process anyway
+        # (kresd.service is masked on systems that use systemd)
+        invoke-rc.d kresd try-restart || true
+    fi
+fi
+
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+    deb-systemd-invoke try-restart 'kresd@*.service' || true
+    invoke-rc.d kresd try-restart || true
+fi
+
+# Automatically added by dh_installtmpfiles/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create knot-resolver.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "/etc/init.d/kresd" ]; then
+		update-rc.d kresd defaults >/dev/null || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'kres-cache-gc.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'kres-cache-gc.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'kres-cache-gc.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'kres-cache-gc.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'kresd.target' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'kresd.target'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'kresd.target' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'kresd.target' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'kres-cache-gc.service' 'kresd.target' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

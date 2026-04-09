@@ -1,0 +1,52 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          binkd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+
+OPTS='/etc/binkd/binkd.cfg -q -C'
+PIDFILE='/run/ftn/binkd.pid'
+DAEMON='/usr/sbin/binkd'
+NAME='binkd'
+
+test -f $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start)
+    log_daemon_msg 'Starting FTN mailer' $NAME
+    [ -d /run/ftn/ ] || \
+    install -d -o ftn -g ftn -m 0750 /run/ftn/
+    start-stop-daemon --start --quiet --background --pidfile $PIDFILE \
+	--chuid ftn:ftn	--exec $DAEMON -- $OPTS
+    log_end_msg $?
+    ;;
+  stop)
+    log_daemon_msg 'Stopping FTN mailer' $NAME
+    start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
+    log_end_msg $?
+    ;;
+  reload)
+    log_daemon_msg 'Reloading FTN mailer' $NAME
+    start-stop-daemon --stop --quiet --signal 1 --pidfile $PIDFILE
+    log_end_msg $?
+    ;;
+  restart|force-reload)
+    $0 stop
+    sleep 1
+    $0 start
+    ;;
+  status)
+    status_of_proc -p $PIDFILE $DAEMON $NAME
+    ;;
+  *)
+    log_action_msg "Usage: /etc/init.d/binkd {start|stop|restart|reload|force-reload}"
+    exit 1
+    ;;
+esac
+
+exit 0

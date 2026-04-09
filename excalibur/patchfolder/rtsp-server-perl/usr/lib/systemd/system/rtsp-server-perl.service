@@ -1,0 +1,21 @@
+[Unit]
+Description=Lightweight RTSP/RTP streaming media server
+After=network.target
+Documentation=file:///usr/share/doc/rtsp-server-perl/README.Debian
+
+[Service]
+Type=simple
+Environment=CLIENT_PORT=554
+Environment=CLIENT_BIND=127.0.0.1
+Environment=SERVER_PORT=5545
+Environment=SERVER_BIND=127.0.0.1
+Environment=LOG_LEVEL=3
+EnvironmentFile=-/etc/default/rtsp-server-perl
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rtsp-server-perl
+ExecStart=/usr/bin/rtsp-server-perl --clientport ${CLIENT_PORT} --serverport ${SERVER_PORT} --client_listen_address ${CLIENT_BIND} --source_listen_address ${SERVER_BIND} --loglevel ${LOG_LEVEL} $EXTRA_OPTS
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target

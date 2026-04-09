@@ -1,0 +1,15 @@
+[Unit]
+Description=Mount ocfs2 Filesystems
+Documentation=man:ocfs2(7) man:mount.ocfs2(8)
+Requires=o2cb.service
+After=o2cb.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/ocfs2.init start
+ExecStop=/usr/sbin/ocfs2.init stop
+ExecReload=/usr/sbin/ocfs2.init restart
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,4 @@
+#!/bin/sh
+chown _runit-log:adm '/var/log/runit/incus-user'
+chmod 750 '/var/log/runit/incus-user'
+exec chpst -u _runit-log svlogd -tt '/var/log/runit/incus-user'

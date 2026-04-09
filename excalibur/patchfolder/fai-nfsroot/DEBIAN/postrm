@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+case "$1" in
+    purge)
+        update-rc.d fai-abort remove > /dev/null
+        ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

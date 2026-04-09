@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Manila Scheduler (manila-scheduler)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:manila-scheduler(1)
+
+[Service]
+User=manila
+Group=manila
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=manila lock/manila
+CacheDirectory=manila
+ExecStart=/etc/init.d/manila-scheduler systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

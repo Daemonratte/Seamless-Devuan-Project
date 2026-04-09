@@ -1,0 +1,35 @@
+[Unit]
+Description=MooseFS chunkserver daemon
+Documentation=man:mfschunkserver
+After=local-fs.target
+Wants=local-fs.target
+After=network.target moosefs-master.service
+Wants=network-online.target
+After=network-online.target
+After=nss-lookup.target
+After=time-sync.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/mfschunkserver -c /etc/mfs/%i/mfschunkserver.cfg -f start
+ExecReload=/bin/kill -HUP $MAINPID
+OOMScoreAdjust=-999
+IOAccounting=true
+IOWeight=250
+StartupIOWeight=100
+KeyringMode=inherit
+
+Restart=on-failure
+RestartSec=4
+StartLimitInterval=20
+StartLimitBurst=4
+
+LimitMEMLOCK=infinity
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectKernelTunables=true
+
+[Install]
+WantedBy=multi-user.target

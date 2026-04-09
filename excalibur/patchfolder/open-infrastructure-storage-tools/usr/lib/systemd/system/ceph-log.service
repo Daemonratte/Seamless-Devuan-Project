@@ -1,0 +1,11 @@
+[Unit]
+Description=ceph-log
+Documentation=man:ceph-log
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/ceph-log
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

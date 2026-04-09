@@ -1,0 +1,18 @@
+[Unit]
+Description=Osmocom osmo-pcu
+Documentation=http://osmocom.org/projects/osmopcu
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/osmo-pcu -c /etc/osmocom/osmo-pcu.cfg
+Restart=always
+RestartSec=2
+PrivateTmp=true
+ProtectHome=read-only
+
+# Read quickly enough
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority=1
+
+[Install]
+WantedBy=multi-user.target

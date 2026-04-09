@@ -1,0 +1,95 @@
+#!/bin/sh
+
+set -e
+
+USER=inetsim
+
+# shortcut to run command as user and group $USER
+as_user () {
+    runuser -u "${USER}" -- "$@"
+}
+
+if [ "$1" = configure ] ; then
+    # create user/group if it does not yet exist
+    if ! getent passwd "$USER" >/dev/null ; then
+        adduser --quiet --system --group \
+            --home /var/lib/inetsim "${USER}"
+    fi
+
+    if dpkg --compare-versions "$2" lt-nl "1.3.0"; then
+    # Change ownership of /var/lib/inetsim
+    # previously owned by root:inetsim to inetsim:inetsim in
+    # upstream Debian package
+	chown -R inetsim:inetsim /var/lib/inetsim 2>/dev/null
+    fi
+
+    # create the variable state information directory
+    mkdir -p /var/lib/inetsim/
+    chown "${USER}:${USER}" /var/lib/inetsim
+
+    # copy examples from /usr/share but don't copy certs directory
+    # certs are created later.
+    as_user cp -r -u /usr/share/inetsim/data/finger \
+            /usr/share/inetsim/data/ftp /usr/share/inetsim/data/http \
+            /usr/share/inetsim/data/pop3 /usr/share/inetsim/data/quotd \
+            /usr/share/inetsim/data/smtp /usr/share/inetsim/data/tftp \
+	    /var/lib/inetsim/
+
+    # add missing directories
+    as_user mkdir -p /var/lib/inetsim/tftp/upload /var/lib/inetsim/ftp/upload \
+        /var/lib/inetsim/smtp /var/lib/inetsim/http/postdata
+    as_user chmod g+w /var/lib/inetsim/tftp/upload \
+         /var/lib/inetsim/ftp/upload /var/lib/inetsim/http/postdata \
+	 /var/lib/inetsim/smtp
+
+    # create certificates directory
+    as_user mkdir -p /var/lib/inetsim/certs
+    if [ ! -f "/var/lib/inetsim/certs/default_key.pem" ] || \
+            [ ! -f "/var/lib/inetsim/certs/default_cert.pem" ]; then
+	echo -n "Creating default SSL key and certificate... "
+	as_user openssl req -new -x509 -days 3650 -nodes -sha1 \
+	    -keyout "/var/lib/inetsim/certs/default_key.pem" \
+	    -out "/var/lib/inetsim/certs/default_cert.pem" \
+	    -subj "/O=INetSim/OU=Development/CN=inetsim.org" 2>/dev/null \
+	    && echo "done"
+    fi
+
+    # create the log dir and report subdir
+    mkdir -p /var/log/inetsim
+    chown "${USER}:${USER}" /var/log/inetsim
+    chmod 0700 /var/log/inetsim
+    as_user mkdir -p /var/log/inetsim/report
+
+    if [ -z "$2" ]; then
+	echo ""
+	echo "Initial installation of INetSim."
+        echo "Please edit /etc/inetsim/inetsim.conf to suit your needs."
+    fi
+
+    if dpkg --compare-versions "$2" lt-nl "1.3.1"; then
+	cat <<EOF
+
+====================================================================
+IMPORTANT NOTE:
+The sample Windows executables for HTTP fakefile mode included
+with INetSim change with each version due to them being rebuilt.
+If your setup relies on INetSim to continue serving the historical
+binaries included with previous versions, see
+/usr/share/inetsim/contrib/sample.README for additional information.
+====================================================================
+
+EOF
+    fi
+
+fi
+
+
+# Automatically added by dh_installinit/13.3.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "/etc/init.d/inetsim" ]; then
+		update-rc.d inetsim defaults >/dev/null
+		invoke-rc.d --skip-systemd-native inetsim start || exit 1
+	fi
+fi
+# End automatically added section
+

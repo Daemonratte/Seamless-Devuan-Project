@@ -1,0 +1,11 @@
+[Unit]
+Description=
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/sbin/ftp-proxy -dn
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target

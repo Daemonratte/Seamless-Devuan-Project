@@ -1,0 +1,13 @@
+[Unit]
+Description=reverse proxy and load balancer
+Documentation=man:pound(8)
+ConditionPathExists=/etc/pound.cfg
+
+[Service]
+EnvironmentFile=-/etc/default/pound
+ExecStartPre=/usr/sbin/pound -c
+ExecStart=/usr/sbin/pound -F
+Type=exec
+
+[Install]
+WantedBy=multi-user.target

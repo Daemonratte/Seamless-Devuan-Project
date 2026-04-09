@@ -1,0 +1,24 @@
+[Unit]
+Description=OpenStack Swift account replicator
+ConditionFileNotEmpty=/etc/swift/account-server.conf
+AssertFileNotEmpty=/etc/swift/account.ring.gz
+AssertFileNotEmpty=/etc/swift/container.ring.gz
+AssertPathExistsGlob=/etc/swift/object*.ring.gz
+Documentation=man:swift-account-replicator(1)
+
+After=network-online.target local-fs.target remote-fs.target 
+Wants=network-online.target 
+
+[Service]
+User=swift
+Group=swift
+WorkingDirectory=~
+CacheDirectory=swift
+RuntimeDirectory=swift lock/swift
+ExecStart=/usr/bin/swift-account-replicator /etc/swift/account-server.conf
+Restart=on-failure
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,57 @@
+#!/bin/sh
+set -e
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p ddupdate 
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p ddupdate  || true
+fi
+
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p ddupdate /usr/share/ddupdate
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p ddupdate /usr/share/ddupdate || true
+fi
+
+# End automatically added section
+# Automatically added by dh_installsystemduser/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] ; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper --user unmask 'ddupdate.service' >/dev/null || true
+
+		# was-enabled defaults to true, so new installations run enable.
+		if deb-systemd-helper --quiet --user was-enabled 'ddupdate.service' ; then
+			# Enables the unit on first installation, creates new
+			# symlinks on upgrades if the unit file has changed.
+			deb-systemd-helper --user enable 'ddupdate.service' >/dev/null || true
+		else
+			# Update the statefile to add new symlinks (if any), which need to be
+			# cleaned up on purge. Also remove old symlinks.
+			deb-systemd-helper --user update-state 'ddupdate.service' >/dev/null || true
+		fi
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemduser/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] ; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper --user unmask 'ddupdate.timer' >/dev/null || true
+
+		# was-enabled defaults to true, so new installations run enable.
+		if deb-systemd-helper --quiet --user was-enabled 'ddupdate.timer' ; then
+			# Enables the unit on first installation, creates new
+			# symlinks on upgrades if the unit file has changed.
+			deb-systemd-helper --user enable 'ddupdate.timer' >/dev/null || true
+		else
+			# Update the statefile to add new symlinks (if any), which need to be
+			# cleaned up on purge. Also remove old symlinks.
+			deb-systemd-helper --user update-state 'ddupdate.timer' >/dev/null || true
+		fi
+	fi
+fi
+# End automatically added section

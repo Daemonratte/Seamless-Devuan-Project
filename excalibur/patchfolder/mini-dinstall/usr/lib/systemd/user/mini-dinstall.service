@@ -1,0 +1,11 @@
+[Unit]
+Description=daemon for updating Debian packages in a repository
+Documentation=man:mini-dinstall(1)
+After=local-fs.target
+
+[Service]
+ExecStart=/usr/bin/mini-dinstall --foreground
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

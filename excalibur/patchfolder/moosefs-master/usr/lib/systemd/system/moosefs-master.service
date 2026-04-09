@@ -1,0 +1,31 @@
+[Unit]
+Description=MooseFS metadata server
+Documentation=man:mfsmaster
+After=local-fs.target
+Wants=local-fs.target
+After=network.target
+Wants=network-online.target
+After=network-online.target
+Before=remote-fs.target
+After=time-sync.target
+
+[Service]
+#Type=notify
+Type=simple
+TimeoutSec=0
+Environment=CFGFILE=/etc/mfs/mfsmaster.cfg
+EnvironmentFile=-/etc/default/%p
+ExecStart=/usr/sbin/mfsmaster -c ${CFGFILE} -f start
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=no
+OOMScoreAdjust=-999
+
+LimitMEMLOCK=infinity
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectKernelTunables=true
+
+[Install]
+WantedBy=multi-user.target

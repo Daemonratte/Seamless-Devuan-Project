@@ -1,0 +1,27 @@
+#! /bin/sh
+# ex: et sw=4 ts=4 sts=4
+
+set -e
+
+if [ "$1" = remove ] || [ "$1" = purge ]; then
+    # stop all master instances
+    if [ -d /run/systemd/system ]; then
+        deb-systemd-invoke stop buildbot-worker@*.service || true
+    else
+        invoke-rc.d buildbot-worker stop || true
+    fi
+fi
+
+
+# Automatically added by dh_python3
+if command -v py3clean >/dev/null 2>&1; then
+	py3clean -p buildbot-worker 
+else
+	dpkg -L buildbot-worker | sed -En -e '/^(.*)\/(.+)\.py$/s,,rm "\1/__pycache__/\2".*,e'
+	find /usr/lib/python3/dist-packages/ -type d -name __pycache__ -empty -print0 | xargs --null --no-run-if-empty rmdir
+fi
+
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,135 @@
+#! /bin/sh
+# ex: et sw=4 ts=4 sts=4
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+HOME_DIR=/var/lib/buildbot
+MASTERS_DIR=$HOME_DIR/masters
+USER_NAME=buildbot
+USER_DESCR="Buildbot system user"
+
+handle_old_master()
+{
+    local basedir="$1"
+    local name=$(basename "$basedir")
+    local pid sed_expr id
+
+    echo "Buildbot master instance in $basedir has been created with a 0.x version and cannot be automatically upgraded."
+
+    if [ -r "$instance/twistd.pid" ]; then
+        pid=$(cat "$instance/twistd.pid")
+    fi
+    if kill -0 "$pid" >/dev/null 2>&1; then
+        echo "Stopping Buildbot master in $basedir (PID $pid) ..."
+        kill $(cat "$pidfile") || true
+    fi
+
+    echo "Please see buildbot(7) for instructions."
+}
+
+upgrade_master()
+{
+    local basedir="$1"
+    local name="$(basename $basedir)"
+    local was_running=false
+
+    if ! [ -d "$basedir" ]; then
+        return
+    fi
+
+    if [ -f "$basedir/.no-auto-upgrade" ]; then
+        handle_old_master "$basedir"
+        return
+    fi
+
+    echo "Upgrading buildbot master instance in $basedir ..."
+
+    if [ -d /run/systemd/system ]; then
+        if systemctl is-active --quiet "buildbot@$name.service"; then
+            was_running=true
+            deb-systemd-invoke stop "buildbot@$name.service"
+        fi
+    else
+        if invoke-rc.d buildbot status "$name" >/dev/null 2>&1; then
+            was_running=true
+            invoke-rc.d buildbot stop "$name"
+        fi
+    fi
+
+    buildbot upgrade-master -q "$basedir"
+
+    if [ "$was_running" = true ]; then
+        if [ -d /run/systemd/system ]; then
+            deb-systemd-invoke start "buildbot@$name.service"
+        else
+            invoke-rc.d buildbot start "$name"
+        fi
+    fi
+}
+
+case "$1" in
+    configure|reconfigure)
+        # Create builbot user account if not exist
+        if ! getent passwd buildbot>/dev/null; then
+            echo "Creating $USER_DESCR ..." >&2
+            useradd \
+                --system \
+                --shell /bin/false \
+                --no-create-home \
+                --user-group \
+                --comment "$USER_DESCR" \
+                --home-dir "$HOME_DIR" \
+                "$USER_NAME"
+        fi
+
+        mkdir -p $HOME_DIR
+        mkdir -p $MASTERS_DIR
+
+        # Fix permissions
+        chown $USER_NAME: $HOME_DIR $MASTERS_DIR
+
+        existing_masters=$(find $MASTERS_DIR -mindepth 1 -maxdepth 1 -type d -print -quit)
+
+        if [ -z "$2" ]; then
+            # first install
+            if [ -z "$existing_masters" ]; then
+                echo "No master instances are configured. See buildbot(7) for instructions." >&2
+            fi
+        else
+            # package upgrade
+            db_get buildbot/upgrade-on-install || true
+            if [ "$RET" = true ]; then
+                # Upgrade any existing master instances
+                for inst in $MASTERS_DIR/*; do
+                    upgrade_master $inst >&2
+                done
+            fi
+        fi
+
+        update-rc.d buildbot defaults >/dev/null
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p buildbot 
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p buildbot  || true
+fi
+
+# End automatically added section
+
+
+exit 0

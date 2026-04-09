@@ -1,0 +1,65 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          rplay
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: start and stop the rplay daemon
+# Description:       Enable service provided by rplay daemon.
+#	rplayd is the sound server for the rplay audio system. The server lis-
+#	tens for requests to play, pause, continue, and stop sounds using  both
+#	the  RPLAY and RPTP protocols.
+### END INIT INFO
+
+# there have been requests to have rplay start up *late* and stop *early*
+FLAGS="defaults 99 10"
+
+test -x /usr/sbin/rplayd || exit 0
+
+. /lib/lsb/init-functions
+
+if egrep "^rplay" /etc/inetd.conf > /dev/null; then
+    log_warning_msg "RPlayd is currently started from inetd"
+    exit 0
+fi
+
+case "$1" in
+start)	log_begin_msg "Starting rplay server" "rplayd"
+	if start-stop-daemon --start --quiet \
+                --exec /usr/sbin/rplayd > /dev/null 2>&1; then
+		log_end_msg 0
+	else
+		log_end_msg 1
+	fi
+	;;
+
+stop)	log_begin_msg "Stopping rplay server" "rplayd"
+	if start-stop-daemon --stop --quiet --exec /usr/sbin/rplayd; then
+		log_end_msg 0
+	else
+		log_end_msg 1
+	fi
+	;;
+    
+reload|force-reload)
+	/usr/bin/rplay --reset
+	;;
+
+restart)
+	log_begin_msg "Restarting rplay server" "rplayd"
+	start-stop-daemon --stop --quiet --exec /usr/sbin/rplayd
+	if start-stop-daemon --start --quiet \
+                --exec /usr/sbin/rplayd > /dev/null 2>&1; then
+		log_end_msg 0
+	else
+		log_end_msg 1
+	fi
+	;;
+
+*)
+	log_failure_msg "Usage: /etc/init.d/rplay {start|stop|reload}"
+	exit 1
+	;;
+esac
+exit 0

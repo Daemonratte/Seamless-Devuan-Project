@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          sauce
+# Required-Start:    $remote_fs $syslog $named $time $network
+# Required-Stop:     $remote_fs $syslog $named $time $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start or stop SAUCE
+### END INIT INFO
+
+test -x /usr/sbin/sauce-run || exit 0
+
+. /etc/sauce/sys-config
+
+set -e
+
+case "$1" in
+start)
+	if sauceadmin '' 2>/dev/null >/dev/null; then exit 0; fi
+	echo Starting smapblocking mail receiver: sauce.
+	/usr/sbin/sauce-run &
+	;;
+
+stop)
+	echo -n "Stopping spamblocking mail receiver: "
+	set +e
+	sauceadmin --sauceadmin-connrefused-ok=true shutdown
+	set -e
+	echo -n sauce
+	start-stop-daemon --stop -oq --retry 30 -u mail -n sauce
+	echo "."
+	;;
+
+restart)
+        $0 stop
+        $0 start
+	;;
+    
+reload)
+	echo -n "Reloading sauce configuration..."
+	sauceadmin --sauceadmin-connrefused-ok=true readconfig || test $? = 1
+	echo "done." 
+	;;
+
+force-reload)
+        $0 reload
+	;;
+
+*)
+	echo "Usage: /etc/init.d/sauce {start|stop|reload|restart|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

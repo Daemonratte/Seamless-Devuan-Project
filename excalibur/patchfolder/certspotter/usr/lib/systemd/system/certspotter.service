@@ -1,0 +1,21 @@
+[Unit]
+Description=Certificate Transparency Log Monitor
+Documentation=man:certspotter(8)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/certspotter/watchlist
+
+[Service]
+Type=simple
+User=_certspotter
+Group=_certspotter
+ExecCondition=grep -q -E -v '^\s*(#|$)' /etc/certspotter/watchlist
+Environment=CERTSPOTTER_CONFIG_DIR=/etc/certspotter CERTSPOTTER_STATE_DIR=/var/cache/certspotter
+ExecStart=/usr/bin/certspotter -start_at_end
+ConfigurationDirectory=certspotter
+CacheDirectory=certspotter
+# not strict, because we want to allow some flexibility to hooks
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

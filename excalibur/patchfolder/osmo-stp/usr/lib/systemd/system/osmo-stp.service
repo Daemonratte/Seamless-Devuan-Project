@@ -1,0 +1,20 @@
+[Unit]
+Description=Osmocom STP (Signal Transfer Point)
+Documentation=https://osmocom.org/projects/osmo-stp/wiki
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+StateDirectory=osmocom
+WorkingDirectory=%S/osmocom
+User=osmocom
+Group=osmocom
+ExecStart=/usr/bin/osmo-stp -c /etc/osmocom/osmo-stp.cfg
+RestartSec=2
+PrivateTmp=true
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

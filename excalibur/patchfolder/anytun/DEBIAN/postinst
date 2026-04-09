@@ -1,0 +1,38 @@
+#!/bin/sh
+# postinst script for anytun
+
+set -e
+
+if [ -x "/etc/init.d/anytun" ]; then
+  update-rc.d anytun defaults >/dev/null
+fi
+
+if [ "$1" = "configure" ]; then
+  adduser --quiet --system --group --no-create-home --home /var/run/anytun anytun
+fi
+
+# Automatically added by dh_installsystemd/13.16
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create anytun.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.16
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'anytun.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'anytun.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'anytun.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'anytun.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

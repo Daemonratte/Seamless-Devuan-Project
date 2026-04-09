@@ -1,0 +1,24 @@
+[Unit]
+Description=MooseFS CGI server daemon
+Documentation=man:mfscgiserv
+After=network.target
+
+[Service]
+Environment=BIND_HOST=0.0.0.0
+Environment=BIND_PORT=9425
+Environment=ROOT_PATH=/usr/share/moosefs-cgi
+EnvironmentFile=-/etc/default/%p
+ExecStart=/usr/sbin/mfscgiserv -f -H ${BIND_HOST} -P ${BIND_PORT} -R ${ROOT_PATH}
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-abort
+User=mfs
+Group=nogroup
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectKernelTunables=true
+
+[Install]
+WantedBy=multi-user.target

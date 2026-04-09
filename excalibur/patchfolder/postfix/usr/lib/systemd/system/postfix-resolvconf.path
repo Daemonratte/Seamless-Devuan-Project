@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for resolv.conf updates for postfix
+ConditionPathExists=/etc/resolv.conf
+
+[Path]
+PathChanged=/etc/resolv.conf
+
+[Install]
+WantedBy=multi-user.target

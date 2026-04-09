@@ -1,0 +1,23 @@
+[Unit]
+Description=Request Tracker 5 FastCGI daemon
+Documentation=man:rt-server-5
+
+[Service]
+Type=forking
+PIDFile=/run/%p.pid
+SyslogIdentifier=%p
+Environment=workers=2
+EnvironmentFile=-/etc/default/%p
+ExecStart=/usr/bin/spawn-fcgi \
+    -F ${workers} \
+    -d / \
+    -u www-data \
+    -g www-data \
+    -s /var/run/%p.sock \
+    -P /var/run/%p.pid \
+    -- /usr/share/request-tracker5/libexec/rt-server.fcgi
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

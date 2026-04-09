@@ -1,0 +1,22 @@
+[Unit]
+Description=Firewall log analyzer
+Documentation=man:fwlogwatch
+After=syslog.socket remote-fs.target
+
+[Service]
+EnvironmentFile=/etc/default/fwlogwatch
+ExecStart=/bin/sh -c \
+ 'if [ "x${START_DAEMON}" != "xtrue" ]; then echo "aborted"; exit 1; fi; \
+  exec /usr/sbin/fwlogwatch -c /etc/fwlogwatch/fwlogwatch.config -R ${PARAMS}'
+Type=forking
+PIDFile=/run/fwlogwatch.pid
+################
+### Security ###
+################
+InaccessibleDirectories=/boot /home /media /mnt /root /opt /srv
+PrivateTmp=yes
+ReadOnlyDirectories=/etc /usr /var
+ReadWriteDirectories=/var/run
+
+[Install]
+WantedBy=multi-user.target

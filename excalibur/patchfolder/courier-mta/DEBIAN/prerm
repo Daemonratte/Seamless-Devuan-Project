@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# Exit immediately if a command produces an error.
+set -e
+
+if [ "$1" = "upgrade" -o "$1" = "remove" ]; then
+    for binary in lockmail preline; do
+	update-alternatives --remove $binary /usr/bin/$binary.courier
+    done
+fi
+
+if [ ! -f /etc/courier/module.fax ]; then
+    # fax module configuration file is missing, courier
+    # will not shutdown properly, therefore we are using
+    # this kludge
+    start-stop-daemon --stop --oknodo --exec /usr/lib/courier/courier/courierd 
+fi
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'courier-msa.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'courier-mta-ssl.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'courier-mta.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'courierfilter.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'courier.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/courier-msa" ] ; then
+	invoke-rc.d --skip-systemd-native courier-msa stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/courier-mta-ssl" ] ; then
+	invoke-rc.d --skip-systemd-native courier-mta-ssl stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/courier-mta" ] ; then
+	invoke-rc.d --skip-systemd-native courier-mta stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/courierfilter" ] ; then
+	invoke-rc.d --skip-systemd-native courierfilter stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/courier" ] ; then
+	invoke-rc.d --skip-systemd-native courier stop || exit 1
+fi
+# End automatically added section
+
+
+exit 0

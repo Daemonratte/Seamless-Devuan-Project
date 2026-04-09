@@ -1,0 +1,7 @@
+[Unit]
+Description=Layer3 multi-hop ad-hoc mesh daemon
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/default/batmand
+ExecStart=/usr/sbin/batmand --no-detach $DAEMON_OPTS

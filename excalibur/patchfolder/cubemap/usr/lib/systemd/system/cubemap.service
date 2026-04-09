@@ -1,0 +1,12 @@
+[Unit]
+Description=Cubemap stream relay
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/cubemap /etc/cubemap.config
+User=cubemap
+ExecReload=/bin/kill -HUP $MAINPID
+LimitNOFILE=16384
+
+[Install]
+WantedBy=multi-user.target

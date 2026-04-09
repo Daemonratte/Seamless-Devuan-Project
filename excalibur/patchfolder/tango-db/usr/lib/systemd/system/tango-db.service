@@ -1,0 +1,24 @@
+# based on https://tango-controls.readthedocs.io/en/9.3.5/tutorials-and-howtos/how-tos/how-to-integrate-with-systemd.html
+# https://tango-controls.readthedocs.io/en/latest/tutorials-and-howtos/how-tos/how-to-try-tango/tango-db-service.html
+# https://gitlab.com/tango-controls/RPM/tango-spec/-/blob/77c47f5dd0786f0c8f94ae3e20ea2cb79c053bd7/tango-db.service
+# and on tango-db.init.d
+[Unit]
+Description=Tango Control System - Database
+Wants=mariadb.service
+After=mariadb.service
+StopWhenUnneeded=true
+ConditionPathExists=/etc/tangorc
+
+[Service]
+User=tango
+Group=tango
+Type=simple
+EnvironmentFile=/etc/tangorc
+ExecStart=/usr/lib/tango/Databaseds 2 -ORBendPoint giop:tcp:${TANGO_HOST}
+TimeoutSec=10
+
+# Place temp files in a secure directory, not /tmp
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

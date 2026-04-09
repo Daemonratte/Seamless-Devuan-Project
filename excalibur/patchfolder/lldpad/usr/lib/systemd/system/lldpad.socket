@@ -1,0 +1,9 @@
+[Unit]
+Description=Link Layer Discovery Protocol Agent Socket.
+
+[Socket]
+ListenDatagram=@/com/intel/lldpad
+PassCredentials=true
+
+[Install]
+WantedBy=sockets.target

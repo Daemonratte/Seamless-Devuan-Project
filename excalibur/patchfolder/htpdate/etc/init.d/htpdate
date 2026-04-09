@@ -1,0 +1,69 @@
+#!/bin/sh
+#
+# Script for htpdate.
+# C2014, Joao Eriberto Mota Filho
+# Based on original upstream script, available at scripts/htpdate.init
+
+### BEGIN INIT INFO
+# Provides:        htpdate
+# Required-Start:  $network $remote_fs $syslog
+# Required-Stop:   $network $remote_fs $syslog
+# Default-Start:   2 3 4 5
+# Default-Stop:    0 1 6
+# Short-Description: Start htpdate daemon
+# Description:       Starts and stops the htpdate daemon used to
+#                    synchronize a computer time.
+### END INIT INFO
+
+test -x /usr/sbin/htpdate || exit 0
+
+. /lib/lsb/init-functions || exit 0
+
+if [ -f /etc/default/htpdate ]; then
+    . /etc/default/htpdate
+else
+    exit 0
+fi
+
+if [ "$HTP_DAEMON" = "no" ]; then
+    echo "htpdate is disabled. Please, see /etc/default/htpdate."
+    exit 0
+fi
+
+HTPCOM="/usr/sbin/htpdate"
+PIDFILE="/var/run/htpdate.pid"
+
+case "$1" in
+	start)
+		echo "Starting HTTP Time Protocol daemon: htpdate"
+		# Set the time first before daemonizing, because the time offset
+		# might be too big for smooth time adjustment
+		$HTPCOM $HTP_OPTIONS $HTP_PROXY -i $PIDFILE $HTP_SERVERS
+		;;
+	stop)
+		echo "Stopping HTTP Time Protocol daemon: htpdate"
+		if [ -f $PIDFILE ]
+		then
+			kill `cat $PIDFILE`
+		else
+			echo "$PIDFILE not found"
+		fi
+		rm -f $PIDFILE
+		;;
+	restart)
+		$0 stop
+		$0 start
+		;;
+	reload|force-reload)
+		echo "Reloading htpdate"
+		start-stop-daemon --stop --signal 1 --exec $HTPCOM
+		;;
+	status)
+		status_of_proc -p $PIDFILE $HTPCOM htpdate
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload|force-reload|status}"
+		exit 1
+esac
+
+exit 0

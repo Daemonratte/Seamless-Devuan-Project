@@ -1,0 +1,63 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          oidentd ident-server
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Should-Start:	
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: replacement ident daemon
+# Description:       oidentd is a replacement ident daemon
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+OIDENTD=/usr/sbin/oidentd
+
+# See if the daemons are there
+test -f ${OIDENTD} || exit 0
+
+# oidentd configuration
+OIDENT_OPTIONS=""
+OIDENT_USER="nobody"
+OIDENT_GROUP="nogroup"
+test -f /etc/default/oidentd && . /etc/default/oidentd
+
+. /lib/lsb/init-functions
+
+if [ "${OIDENT_BEHIND_PROXY}" = "yes" ]; then
+	OIDENT_OPTIONS="${OIDENT_OPTIONS} -P `ip route show to exact 0/0 | awk '{print $3}'`"
+fi
+
+
+OPTIONS="${OIDENT_OPTIONS} -u ${OIDENT_USER} -g ${OIDENT_GROUP}"
+
+case "$1" in
+	start)
+		log_daemon_msg "Starting ident daemon" "oidentd"
+		start-stop-daemon --start --quiet --oknodo --exec ${OIDENTD} -- ${OPTIONS}
+		log_end_msg $?
+		;;
+	stop)
+		log_daemon_msg "Stopping ident daemon" "oidentd"
+		start-stop-daemon --stop --quiet --oknodo --exec ${OIDENTD} -- ${OPTIONS}
+		log_end_msg $?
+		;;
+	reload|restart|force-reload)
+		log_daemon_msg "Restarting ident daemon" "oidentd"
+		start-stop-daemon --stop --quiet --exec ${OIDENTD} -- ${OPTIONS}
+		sleep 2
+		start-stop-daemon --start --quiet --exec ${OIDENTD} -- ${OPTIONS}
+		log_end_msg $?
+		;;
+	status)
+		status_of_proc "$OIDENTD" "oidentd" && exit 0 || exit $?
+		;;
+	*)
+		log_success_msg "Usage: $0 {start|stop|restart|reload|force-reload|status}"
+		exit 1
+		;;
+esac
+
+exit 0
+

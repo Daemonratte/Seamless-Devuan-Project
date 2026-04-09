@@ -1,0 +1,13 @@
+[Unit]
+  Description=PKCS#11 daemon
+  After=network-online.target
+  
+  [Service]
+  Type=simple
+  Environment=PKCS11_DAEMON_SOCKET="tls://[::]:2345"
+  Environment=PKCS11_PROXY_TLS_PSK_FILE="/var/lib/pkcs11-daemon/softhsm2.psk"
+  ExecStart=/usr/bin/pkcs11-daemon /usr/lib/softhsm/libsofthsm2.so
+  Restart=on-failure
+  
+  [Install]
+  WantedBy=multi-user.targe

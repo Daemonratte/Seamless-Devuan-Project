@@ -1,0 +1,67 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    purge)
+	rm -rf /var/spool/smtpd
+        # Remove the statoverride before the opensmtpq group.
+        # Otherwise, if users attempt to install the package after
+        # a purge, dpkg will abort with:
+        # > dpkg: unrecoverable fatal error, aborting:
+        # >  unknown system group 'opensmtpq' in statoverride file; the system
+        # > group got removed before the override, which is most probably a
+        # > packaging bug, to recover you can remove the override manually with
+        # > dpkg-statoverride
+        if dpkg-statoverride --list --quiet "/usr/sbin/smtpctl" >/dev/null;
+        then
+            dpkg-statoverride --quiet --remove "/usr/sbin/smtpctl"
+        fi
+        for name in opensmtpd opensmtpq; do
+            # By debian Policy §6.5, we may only rely on essential packages and
+            # must fail gracefully if they are unavailable.
+            # Use userdel/groupdel from passwd instead of deluser/delgroup from
+            # the adduser package. This is because adduser depends on passwd,
+            # but is of lesser priority.
+            # Note that at the time of this writing, neither passwd nor adduser
+            # are essential packages.
+            userdel  ${name} >/dev/null 2>&1 || true;
+            groupdel ${name} >/dev/null 2>&1 || true;
+        done
+	;;
+
+    remove|failed-upgrade|abort-install|abort-upgrade|disappear|upgrade)
+	;;
+
+    *)
+	echo "postrm called with unknown argument \`$1'" >&2
+	exit 1
+	;;
+esac
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/opensmtpd" ] ; then
+	chmod -x "/etc/init.d/opensmtpd" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d opensmtpd remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'opensmtpd.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+

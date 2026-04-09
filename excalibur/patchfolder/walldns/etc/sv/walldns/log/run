@@ -1,0 +1,4 @@
+#!/bin/sh
+chown _runit-log:adm '/var/log/runit/walldns'
+chmod 750 '/var/log/runit/walldns'
+exec chpst -u _runit-log svlogd -tt '/var/log/runit/walldns'

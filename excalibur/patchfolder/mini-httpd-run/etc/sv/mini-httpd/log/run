@@ -1,0 +1,4 @@
+#!/bin/sh
+chown _runit-log:adm '/var/log/runit/mini-httpd'
+chmod 750 '/var/log/runit/mini-httpd'
+exec chpst -u _runit-log svlogd -tt '/var/log/runit/mini-httpd'

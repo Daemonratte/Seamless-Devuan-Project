@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodically run rpki-client
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=15min
+
+[Install]
+WantedBy=timers.target
+

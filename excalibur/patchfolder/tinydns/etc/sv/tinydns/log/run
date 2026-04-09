@@ -1,0 +1,4 @@
+#!/bin/sh
+chown _runit-log:adm '/var/log/runit/tinydns'
+chmod 750 '/var/log/runit/tinydns'
+exec chpst -u _runit-log svlogd -tt '/var/log/runit/tinydns'

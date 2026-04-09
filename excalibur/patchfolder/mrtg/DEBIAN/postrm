@@ -1,0 +1,52 @@
+#!/bin/sh
+
+set -e
+
+# Remove user, group and directories when purging
+
+case "$1" in
+    purge)
+	if getent passwd | grep -q mrtg; then
+	    deluser --system mrtg  2>/dev/null || userdel -fr mrtg 2>/dev/null
+	fi
+
+	if getent group | grep -q mrtg; then
+	    delgroup --system mrtg  2>/dev/null || groupdel -f mrtg 2>/dev/null
+	fi
+
+	if [ -d /var/lib/mrtg ]; then rm -rf /var/lib/mrtg; fi
+	if [ -d /var/lock/mrtg ]; then rm -rf /var/lock/mrtg; fi
+	if [ -d /var/log/mrtg ]; then rm -rf /var/log/mrtg; fi
+	if [ -d /var/run/mrtg ]; then rm -rf /var/run/mrtg; fi
+    ;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/mrtg" ] ; then
+	chmod -x "/etc/init.d/mrtg" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d mrtg remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'mrtg.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,18 @@
+[Unit]
+Description=Groonga full text search GQTP server
+Documentation=https://groonga.org/docs/server/package.html#groonga-server-gqtp
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/groonga-server-gqtp
+User=_groonga
+Group=groonga
+ExecStartPre=-/bin/mkdir -p /run/groonga
+ExecStart=/usr/bin/groonga --protocol gqtp --bind-address $ADDRESS --log-path $LOG_PATH --query-log-path $QUERY_LOG_PATH --port $PORT -s $DATABASE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

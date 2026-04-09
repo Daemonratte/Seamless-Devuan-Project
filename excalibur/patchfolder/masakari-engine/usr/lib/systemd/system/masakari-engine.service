@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Masakari Engine (masakari-engine)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:masakari-engine(1)
+
+[Service]
+User=masakari
+Group=masakari
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=masakari lock/masakari
+CacheDirectory=masakari
+ExecStart=/etc/init.d/masakari-engine systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

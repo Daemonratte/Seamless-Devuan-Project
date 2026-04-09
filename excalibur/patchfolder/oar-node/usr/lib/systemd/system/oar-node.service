@@ -1,0 +1,15 @@
+[Unit]
+Description=OAR compute node
+After=multi-user.target
+Documentation=man:oar-node(8)
+
+[Service]
+ExecStart=/usr/sbin/sshd -f /etc/oar/sshd_config
+Type=notify
+KillMode=process
+RuntimeDirectory=sshd
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=oar.target

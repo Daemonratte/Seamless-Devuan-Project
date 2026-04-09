@@ -1,0 +1,40 @@
+[Unit]
+Description=binkd FidoTech TCP/IP mailer
+Documentation=man:binkd(8)
+After=network.target
+
+[Service]
+Restart=on-failure
+ExecStart=/usr/sbin/binkd /etc/binkd/binkd.cfg -q -C
+ExecReload=/bin/kill -HUP $MAINPID
+User=ftn
+Group=ftn
+ConfigurationDirectory=binkd
+StateDirectory=ftn
+ReadWritePaths=/var/log/binkd/
+ReadWritePaths=/var/spool/ftn/
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=@system-service
+
+[Install]
+WantedBy=multi-user.target
+

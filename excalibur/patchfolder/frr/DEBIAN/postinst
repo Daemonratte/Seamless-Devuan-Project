@@ -1,0 +1,107 @@
+#!/bin/sh
+
+set -e
+
+Remove_default_file()
+{
+	FILENAME="${1}"
+	CHECKSUM="${2}"
+
+	if [ ! -e "${FILENAME}" ] || [ -z "${CHECKSUM}" ]
+	then
+		return 0
+	fi
+
+	MD5SUM="$(md5sum "${FILENAME}" | cut -d' ' -f1)"
+
+	if [ "${CHECKSUM}" = "${MD5SUM}" ]
+	then
+		rm -f "${FILENAME}"
+	fi
+}
+
+case "${1}" in
+	configure)
+		# creating group
+		for GROUP in frr frrvty
+		do
+			if ! getent group "${GROUP}" > /dev/null 2>&1
+			then
+				groupadd --system "${GROUP}"
+			fi
+		done
+
+		# creating user
+		if ! getent passwd frr > /dev/null 2>&1
+		then
+			useradd --system -g frr --home-dir /nonexistent --no-create-home frr
+		fi
+
+		usermod -G frrvty frr
+
+		mkdir -p /etc/frr
+		if ! dpkg-statoverride --list /etc/frr > /dev/null 2>&1
+		then
+			dpkg-statoverride --update --add frr frr 0700 /etc/frr
+		fi
+
+		mkdir -p /var/lib/frr
+		chown frr:frr /var/lib/frr
+
+		mkdir -p /var/log/frr
+		chown frr:adm /var/log/frr
+
+		if [ -e /etc/frr/.pkg.frr.nointegrated ]
+		then
+			Remove_default_file	/etc/frr/frr.conf	53456334f26ca14c15053dff133b4ac0
+			Remove_default_file	/etc/frr/vtysh.conf	a9381cc58d80a472e8f51522e007e507
+
+			rm -f /etc/frr/.pkg.frr.nointegrated
+		fi
+		;;
+
+	abort-upgrade|abort-remove|abort-deconfigure)
+
+		;;
+
+	*)
+		echo "postinst called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
+esac
+
+# Automatically added by dh_installtmpfiles/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create frr.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'frr.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'frr.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'frr.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'frr.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		deb-systemd-invoke start 'frr.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

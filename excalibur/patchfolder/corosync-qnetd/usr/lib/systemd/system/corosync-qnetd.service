@@ -1,0 +1,20 @@
+[Unit]
+Description=Corosync Qdevice Network daemon
+Documentation=man:corosync-qnetd
+ConditionKernelCommandLine=!nocluster
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+EnvironmentFile=-/etc/default/corosync-qnetd
+ExecStart=/usr/bin/corosync-qnetd -f $COROSYNC_QNETD_OPTIONS
+Type=notify
+StandardError=null
+Restart=on-abnormal
+User=coroqnetd
+RuntimeDirectory=corosync-qnetd
+RuntimeDirectoryMode=0770
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

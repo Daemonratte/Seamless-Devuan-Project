@@ -1,0 +1,22 @@
+[Unit]
+Documentation=man:systemd-sysv-generator(8)
+SourcePath=/etc/init.d/canna
+Description=LSB: canna Japanese Input System
+Before=multi-user.target
+Before=graphical.target
+After=remote-fs.target
+
+[Service]
+Type=forking
+Restart=no
+TimeoutSec=5min
+IgnoreSIGPIPE=no
+KillMode=process
+GuessMainPID=no
+RemainAfterExit=yes
+SuccessExitStatus=5 6
+ExecStart=/etc/init.d/canna start
+ExecStop=/etc/init.d/canna stop
+
+[Install]
+WantedBy=multi-user.target

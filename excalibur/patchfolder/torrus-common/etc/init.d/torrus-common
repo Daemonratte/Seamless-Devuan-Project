@@ -1,0 +1,92 @@
+#!/bin/sh
+#
+# init.d script for Torrus
+# Install it as /etc/init.d/torrus (most UNIXes),
+# or as /usr/local/etc/rc.d/torrus.sh (FreeBSD), or probably somewhere else.
+#
+# Stanislav Sinyagin <ssinyagin@k-open.com>
+#
+#
+### chkconfig info
+# chkconfig: 2345 90 10
+# description: Starts/Stops Torrus collectors and monitors
+###
+#
+### BEGIN INIT INFO
+# Provides:          torrus-collector torrus-monitor torrus-common
+# Required-Start:    $local_fs $remote_fs $syslog $named $network $time
+# Required-Stop:     $local_fs $remote_fs $syslog $named $network
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Torrus collectors and monitors
+# Description:       Start/stop Torrus collectors and monitors
+### END INIT INFO
+
+set -e
+
+if [ -r "/lib/lsb/init-functions" ]; then
+  . /lib/lsb/init-functions
+fi
+
+prefix=/usr
+sysconfdir=/etc
+pkghome=/usr/share
+cmddir=/usr/share/torrus/bin
+piddir=/var/run/torrus
+sitedir=${sysconfdir}/torrus
+
+. /usr/share/torrus/conf_defaults/initscript.conf
+if test -f ${sitedir}/conf/initscript.siteconf; then
+  . ${sitedir}/conf/initscript.siteconf
+fi
+
+START_ARGS="--cmd=start"
+STOP_ARGS="--cmd=stop"
+
+if [ ! -d $piddir ]; then
+  mkdir -p $piddir
+fi
+
+if test x"${TORRUS_USER}" != x; then
+  START_ARGS=${START_ARGS}' --user='${TORRUS_USER}
+  STOP_ARGS=${STOP_ARGS}' --user='${TORRUS_USER}
+  chown $TORRUS_USER $piddir
+fi
+
+
+start_daemons () {
+  ${cmddir}/launcher ${START_ARGS} 2>&1 | tee -a /var/log/torrus/launcher_start.log
+}
+
+stop_daemons () {
+  ${cmddir}/launcher ${STOP_ARGS} 2>&1 | tee -a /var/log/torrus/launcher_stop.log
+}
+
+case "$1" in
+  'start')    start_daemons
+  ;;
+
+  'stop')     stop_daemons
+  ;;
+  
+  'restart')  stop_daemons; start_daemons
+  ;;
+
+  'force-reload')  stop_daemons; start_daemons
+  ;;
+
+  'status')   ${cmddir}/launcher --cmd=status
+  ;;
+  
+  *)  echo "Usage: $0 {start|stop|restart|force-reload|status}"
+  ;;
+  esac
+
+# Local Variables:
+# mode: shell-script
+# sh-shell: sh
+# indent-tabs-mode: nil
+# sh-basic-offset: 2
+# End:

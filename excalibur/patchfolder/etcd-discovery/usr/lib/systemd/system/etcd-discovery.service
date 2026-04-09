@@ -1,0 +1,21 @@
+[Unit]
+Description=Etcd Discovery Service (discovery.etcd.io)
+After=etcd.service network-online.target local-fs.target remote-fs.target 
+Wants=etcd.service network-online.target 
+
+Documentation=man:discovery.etcd.io(1)
+
+[Service]
+User=etcd
+Group=etcd
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=etcd lock/etcd
+CacheDirectory=etcd
+ExecStart=/etc/init.d/etcd-discovery systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=OAR server
+Documentation=man:oar-server(8)
+After=network-online.target
+After=remote-fs.target
+After=postgresql.service
+After=mysql-server.service
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/sbin/oar-server
+Type=forking
+
+[Install]
+WantedBy=multi-user.target

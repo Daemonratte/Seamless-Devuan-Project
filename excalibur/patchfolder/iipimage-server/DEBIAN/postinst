@@ -1,0 +1,52 @@
+#!/bin/bash
+
+set -e
+
+# Automatically added by dh_systemd_enable/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'iipsrv.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'iipsrv.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'iipsrv.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'iipsrv.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_systemd_start/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		deb-systemd-invoke start 'iipsrv.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+if [ "$1" != "configure" -a "$1" != "purge" ]; then
+	exit 0
+fi
+
+if [ -e /etc/apache2/apache2.conf ]; then
+	a2enmod iipsrv || true
+	touch /var/log/iipsrv.log
+	chown www-data:www-data /var/log/iipsrv.log
+fi
+
+if [ -e /etc/lighttpd/lighttpd.conf ]; then
+	lighty-enable-mod iipsrv || true
+	touch /var/log/iipsrv.log
+	chown www-data:www-data /var/log/iipsrv.log
+fi
+
+if [ -x "/etc/init.d/memcached" ]; then
+  invoke-rc.d memcached start || exit $?
+fi
+
+exit 0

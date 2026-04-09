@@ -1,0 +1,13 @@
+[Unit]
+Description=anti portscan daemon (%i)
+Documentation=man:portsentry(8)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=forking
+ExecStartPre=/usr/lib/portsentry/portsentry-build-ignore-file
+ExecStart=/usr/sbin/portsentry -%i
+
+[Install]
+WantedBy=multi-user.target

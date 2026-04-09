@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.15.3
+dpkg-maintscript-helper rm_conffile /etc/init/aptitude-robot.conf 1.5.3-1 -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.15.3
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/aptitude-robot" ] ; then
+	chmod +x "/etc/init.d/aptitude-robot" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'aptitude-robot.service' >/dev/null || true
+fi
+# End automatically added section

@@ -1,0 +1,211 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          c-icap
+# Required-Start:    $network $remote_fs $syslog
+# Required-Stop:     $network $remote_fs $syslog
+# Should-Start:      $named
+# Should-Stop:       $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: c-icap Server
+# Description:       ICAP server
+### END INIT INFO
+
+# Do NOT "set -e"
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="c-icap Server"
+NAME=c-icap
+DAEMON=/usr/bin/$NAME
+DAEMON_ARGS=""
+config_PidFile=/var/run/$NAME/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+CONFFILE=/etc/c-icap/c-icap.conf
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Support for older option name
+if [ ! -z "$DAEMON_OPTS" ]; then
+	DAEMON_ARGS="$DAEMON_OPTS"
+fi
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+. /lib/lsb/init-functions
+
+#
+# c-icap specific functions
+#
+slurp_config()
+{
+	local CONFFILE="$1"
+	local var_regexp_group='\(User\|Group\|CommandsSocket\)'
+	local full_regexp="^[[:space:]]*${var_regexp_group}[[:space:]]\+\([^']*\)$"
+	local variable
+	local value
+
+	# Some default values
+	config_CommandsSocket=/var/run/c-icap/c-icap.ctl
+	config_User=c-icap
+	config_Group=c-icap
+
+	if [ -f "$CONFFILE" ]; then
+		local line
+		local old_IFS="$IFS"
+		# A new line (as $'\n' is a bashism)
+		IFS='
+'
+		for line in `grep "${full_regexp}" "$CONFFILE"`; do
+			variable=$(echo "$line" | sed "s/${full_regexp}/\\1/")
+			value=$(echo "$line" | sed "s/${full_regexp}/\\2/")
+			if [ -n "$value" ]; then
+				export "config_$variable"="$value"
+			fi
+		done
+		IFS="${old_IFS}"
+	fi
+}
+
+check_run_dir() {
+	local ctl_dir
+	ctl_dir=$(dirname "$config_PidFile")
+
+	# Create the run empty directory if necessary
+	if [ ! -d "$ctl_dir" ]; then
+		mkdir /var/run/c-icap
+		chown "$config_User":"$config_Group" /var/run/c-icap
+		chmod 0755 /var/run/c-icap
+	fi
+}
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+	# If the daemon is not enabled, give the user a warning and stop.
+	if [ "$START" != "yes" ]; then
+		echo "To enable $NAME, edit /etc/default/$NAME and set START=yes"
+		exit 0
+	fi
+
+	# Return
+	#   0 if daemon has been started
+	#   1 if daemon was already running
+	#   2 if daemon could not be started
+	start-stop-daemon --start --quiet --pidfile $config_PidFile --exec $DAEMON --test > /dev/null \
+		|| return 1
+	start-stop-daemon --start --quiet --pidfile $config_PidFile --exec $DAEMON -- \
+		$DAEMON_ARGS \
+		|| return 2
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+	local RETVAL
+	# Return
+	#   0 if daemon has been stopped
+	#   1 if daemon was already stopped
+	#   2 if daemon could not be stopped
+	#   other if a failure occurred
+	start-stop-daemon --stop --quiet --retry=TERM/10/KILL/5 --pidfile $config_PidFile --name $NAME
+	RETVAL="$?"
+	[ "$RETVAL" = 2 ] && return 2
+	# Wait for children to finish too if this is a daemon that forks
+	# and if the daemon is only ever run from this initscript.
+	# If the above conditions are not satisfied then add some other code
+	# that waits for the process to drop all resources that could be
+	# needed by services started subsequently.  A last resort is to
+	# sleep for some time.
+	start-stop-daemon --stop --quiet --oknodo --retry=0/10/KILL/5 --exec $DAEMON
+	[ "$?" = 2 ] && return 2
+	# Many daemons don't delete their pidfiles when they exit.
+	rm -f $config_PidFile
+	return "$RETVAL"
+}
+
+#
+# Function that sends a SIGHUP to the daemon/service
+#
+do_reload() {
+	echo -n "reconfigure" > "$config_CommandsSocket"
+	return 0
+}
+
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+
+	# Read config
+	slurp_config "$CONFFILE"
+	# Check to create /var/run directory even if START=no, if someone wants to run c-icap
+	# in debug mode / foreground to test some functions without start it from init.d
+	check_run_dir
+
+	do_start
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  stop)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+	# Read config
+	slurp_config "$CONFFILE"
+	do_stop
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  status)
+	status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+	;;
+  reload|force-reload)
+	log_daemon_msg "Reloading $DESC" "$NAME"
+	# Read config
+	slurp_config "$CONFFILE"
+	do_reload
+	log_end_msg $?
+	;;
+  restart)
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	# Read config
+	slurp_config "$CONFFILE"
+	# Check to create /var/run
+	check_run_dir
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_end_msg 0 ;;
+			1) log_end_msg 1 ;; # Old process is still running
+			*) log_end_msg 1 ;; # Failed to start
+		esac
+		;;
+	  *)
+		# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|status|reload|force-reload|restart}" >&2
+	exit 3
+	;;
+esac
+
+:

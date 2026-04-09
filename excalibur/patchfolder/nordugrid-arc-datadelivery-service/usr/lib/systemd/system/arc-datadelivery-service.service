@@ -1,0 +1,11 @@
+[Unit]
+Description=A-REX datadelivery service
+After=local-fs.target remote-fs.target
+
+[Service]
+ExecStart=/usr/share/arc/arc-datadelivery-service-start
+NotifyAccess=all
+Type=forking
+
+[Install]
+WantedBy=multi-user.target

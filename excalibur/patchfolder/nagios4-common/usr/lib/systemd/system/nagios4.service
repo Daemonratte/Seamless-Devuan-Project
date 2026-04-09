@@ -1,0 +1,16 @@
+[Unit]
+Description=nagios4
+Documentation=man:nagios4
+
+[Service]
+Environment=NAGIOSCFG="/etc/nagios4/nagios.cfg"
+EnvironmentFile=/etc/default/nagios4
+ExecStartPre=sh -c 'nagiospipe=$$(sed -n "s/^command_file=\\(.*\\)/\\1/p" ${NAGIOSCFG}); [ -z "$${nagiospipe}" -o ! -e "$${nagiospipe}" ] || rm -f "$${nagiospipe}"'
+ExecStart=/usr/sbin/nagios4 ${NAGIOSCFG}
+ExecStopPost=sh -c 'nagiospipe=$$(sed -n "s/^command_file=\\(.*\\)/\\1/p" ${NAGIOSCFG}); [ -z "$${nagiospipe}" -o ! -e "$${nagiospipe}" ] || rm -f "$${nagiospipe}"'
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+PIDFile=/run/nagios4/nagios.pid
+
+[Install]
+WantedBy=multi-user.target

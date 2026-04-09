@@ -1,0 +1,92 @@
+#! /bin/sh
+#
+#		Written by Miquel van Smoorenburg <miquels@cistron.nl>
+#		Modified for Debian by Ian Murdock <imurdock@gnu.ai.mit.edu>
+#
+
+### BEGIN INIT INFO
+# Provides:          pvpgn
+# Required-Start:    $local_fs $remote_fs $syslog $network $time
+# Required-Stop:     $local_fs $remote_fs $syslog $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Gaming server that emulates Battle.net(R)
+# Description: control bnetd daemon
+### END INIT INFO
+
+set -e
+
+. /lib/lsb/init-functions
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/bnetd
+NAME=bnetd
+DESC="bnetd daemon"
+
+# checks for the pvpgn support files
+check_support()
+{
+FILES="
+ ad000001.smk
+ ad000002.mng
+ ad000002.smk
+ icons.bni
+ icons_STAR.bni
+ icons-WAR3.bni
+ IX86ExtraWork.mpq
+ IX86ver1.mpq
+ newbie.save
+ PMACver1.mpq
+ ver-IX86-1.mpq
+ XMACver1.mpq
+"
+
+	START=1
+	for i in $FILES; do
+		if [ ! -f "/var/lib/pvpgn/files/$i" ]; then
+			START=0;
+		fi
+	done
+
+	if [ "$START" = "0" ]; then
+		echo
+		echo "You are missing the pvpgn support files and daemon will not start without them."
+		echo "Run 'sudo pvpgn-support-installer' or read /usr/share/doc/pvpgn/README.Debian"
+		exit 0
+	fi
+
+}
+
+test -x $DAEMON || exit 0
+
+case "$1" in
+  start)
+	check_support
+	echo -n "Starting $DESC: "
+	start-stop-daemon --start --quiet --exec $DAEMON -- $DAEMON_OPTS
+	echo "$NAME."
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+	start-stop-daemon --stop --quiet --oknodo --exec $DAEMON
+	echo "$NAME."
+	;;
+  status)
+	status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+	;;
+  restart|force-reload)
+	check_support
+	echo -n "Restarting $DESC: "
+	start-stop-daemon --stop --quiet --exec $DAEMON
+	sleep 1
+	start-stop-daemon --start --quiet --exec $DAEMON -- $DAEMON_OPTS
+	echo "$NAME."
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|status|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

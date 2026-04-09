@@ -1,0 +1,11 @@
+[Unit]
+Description=mailgraph mail log file analyzer
+After=
+
+[Service]
+Nice=19
+Type=forking
+ExecStart=/usr/sbin/mailgraph -d -l /var/log/mail.log --daemon-rrd=/var/lib/mailgraph --ignore-localhost
+
+[Install]
+WantedBy=multi-user.target

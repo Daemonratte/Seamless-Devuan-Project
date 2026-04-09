@@ -1,0 +1,31 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|upgrade|purge)
+	# if sslh is running, stop it before removing
+	if pidof sslh >/dev/null 2>&1; then
+		# test if invoke-rc.d command is present on this system
+		if command -v invoke-rc.d >/dev/null 2>&1; then
+		    invoke-rc.d sslh stop
+		# if really not, use initscript
+		else
+		    /etc/init.d/sslh stop
+		fi
+	fi
+    ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'sslh.service' >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,10 @@
+[Unit]
+Description=lightweight wiki didiwiki daemon
+
+[Service]
+User=didiwiki
+EnvironmentFile=/etc/default/didiwiki
+ExecStart=/usr/bin/didiwiki --home $HOME --listen $LISTEN $OPTIONS
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=virus-scanning SMTP proxy clamsmtp
+Documentation=man:clamsmtpd(8)
+After=network.target local-fs.target
+
+[Service]
+Type=forking
+User=clamsmtp
+Group=clamsmtp
+RuntimeDirectory=clamsmtp
+ExecStart=/usr/sbin/clamsmtpd
+
+[Install]
+WantedBy=multi-user.target
+

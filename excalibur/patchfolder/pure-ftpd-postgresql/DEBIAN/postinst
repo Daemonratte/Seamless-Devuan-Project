@@ -1,0 +1,56 @@
+#! /bin/sh
+# postinst script for all pure-ftpd flavours
+
+set -e
+
+# get settings from debconf
+. /usr/share/debconf/confmodule
+db_get pure-ftpd/standalone-or-inetd
+SOI="$RET"
+
+FLAVOUR=
+
+case "$0" in
+	*mysql*)
+		chmod 600 /etc/pure-ftpd/db/mysql.conf
+		FLAVOUR="mysql"
+		;;
+	*postgresql*)
+		chmod 600 /etc/pure-ftpd/db/postgresql.conf
+		FLAVOUR="postgresql"
+		;;
+	*ldap*)
+		chmod 600 /etc/pure-ftpd/db/ldap.conf
+		FLAVOUR="ldap"
+		;;
+esac
+
+if [ "$SOI" = "inetd" ]; then
+	test -x "/etc/init.d/pure-ftpd" && /etc/init.d/pure-ftpd stop
+
+	FTPENTRY="ftp stream tcp nowait root /usr/sbin/tcpd /usr/sbin/pure-ftpd-wrapper $FLAVOUR"
+	update-inetd --group STANDARD --add "$FTPENTRY"
+else
+	update-inetd --disable ftp
+fi
+
+# Automatically added by dh_installdeb/13.23
+dpkg-maintscript-helper symlink_to_dir /usr/share/doc/pure-ftpd-postgresql pure-ftpd-common 1.0.49-4.1\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/pure-ftpd-postgresql" ]; then
+		update-rc.d pure-ftpd-postgresql defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d pure-ftpd-postgresql $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+
+
+# Don't wait on pure-ftpd to close file handles
+db_stop

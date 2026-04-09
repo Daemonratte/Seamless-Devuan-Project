@@ -1,0 +1,75 @@
+#! /bin/sh
+
+# atheme-services
+# Version:	atheme-services 2.2.0  06-08-07
+# Author:	Bradley Smith <brad@brad-smith.co.uk>
+
+set -e
+
+case "$1" in
+
+    configure)
+	    chown irc:irc /var/lib/atheme/
+	    chown irc:irc /var/log/atheme/
+	    chown root:irc /etc/atheme/
+	    chmod 770 /etc/atheme/
+	;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "ERROR: Postinst called with unknown argument!"
+        exit 0
+    ;;
+
+esac
+
+# Automatically added by dh_installdeb/13.20
+dpkg-maintscript-helper rm_conffile /etc/default/atheme-services 7.2.9-2\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/atheme-services" ]; then
+		update-rc.d atheme-services defaults-disabled >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native atheme-services $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'atheme-services.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'atheme-services.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'atheme-services.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'atheme-services.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'atheme-services.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'atheme-services.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

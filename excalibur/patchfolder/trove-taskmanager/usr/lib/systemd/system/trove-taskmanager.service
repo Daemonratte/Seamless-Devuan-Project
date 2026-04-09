@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Trove DBaaS Task Manager
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:trove-taskmanager(1)
+
+[Service]
+User=trove
+Group=trove
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=trove lock/trove
+CacheDirectory=trove
+ExecStart=/etc/init.d/trove-taskmanager systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

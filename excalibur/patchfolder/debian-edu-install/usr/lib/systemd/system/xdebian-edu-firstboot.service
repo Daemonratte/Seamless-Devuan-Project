@@ -1,0 +1,14 @@
+[Unit]
+Description=Run various tasks on the first boot after installation
+After=remote-fs.target network-online.target
+Wants=remote-fs.target
+ConditionPathExists=!/etc/debian-edu/xdebian-edu-firstboot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/debian-edu-config/tools/run-at-firstboot
+ExecStartPost=touch /etc/debian-edu/xdebian-edu-firstboot
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=RARP lookup daemon
+
+[Service]
+Type=forking
+Environment=OPTS="-e -v"
+EnvironmentFile=/etc/default/rarpd
+ExecStart=/usr/sbin/rarpd $OPTS
+
+[Install]
+WantedBy=multi-user.target

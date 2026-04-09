@@ -1,0 +1,9 @@
+[Unit]
+Description=AWFFull daily maintenance
+Documentation=man:awffull(1)
+ConditionACPower=true
+
+[Service]
+Type=oneshot
+ExecStart=/etc/cron.daily/awffull systemd-timer
+

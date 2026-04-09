@@ -1,0 +1,124 @@
+#! /bin/sh
+
+# SynCache dRuby object cache server init script
+# May 2005
+# Dmitry Borodaenko
+
+# Borrowed from spamassassin init script by Duncan Findlay
+# Based on skeleton by Miquel van Smoorenburg and Ian Murdock
+
+### BEGIN INIT INFO
+# Provides:          syncache
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Start-Before:    apache2 lighttpd nginx
+# X-Stop-After:      apache2 lighttpd nginx
+# Short-Description: Start and stop SynCache DRB server
+# Description: A DRb server that exports a SynCache::Cache object providing
+#              thread-safe time-limited cache for use in Ruby programs.
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+CHUID=syncache
+DAEMON=/usr/bin/syncache-drb
+NAME=syncache-drb
+SNAME=syncache
+DESC="SynCache object cache"
+PIDFILE="/var/run/$NAME/$NAME.pid"
+ERROR_LOG="/var/log/$NAME.log"
+PNAME=$NAME
+
+# use dummy lsb init-functions if lsb-base is not installed
+if [ -r /lib/lsb/init-functions ]; then
+    . /lib/lsb/init-functions
+else
+    log_begin_msg() { echo -n "$@"; }
+    log_progress_msg() { echo -n " $@"; }
+    log_success_msg() { echo "$@"; }
+    log_failure_msg() { echo "$@"; }
+    log_warning_msg() { echo "$@"; }
+    log_end_msg() { if [ "$1" = "0" ]; then echo "."; else echo " failed!"; fi }
+fi
+
+# Apparently people have trouble if this isn't explicitly set...
+export TMPDIR=/tmp
+
+# Defaults - don't touch, edit /etc/default/syncache
+ENABLED=0
+OPTIONS="--user $CHUID --pidfile $PIDFILE --error-log $ERROR_LOG"
+NICE=
+
+test -f "/etc/default/$SNAME" && . "/etc/default/$SNAME"
+
+if [ "$ENABLED" = "0" ]; then
+    log_success_msg "$DESC: disabled, see /etc/default/$SNAME"
+    exit 0
+fi
+
+test -f $DAEMON || exit 0
+
+[ -n "$TTL" ] && OPTIONS="$OPTIONS --ttl $TTL"
+[ -n "$SIZE" ] && OPTIONS="$OPTIONS --size $SIZE"
+[ -n "$FLUSHDELAY" ] && OPTIONS="$OPTIONS --flush-delay $FLUSHDELAY"
+[ -n "$URI" ] && OPTIONS="$OPTIONS $URI"
+
+set -e
+
+syncache_start () {
+	PIDDIR=`dirname "$PIDFILE"`
+	install -o syncache -g syncache -m 755 -d "$PIDDIR"
+	start-stop-daemon --start --pidfile $PIDFILE --name $PNAME \
+	    $NICE --oknodo --startas $DAEMON -- $OPTIONS
+}
+
+syncache_stop () {
+	start-stop-daemon --stop --pidfile $PIDFILE --oknodo --retry 3
+	rm -f $PIDFILE
+}
+
+syncache_reload () {
+	start-stop-daemon --stop --pidfile $PIDFILE --signal HUP
+}
+
+case "$1" in
+  start)
+	log_begin_msg "Starting $DESC:"
+	log_progress_msg $NAME
+	syncache_start
+	log_end_msg $?
+	;;
+
+  stop)
+	log_begin_msg "Stopping $DESC:"
+	log_progress_msg "$NAME"
+	syncache_stop
+	log_end_msg $?
+	;;
+
+  reload|force-reload)
+	log_begin_msg "Reloading $DESC:"
+	log_progress_msg $NAME
+	syncache_reload
+	log_end_msg $?
+	;;
+
+  restart)
+	log_begin_msg "Restarting $DESC:"
+	log_progress_msg $NAME
+	syncache_stop
+	syncache_start
+	log_end_msg $?
+	;;
+
+  *)
+	N=/etc/init.d/$SNAME
+	log_failure_msg "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

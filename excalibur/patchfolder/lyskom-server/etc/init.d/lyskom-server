@@ -1,0 +1,65 @@
+#! /bin/sh
+#
+# /etc/init.d/lyskom-server: start and stop the LysKOM server
+# See below for information on how to enable.
+#
+### BEGIN INIT INFO
+# Provides:          lyskom-server
+# Required-Start:    $syslog $network $time $local_fs $remote_fs
+# Required-Stop:     $syslog $network $time $local_fs $remote_fs
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and stop the LysKOM server
+# Description:       Used to start and stop the LysKOM server.
+#                    Automatic start is by default disabled, edit
+#                    /etc/default/lyskom-server to enable automatic
+#                    start through this script.
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DESC="LysKOM server"
+NAME=komrunning
+RUNDIR=/var/run/lyskom-server
+
+if [ -f  /etc/default/lyskom-server ]; then
+  . /etc/default/lyskom-server
+fi
+
+test -x /usr/sbin/komrunning || exit 0
+
+. /lib/lsb/init-functions
+
+if [ ! -d ${RUNDIR} ]; then
+  if ! install -o lyskom -m 755 -d ${RUNDIR}; then
+    log_failure_msg "Failed to create ${RUNDIR}"
+    exit 1
+  fi
+fi
+
+case "$1" in
+  start|force-start)
+    log_begin_msg "Signalling start of ${DESC}"
+    /usr/sbin/komrunning start
+    /usr/sbin/updateLysKOM
+    log_end_msg $?
+    ;;
+
+  stop)
+    log_begin_msg "Stopping ${DESC}" ${NAME}
+    /usr/sbin/komrunning stop && rm -f ${RUNDIR}/pid
+    log_end_msg $?
+    ;;
+
+  restart|force-reload)
+    sh $0 stop
+    sh $0 force-start
+    ;;
+
+  *)
+    echo "Usage: /etc/init.d/lyskom-server {start|force-start|stop|restart}"
+    ;;
+esac
+
+exit 0

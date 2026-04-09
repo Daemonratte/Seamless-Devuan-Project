@@ -1,0 +1,73 @@
+#! /bin/sh
+set -e
+
+if [ "$1" = configure ]; then
+	if ! getent passwd clickpkg >/dev/null; then
+		adduser --quiet --system --home /nonexistent --no-create-home \
+			--disabled-password --shell /bin/false --group \
+			clickpkg
+	fi
+
+	mkdir -p -m 755 /var/lib/clickpkg
+	chown clickpkg:clickpkg /var/lib/clickpkg
+
+	deb-systemd-helper enable click-user-hooks.service || true
+fi
+
+# Automatically added by dh_click/UNDECLARED
+if [ "$1" = "configure" ] && command -v click >/dev/null 2>&1; then
+	click hook install click-desktop
+fi
+# End automatically added section
+# Automatically added by dh_installsystemduser/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] ; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper --user unmask 'click-user-hooks.service' >/dev/null || true
+
+		# was-enabled defaults to true, so new installations run enable.
+		if deb-systemd-helper --quiet --user was-enabled 'click-user-hooks.service' ; then
+			# Enables the unit on first installation, creates new
+			# symlinks on upgrades if the unit file has changed.
+			deb-systemd-helper --user enable 'click-user-hooks.service' >/dev/null || true
+		else
+			# Update the statefile to add new symlinks (if any), which need to be
+			# cleaned up on purge. Also remove old symlinks.
+			deb-systemd-helper --user update-state 'click-user-hooks.service' >/dev/null || true
+		fi
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'click-system-hooks.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'click-system-hooks.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'click-system-hooks.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'click-system-hooks.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'click-system-hooks.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,22 @@
+[Unit]
+Description=Prometheus exporter for dnsmasq
+Documentation=https://github.com/google/dnsmasq_exporter
+After=network.target
+
+[Service]
+Restart=on-failure
+DynamicUser=yes
+EnvironmentFile=/etc/default/prometheus-dnsmasq-exporter
+ExecStart=/usr/bin/prometheus-dnsmasq-exporter $ARGS
+
+# systemd hardening options
+PrivateDevices=true
+PrivateUsers=true
+ProtectClock=true
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

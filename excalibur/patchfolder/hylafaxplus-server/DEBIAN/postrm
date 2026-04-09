@@ -1,0 +1,27 @@
+#!/bin/bash -e
+
+update-rc.d hylafax remove >/dev/null
+
+USERDEL=/usr/sbin/userdel
+
+if [ "$1" = purge ]; then
+    if getent passwd faxmaster >/dev/null 2>&1
+    then
+	[ -x $USERDEL ] && $USERDEL faxmaster
+    fi
+
+    for i in /etc/hylafax/setup.cache /etc/hylafax/setup.modem \
+	/var/spool/hylafax/status/any.info /var/spool/hylafax/dev/null \
+	/var/spool/hylafax/FIFO /var/spool/hylafax/bin/ps2fax \
+	/var/spool/hylafax/bin/pdf2fax /var/spool/hylafax/bin/bin \
+	/etc/default/hylafax
+    do
+	[ -e "$i" -o -L "$i" ] && rm "$i"
+    done
+fi
+
+exit 0
+
+#This is to satisfy lintian
+
+

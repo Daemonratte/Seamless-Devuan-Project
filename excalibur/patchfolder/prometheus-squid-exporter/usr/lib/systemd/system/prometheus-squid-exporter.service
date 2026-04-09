@@ -1,0 +1,12 @@
+[Unit]
+Description=Squid Prometheus Exporter
+Documentation=https://github.com/boynux/squid-exporter man:prometheus-squid-exporter(1)
+After=network.target
+
+[Service]
+User=proxy
+EnvironmentFile=/etc/default/prometheus-squid-exporter
+ExecStart=/usr/bin/prometheus-squid-exporter $ARGS
+
+[Install]
+WantedBy=multi-user.target

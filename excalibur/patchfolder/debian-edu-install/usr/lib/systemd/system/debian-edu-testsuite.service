@@ -1,0 +1,18 @@
+[Unit]
+Description=Check the Debian Edu installation after first boot
+After=xdebian-edu-firstboot.service graphical.target
+Requisite=xdebian-edu-firstboot.service
+ConditionPathExists=!/etc/debian-edu/debian-edu-testsuite
+
+[Service]
+EnvironmentFile=-/etc/debian-edu/config
+Type=oneshot
+ExecCondition=test ${TESTINSTALL} = true
+ExecStart=/usr/lib/debian-edu-install/debian-edu-testsuite run
+ExecStartPost=touch /etc/debian-edu/debian-edu-testsuite
+# Do not try to run after first boot even if condition failed
+ExecStopPost=touch /etc/debian-edu/debian-edu-testsuite
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Gnocchi Statsd daemon
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service mongodb.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service mongodb.service network-online.target 
+
+Documentation=man:gnocchi-statsd(1)
+
+[Service]
+User=gnocchi
+Group=gnocchi
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=gnocchi lock/gnocchi
+CacheDirectory=gnocchi
+ExecStart=/etc/init.d/gnocchi-statsd systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

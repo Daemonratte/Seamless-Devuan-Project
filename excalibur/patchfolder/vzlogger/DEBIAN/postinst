@@ -1,0 +1,75 @@
+#!/bin/sh -e
+
+set -e
+
+case "$1" in
+    configure)
+    if id vzlogger > /dev/null 2>&1 \
+		&& dpkg --compare-versions "$2" le-nl 0.8.3 \
+		&& dpkg --compare-versions "$2" ge 0.8.2; then
+		# maintain compatibility with existing native installations
+		usermod -l _vzlogger vzlogger	
+		groupmod --new-name _vzlogger vzlogger
+	fi
+    if ! id _vzlogger > /dev/null 2>&1 ; then
+        adduser --quiet --system --no-create-home --home /nonexistent \
+            --group --disabled-password --shell /bin/false \
+            _vzlogger
+        usermod -a -G dialout _vzlogger
+    fi
+
+    touch /var/log/vzlogger.log
+    chown _vzlogger:adm /var/log/vzlogger.log
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+    echo "$0 called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+# Automatically added by dh_installinit/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/vzlogger" ]; then
+		update-rc.d vzlogger defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native vzlogger $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'vzlogger.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'vzlogger.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'vzlogger.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'vzlogger.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		deb-systemd-invoke start 'vzlogger.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0
+

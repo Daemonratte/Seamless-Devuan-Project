@@ -1,0 +1,82 @@
+#!/bin/sh
+#
+# /etc/init.d/nis	Start NIS (formerly YP) ypxfrd server.
+#
+### BEGIN INIT INFO
+# Provides:		    ypxfrd
+# Required-Start:	$network $portmap $remote_fs ypserv
+# Required-Stop:	$portmap $remote_fs
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+# Short-Description:	Start NIS server daemons.
+# Description:		Start NIS server daemons.  NIS is mostly 
+#			used to let several machines in a network share the 
+#			same account information (eg the password file).
+### END INIT INFO
+
+# Customize the variables in /etc/default/nis rather than here
+NISSERVER=false
+NISMASTER=
+YPPWDDIR=/etc
+YPCHANGEOK=chsh
+YPSERVARGS=""
+YPPASSWDDARGS=""
+YPXFRDARGS=""
+YPPWDDIRARGS=""
+
+[ -f /etc/default/nis ] && . /etc/default/nis
+
+. /lib/lsb/init-functions
+
+NET="/usr/sbin"
+
+do_start ()
+{
+	oname=`domainname`
+	nname=`cat /etc/defaultdomain`
+	if [ "$oname" != "$nname" ]; then
+		log_action_msg "Setting NIS domainname to: $nname"
+		domainname "$nname"
+	fi
+	log_daemon_msg "Starting NIS services"
+	if [ "$NISSERVER" != "false" ]
+	then
+		log_progress_msg "ypxfrd"
+		start-stop-daemon --start --quiet \
+			--pidfile /run/ypxfrd.pid --exec ${NET}/rpc.ypxfrd \
+			-- ${YPSERVARGS}
+	fi
+	log_end_msg 0
+}
+
+do_stop () {
+	log_daemon_msg "Stopping NIS server services"
+	log_progress_msg "ypxrd"
+	start-stop-daemon --stop --quiet --oknodo \
+		--pidfile /run/ypxfrd.pid
+	log_end_msg 0
+}
+
+case "$1" in
+  start)
+	do_start
+	;;
+  stop)
+	do_stop
+	;;
+  reload|force-reload)
+	start-stop-daemon --stop --quiet --oknodo --signal 1 \
+		--pidfile /run/ypxfrd.pid --exec ${NET}/rpc.ypxfrd
+	;;
+  restart)
+	do_stop
+	sleep 2
+	do_start
+	;;
+  *)
+	echo "Usage: /etc/init.d/nis {start|stop|reload|force-reload|restart}"
+	exit 1
+esac
+
+exit 0
+

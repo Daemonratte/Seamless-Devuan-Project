@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Barbican Keystone Event Listener (barbican-keystone-listener)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service chrony.service frr.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service chrony.service frr.service network-online.target 
+
+Documentation=man:barbican-keystone-listener(1)
+
+[Service]
+User=barbican
+Group=barbican
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=barbican lock/barbican
+CacheDirectory=barbican
+ExecStart=/etc/init.d/barbican-keystone-listener systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

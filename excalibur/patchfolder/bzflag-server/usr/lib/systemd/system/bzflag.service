@@ -1,0 +1,13 @@
+[Unit]
+Description=BZFlag game server
+Documentation=man:bzfs(6)
+After=network.target
+
+[Service]
+Restart=on-failure
+User=games
+Group=games
+ExecStart=/usr/games/bzfs -advertise NONE
+
+[Install]
+WantedBy=multi-user.target

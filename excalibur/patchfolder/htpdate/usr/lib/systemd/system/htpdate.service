@@ -1,0 +1,21 @@
+[Unit]
+Description=HTTP based time synchronization tool
+Documentation=man:htpdate
+After=network.target remote-fs.target
+
+[Service]
+EnvironmentFile=/etc/default/htpdate
+ExecStart=/usr/sbin/htpdate $HTP_OPTIONS $HTP_PROXY -i /run/htpdate.pid $HTP_SERVERS
+ExecReload=/bin/kill -HUP $MAINPID
+Type=forking
+PIDFile=/run/htpdate.pid
+################
+### Security ###
+################
+InaccessibleDirectories=/boot /home /media /mnt /root /opt /srv
+PrivateTmp=yes
+ReadOnlyDirectories=/etc /usr /var
+ReadWriteDirectories=/var/run
+
+[Install]
+WantedBy=multi-user.target

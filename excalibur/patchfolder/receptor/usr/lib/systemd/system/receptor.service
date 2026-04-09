@@ -1,0 +1,13 @@
+[Unit]
+Description=Receptor service
+Documentation=man:receptor file:/usr/share/doc/receptor/guides
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/receptor -c /etc/receptor/receptor.conf
+KillMode=process
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target

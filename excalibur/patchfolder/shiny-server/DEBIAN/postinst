@@ -1,0 +1,68 @@
+#!/bin/sh
+
+# errors shouldn't cause script to exit
+set -e
+set -x
+
+SHINYHOME=/var/lib/shiny
+SHINYSRV=/var/lib/shiny-server
+
+ln -f -s "/usr/lib/shiny-server/bin/shiny-server" /usr/bin/shiny-server
+# See if "shiny" user exists
+if id -u shiny >/dev/null 2>&1;
+then
+   echo "User 'shiny' already exists. Ensuring proper permissions on $SHINYHOME."
+   mkdir -p $SHINYHOME
+   chown shiny:shiny $SHINYHOME
+else
+   echo Creating user "shiny"
+   adduser --system --group --home $SHINYHOME shiny
+fi
+
+# Register with update-rc.d
+update-rc.d shiny-server defaults > /dev/null || exit $?
+
+if [ ! -d "$SHINYSRV" ];
+then
+   mkdir -p $SHINYSRV
+   # And seed with initial apps and index.html
+   ln -s /usr/lib/shiny-server/samples/welcome.html $SHINYSRV/index.html
+   ln -s /usr/lib/shiny-server/samples/sample-apps $SHINYSRV/sample-apps
+fi
+
+mkdir -p /var/log/shiny-server
+
+# Log dir must be writable by "shiny" user
+chown shiny:shiny /var/log/shiny-server
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'shiny-server.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'shiny-server.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'shiny-server.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'shiny-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'shiny-server.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

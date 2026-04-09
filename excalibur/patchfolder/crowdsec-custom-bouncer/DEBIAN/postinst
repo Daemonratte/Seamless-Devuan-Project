@@ -1,0 +1,90 @@
+#!/bin/sh
+set -e
+
+CONFIG=/etc/crowdsec/bouncers/crowdsec-custom-bouncer.yaml
+PENDING=/var/lib/crowdsec/pending-registration
+
+# Create a configuration override file only once, see README.Debian:
+if [ "$1" = configure ] && [ ! -f "$CONFIG.local" ]; then
+  # Bail early if the Recommends on crowdsec isn't met:
+  if ! which cscli >/dev/null 2>&1; then
+    echo "W: cscli not found, no automatic registration" >&2
+  else
+    # Generate a unique identifier, since a given API can deal with several
+    # machines; reuse the logic from crowdsec's postinst:
+    unique=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 32 | head -n 1)
+    id="CustomBouncer-$unique"
+
+    # crowdsec might be unpacked but not configured (#1035499):
+    if [ -f /etc/crowdsec/config.yaml ]; then
+      api_key=$(cscli --error -oraw bouncers add "$id")
+      if [ -z "$api_key" ]; then
+        echo "E: Local registration failed to yield an API key" >&2
+        exit 1
+      fi
+    else
+      api_key=$(tr -dc 'a-f0-9' < /dev/urandom | fold -w 32 | head -n 1)
+      if [ ! -f $PENDING ]; then
+        touch $PENDING
+        chmod 600 $PENDING
+      fi
+      echo "crowdsec-custom-bouncer $id $api_key" >> $PENDING
+    fi
+
+    # Store it so that it can be unregistered when purging the package:
+    echo "$id" > "$CONFIG.id"
+  fi
+
+  # Let's use a no-op by default, letting the local admin edit the file and
+  # restart the unit on their own:
+  DEFAULT_SCRIPT=/usr/bin/true
+  echo "W: Using $DEFAULT_SCRIPT as default custom script" >&2
+
+  touch "$CONFIG.local"
+  chmod 600 "$CONFIG.local"
+
+  if [ -n "$api_key" ]; then
+    cat > "$CONFIG.local" <<EOF
+bin_path: $DEFAULT_SCRIPT
+api_key: $api_key
+EOF
+  else
+    cat > "$CONFIG.local" <<EOF
+bin_path: $DEFAULT_SCRIPT
+# non-local crowdsec setup: please specify both api_url and api_key manually
+EOF
+  fi
+  echo "To adjust the config: editor $CONFIG.local && systemctl restart crowdsec-custom-bouncer" >&2
+fi
+
+## Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'crowdsec-custom-bouncer.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'crowdsec-custom-bouncer.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'crowdsec-custom-bouncer.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'crowdsec-custom-bouncer.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'crowdsec-custom-bouncer.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+#

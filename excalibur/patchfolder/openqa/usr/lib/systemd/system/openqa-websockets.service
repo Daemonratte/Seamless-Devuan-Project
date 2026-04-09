@@ -1,0 +1,12 @@
+[Unit]
+Description=The openQA WebSockets server
+Wants=openqa-setup-db.service
+Before=openqa-webui.service
+After=openqa-scheduler.service postgresql.service openqa-setup-db.service network.target nss-lookup.target remote-fs.target
+
+[Service]
+User=geekotest
+ExecStart=/usr/share/openqa/script/openqa-websockets-daemon
+
+[Install]
+WantedBy=multi-user.target

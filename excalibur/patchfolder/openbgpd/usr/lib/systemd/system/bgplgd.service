@@ -1,0 +1,34 @@
+[Unit]
+Description=OpenBGPD Looking Glass
+Documentation=man:bgplgd(8)
+After=openbgpd.service
+ConditionPathExists=/etc/bgpd.conf
+
+[Service]
+EnvironmentFile=-/etc/default/openbgpd
+Type=forking
+ExecStart=/usr/sbin/bgplgd $LG_DAEMON_OPTS
+Restart=on-failure
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=@system-service chroot
+
+[Install]
+WantedBy=multi-user.target

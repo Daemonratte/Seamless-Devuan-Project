@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Mistral Engine
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:mistral-engine(1)
+
+[Service]
+User=mistral
+Group=mistral
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=mistral lock/mistral
+CacheDirectory=mistral
+ExecStart=/etc/init.d/mistral-engine systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

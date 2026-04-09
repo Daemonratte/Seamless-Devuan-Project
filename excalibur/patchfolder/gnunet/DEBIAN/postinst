@@ -1,0 +1,153 @@
+#!/bin/sh
+
+set -e
+
+case "${1}" in
+	configure)
+		. /usr/share/debconf/confmodule
+
+		db_get gnunet/user
+		GNUNET_USER="${RET:-gnunet}" # string w/o empty
+
+		db_get gnunet/group
+		GNUNET_GROUP="${RET:-gnunet}" # string w/o empty
+
+		db_get gnunet/autostart
+		GNUNET_AUTOSTART="${RET}" # boolean
+
+		db_stop
+
+		CONFIG_FILE="/etc/default/gnunet"
+
+		# Read default values
+		GNUNET_HOME="/var/lib/gnunet"
+		eval $(grep GNUNET_HOME /etc/gnunet.conf | tr -d '[:blank:]')
+
+		# Creating gnunet group if needed
+		if ! getent group ${GNUNET_GROUP} > /dev/null
+		then
+			echo -n "Creating new GNUnet group ${GNUNET_GROUP}:"
+			groupadd --system ${GNUNET_GROUP}
+			echo " done."
+		fi
+
+		# Creating gnunet user if needed
+		if ! getent passwd ${GNUNET_USER} > /dev/null
+		then
+			echo -n "Creating new GNUnet user ${GNUNET_USER}:"
+			useradd --system -g ${GNUNET_GROUP} --home-dir ${GNUNET_HOME} ${GNUNET_USER}
+			echo " done."
+		fi
+
+		# Add a special secured group
+		GNUNETDNS_GROUP="gnunetdns"
+
+		# Creating gnunetdns group if needed
+		if ! getent group ${GNUNETDNS_GROUP} > /dev/null
+		then
+			echo -n "Creating new secured GNUnet group ${GNUNETDNS_GROUP}:"
+			groupadd --system ${GNUNETDNS_GROUP}
+			echo " done."
+		fi
+
+		# Update files and directories permissions.
+		# Assuming default values, this *should* not be changed.
+		echo -n "Updating files and directories permissions:"
+		chown -R ${GNUNET_USER}:${GNUNET_GROUP} /var/log/gnunet
+		chown -R ${GNUNET_USER}:${GNUNET_GROUP} ${GNUNET_HOME}
+		# Secure access to the data directory
+		chmod 0700 "${GNUNET_HOME}" || true
+		# Restrict access on setuid binaries
+		for file in /usr/bin/gnunet-helper-exit \
+			/usr/bin/gnunet-helper-nat-client \
+			/usr/bin/gnunet-helper-nat-server \
+			/usr/bin/gnunet-helper-transport-bluetooth \
+			/usr/bin/gnunet-helper-transport-wlan \
+			/usr/bin/gnunet-helper-vpn
+		do
+			# only do something when no setting exists
+			if ! dpkg-statoverride --list $file >/dev/null 2>&1 && [ -e $file ]
+			then
+				chown root:${GNUNET_GROUP} $file
+				chmod 4750 $file
+			fi
+		done
+		if ! dpkg-statoverride --list /usr/bin/gnunet-helper-dns >/dev/null 2>&1 \
+			&& [ -e /usr/bin/gnunet-helper-dns ]
+		then
+			chown root:${GNUNETDNS_GROUP} /usr/bin/gnunet-helper-dns
+			chmod 4750 /usr/bin/gnunet-helper-dns
+		fi
+		if ! dpkg-statoverride --list /usr/bin/gnunet-service-dns >/dev/null 2>&1 \
+			&& [ -e /usr/bin/gnunet-service-dns ]
+		then
+			chown ${GNUNET_USER}:${GNUNETDNS_GROUP} /usr/bin/gnunet-service-dns
+			chmod 2750 /usr/bin/gnunet-service-dns
+		fi
+		echo  " done."
+
+		# Writing new values to configuration file
+		echo -n "Writing new configuration file:"
+		CONFIG_NEW=$(mktemp gnunet.XXXX)
+
+cat > "${CONFIG_NEW}" <<EOF
+# This file controls the behaviour of the GNUnet init script.
+# It will be parsed as a shell script.
+# please do not edit by hand, use 'dpkg-reconfigure gnunet-server'.
+
+GNUNET_USER=${GNUNET_USER}
+GNUNET_GROUP=${GNUNET_GROUP}
+GNUNET_AUTOSTART="${GNUNET_AUTOSTART}"
+EOF
+
+		cp -f "${CONFIG_NEW}" "${CONFIG_FILE}"
+		echo " done."
+
+		# Cleaning
+		rm -f "${CONFIG_NEW}"
+		echo "All done."
+		;;
+
+	abort-upgrade|abort-remove|abort-deconfigure)
+
+		;;
+
+	*)
+		echo "postinst called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'gnunet.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'gnunet.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'gnunet.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'gnunet.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'gnunet.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,49 @@
+# Systemd Bacula service file
+#
+# Copyright (C) 2000-2022 Kern Sibbald
+# License: BSD 2-Clause; see file LICENSE-FOSS
+#
+# /lib/systemd/system/bacula-sd.service
+#
+# Description:
+#    Used to start the bacula storage daemon service (bacula-sd)
+#    enable : systemctl enable bacula-sd
+#    start : systemctl start bacula-sd
+#
+#
+
+# from http://www.freedesktop.org/software/systemd/man/systemd.unit.html
+[Unit]
+Description=Bacula Storage Daemon service
+Documentation=man:bacula-sd(8)
+Requires=network.target
+After=network.target
+RequiresMountsFor=/var/lib/bacula /etc/bacula /usr/sbin /run/bacula
+
+# from http://www.freedesktop.org/software/systemd/man/systemd.service.html
+[Service]
+Type=exec
+User=bacula
+Group=tape
+SupplementaryGroups=bacula
+Environment="CONFIG=/etc/bacula/bacula-sd.conf"
+EnvironmentFile=-/etc/default/bacula-sd
+Environment="LD_LIBRARY_PATH=/usr/lib/bacula"
+ExecStartPre=/usr/sbin/bacula-sd -t -c $CONFIG
+ExecStart=/usr/sbin/bacula-sd -fP -c $CONFIG
+ExecReload=/usr/sbin/bacula-sd -t -c $CONFIG
+ExecReload=/bin/kill -HUP $MAINPID
+SuccessExitStatus=15
+StandardOutput=journal
+StandardError=journal
+TimeoutStopSec=3min
+LimitMEMLOCK=infinity
+LimitNOFILE=10000
+LimitNPROC=10000
+OOMScoreAdjust=-1000
+AmbientCapabilities=CAP_LINUX_IMMUTABLE
+
+Restart=on-failure
+RestartSec=60
+[Install]
+WantedBy=multi-user.target

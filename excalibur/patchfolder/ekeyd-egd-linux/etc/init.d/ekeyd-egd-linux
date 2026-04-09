@@ -1,0 +1,64 @@
+#!/bin/sh -e
+
+### BEGIN INIT INFO
+# Provides:          ekeyd-egd-linux
+# Required-Start:    $remote_fs $network
+# Required-Stop:     $remote_fs $network
+# Should-Start:      ekeyd
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Entropy Key Manager, EGD->Linux pool stirrer
+### END INIT INFO
+
+PATH="/sbin:/bin:/usr/sbin:/usr/bin"
+DAEMON=/usr/sbin/ekeyd-egd-linux
+
+[ -x "$DAEMON" ] || exit 0
+
+. /lib/lsb/init-functions
+
+START_EKEYD_EGD_LINUX=NO
+
+test -f /etc/default/ekeyd-egd-linux && . /etc/default/ekeyd-egd-linux
+
+if [ "x$START_EKEYD_EGD_LINUX" != "xYES" ]; then
+    log_daemon_msg "Simtec Entropy Key EGD->Linux Daemon is disabled"
+    log_end_msg 0
+    exit 0
+fi
+
+test "x$HOST" = "x" || HOST="-H$HOST"
+test "x$PORT" = "x" || PORT="-p$PORT"
+test "x$BLOCKS" = "x" || BLOCKS="-b$BLOCKS"
+test "x$SHANNONS" = "x" || SHANNONS="-S$SHANNONS"
+test "x$RETRYTIME" = "x" || RETRYTIME="-r$RETRYTIME"
+
+test "x$WATERMARK" = "x" && WATERMARK=1024
+
+case "$1" in
+    start)
+	log_daemon_msg "Starting Simtec Entropy Key Daemon - EGD->Linux bridge" "ekeyd-egd-linux"
+	start-stop-daemon --start --exec $DAEMON -- $HOST $PORT $BLOCKS $SHANNONS $RETRYTIME -D/var/run/ekeyd-egd-linux.pid || true
+	sysctl kernel.random.write_wakeup_threshold=$WATERMARK >/dev/null 2>&1
+	log_end_msg 0
+	;;
+    restart|force-reload)
+	$0 stop
+	$0 start
+	;;
+    stop)
+	log_daemon_msg "Stopping Simtec Entropy Key Daemon - EGD->Linux bridge" "ekeyd-egd-linux"
+	start-stop-daemon --stop --pidfile /var/run/ekeyd-egd-linux.pid --exec $DAEMON --oknodo --quiet || true
+	log_end_msg 0
+	;;
+    status)
+	status_of_proc $DAEMON ekeyd-egd-linux
+	;;
+    *)
+	echo "Usage: /etc/init.d/ekeyd-egd-linux {start|stop}"
+	exit 2
+	;;
+	
+esac
+
+exit 0

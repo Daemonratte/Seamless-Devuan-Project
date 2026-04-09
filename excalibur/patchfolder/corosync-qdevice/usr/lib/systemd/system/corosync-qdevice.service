@@ -1,0 +1,19 @@
+[Unit]
+Description=Corosync Qdevice daemon
+Documentation=man:corosync-qdevice
+ConditionKernelCommandLine=!nocluster
+Requires=corosync.service
+After=corosync.service
+
+[Service]
+EnvironmentFile=-/etc/default/corosync-qdevice
+ExecStart=/usr/sbin/corosync-qdevice -f $COROSYNC_QDEVICE_OPTIONS
+Type=notify
+StandardError=null
+Restart=on-failure
+RuntimeDirectory=corosync-qdevice
+RuntimeDirectoryMode=0770
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

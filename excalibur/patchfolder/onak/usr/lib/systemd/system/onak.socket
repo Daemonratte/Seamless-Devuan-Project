@@ -1,0 +1,7 @@
+[Socket]
+ListenStream=/run/onak/keyd.sock
+SocketUser=onak
+SocketMode=0660
+
+[Install]
+WantedBy=sockets.target

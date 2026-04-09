@@ -1,0 +1,17 @@
+[Unit]
+Description=Linux Virtual Server administration daemon
+Documentation=man:ipvsadm(8) man:ipvsadm-restore(8) man:ipvsadm-save(8)
+After=network.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/default/ipvsadm
+ExecStartPre=/usr/libexec/ipvsadm/ipvsadm-load
+ExecStart=/usr/libexec/ipvsadm/ipvsadm-start
+ExecReload=/usr/libexec/ipvsadm/ipvsadm-load
+ExecStop=/usr/libexec/ipvsadm/ipvsadm-stop
+ExecStopPost=/usr/libexec/ipvsadm/ipvsadm-flush
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

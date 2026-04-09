@@ -1,0 +1,78 @@
+#!/bin/sh
+set -e
+
+PKG="pollen"
+DIR="/etc/$PKG"
+mkdir -p -m 700 "$DIR"
+PUB_CERT="$DIR/cert.pem"
+PK="$DIR/key.pem"
+CA="$DIR/ca.pem"
+
+# Create the pollen user if necessary
+if ! getent passwd $PKG >/dev/null; then
+	adduser --disabled-password --quiet --system --home /var/cache/pollen --ingroup daemon $PKG --shell /bin/false
+fi
+
+# Set capabilities on the pollen binary to bind to privileged ports
+setcap 'cap_net_bind_service=+ep' /usr/bin/pollen
+
+if [ ! -r "$PUB_CERT" ] || [ ! -r "$PK" ]; then
+	install -m 600 /dev/null "$PUB_CERT"
+	install -m 600 /dev/null "$PK"
+	# Auto generate self signed certs if we don't have one already in place
+	openssl req -new -newkey rsa:4096 -nodes -x509 -out "$PUB_CERT" -keyout "$PK" -days 3650 -subj "/C=US/ST=TX/L=Austin/CN=localhost/emailAddress=pollen@example.com"
+fi
+
+chown $PKG:root $DIR
+chown $PKG:root $DIR/*
+
+# Automatically added by dh_apparmor/4.1.0-1
+if [ "$1" = "configure" ]; then
+    APP_PROFILE="/etc/apparmor.d/usr.bin.pollen"
+    if [ -f "$APP_PROFILE" ]; then
+        # Add the local/ include
+        LOCAL_APP_PROFILE="/etc/apparmor.d/local/usr.bin.pollen"
+
+        test -e "$LOCAL_APP_PROFILE" || {
+            mkdir -p `dirname "$LOCAL_APP_PROFILE"`
+            install --mode 644 /dev/null "$LOCAL_APP_PROFILE"
+        }
+
+        # Reload the profile, including any abstraction updates
+        if aa-enabled --quiet 2>/dev/null; then
+            apparmor_parser -r -T -W "$APP_PROFILE" || true
+        fi
+    fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'pollen.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'pollen.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'pollen.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'pollen.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'pollen.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

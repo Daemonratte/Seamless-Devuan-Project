@@ -1,0 +1,15 @@
+#!/usr/bin/env /lib/runit/invoke-run
+#Copyright: 2022-2023 Lorenzo Puliti <plorenzo@disroot.org>
+#License: CC0-1.0
+
+exec 2>&1
+
+if [ ! -d /var/run/dbus ]; then
+    install -d /var/run/dbus -o messagebus -g messagebus
+fi
+mountpoint -q /proc/ || exit 162
+if [ -x /usr/bin/dbus-uuidgen ]; then
+    /usr/bin/dbus-uuidgen --ensure
+fi
+
+exec /usr/bin/dbus-daemon --system --nofork --nopidfile 

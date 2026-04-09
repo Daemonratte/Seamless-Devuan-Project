@@ -1,0 +1,20 @@
+#!/bin/sh
+
+set -e 
+
+if [ \( "$1" = "upgrade" -o "$1" = "remove" \) -a -L /usr/doc/watchdog ]; then
+        rm -f /usr/doc/watchdog
+fi
+
+# Automatically added by dh_installsystemd/13.20
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'wd_keepalive.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'watchdog.service' >/dev/null || true
+fi
+# End automatically added section
+
+

@@ -1,0 +1,17 @@
+[Unit]
+Description=Tryton Server Cron - %i
+Documentation=man:trytond-cron,file:/usr/share/doc/tryton-server,file:/usr/share/doc/tryton-server-doc,https://docs.tryton.org
+After=remote-fs.target
+After=network.target
+After=postgresql.service
+After=mysql.service
+ConditionPathExists=/etc/tryton/trytond.conf
+
+[Service]
+User=tryton
+Group=tryton
+ExecStart=/usr/bin/trytond-cron --config /etc/tryton/trytond.conf --logconf /etc/tryton/trytond_log.conf -d %i
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

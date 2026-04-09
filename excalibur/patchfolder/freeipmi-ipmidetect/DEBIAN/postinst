@@ -1,0 +1,24 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.1
+dpkg-maintscript-helper rm_conffile /etc/default/ipmidetectd 1.6.4-4\~ freeipmi-ipmidetect -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/ipmidetectd 1.6.4-3.1\~ -- "$@"
+dpkg-maintscript-helper symlink_to_dir /usr/share/doc/freeipmi-ipmidetect /usr/share/doc/freeipmi-common 1.6.6-4\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'ipmidetectd.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'ipmidetectd.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'ipmidetectd.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'ipmidetectd.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'ipmidetectd.service' >/dev/null || true
+fi
+# End automatically added section

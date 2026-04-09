@@ -1,0 +1,12 @@
+[Unit]
+Description=UFTP Encrypted multicast file transfer daemon
+After=network.target
+Documentation=man:uftpd.1
+
+[Service]
+EnvironmentFile=-/etc/default/uftp
+ExecStart=/usr/bin/uftpd -d $DAEMON_ARGS
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

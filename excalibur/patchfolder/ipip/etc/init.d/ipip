@@ -1,0 +1,37 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          ipip
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: IP over IP encapsulation daemon 
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+DAEMON=/usr/sbin/ipip
+
+FLAGS="defaults 50"
+
+test -f $DAEMON || exit 0
+
+case "$1" in
+  start)
+    start-stop-daemon --start --verbose --exec $DAEMON
+    ;;
+  stop)
+    start-stop-daemon --stop --verbose --exec $DAEMON
+    ;;
+  restart|force-reload) 
+    start-stop-daemon --stop --verbose --exec $DAEMON
+    start-stop-daemon --start --verbose --exec $DAEMON
+    ;;
+  *)
+    echo "Usage: /etc/init.d/ipip {start|stop|restart|force-reload}"
+    exit 1
+    ;;
+esac
+
+exit 0

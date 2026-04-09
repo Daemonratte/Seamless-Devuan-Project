@@ -1,0 +1,8 @@
+[Unit]
+Description=Run msktutil-auto-update if configured in /etc/default/msktutil
+Documentation=man:msktutil(8)
+
+[Service]
+EnvironmentFile=/etc/default/msktutil
+ExecCondition=/bin/sh -a -c "[ \"${AUTOUPDATE_ENABLED}\" = \"true\" ]"
+ExecStart=/usr/sbin/msktutil --auto-update $AUTOUPDATE_OPTIONS

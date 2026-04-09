@@ -1,0 +1,95 @@
+#!/bin/sh
+
+set -e
+
+# POSIX-compliant maint function recommend by devref
+# to check for the existence of a command
+# https://www.debian.org/doc/manuals/developers-reference/ch06.html#bpp-debian-maint-scripts
+pathfind() {
+	OLDIFS="$IFS"
+	IFS=:
+	for p in $PATH; do
+		if [ -x "$p/$*" ]; then
+		IFS="$OLDIFS"
+		return 0
+		fi
+	done
+	IFS="$OLDIFS"
+	return 1
+}
+
+case "$1" in
+	configure|reconfigure)
+		if pathfind setcap; then
+			if ! setcap \
+				cap_net_bind_service+ep /usr/bin/v2ray; then
+				echo "Failed to set capabilities; v2ray will only be able to start by root."
+			fi
+		else
+			echo "setcap not installed; v2ray will only be able to start by root."
+		fi
+		if [ ! -f /etc/v2ray/config.json ]; then
+			set +e
+			uuid="$(cat '/proc/sys/kernel/random/uuid')"
+			set -e
+			mkdir -p /etc/v2ray
+			sed "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${uuid}/g" \
+				/usr/share/v2ray/config_vmess.json \
+				> /etc/v2ray/config.json
+		fi
+		;;
+	abort-upgrade|abort-remove|abort-deconfigure)
+		exit 0
+		;;
+	*)
+		echo "postinst called with unknown argument \`$1'" >&2
+		exit 0
+		;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/v2ray" ]; then
+		update-rc.d v2ray defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native v2ray $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'v2ray.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'v2ray.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'v2ray.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'v2ray.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'v2ray.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

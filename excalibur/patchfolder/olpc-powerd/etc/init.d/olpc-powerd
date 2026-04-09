@@ -1,0 +1,76 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:		olpc-powerd
+# Required-Start:	$syslog $remote_fs
+# Required-Stop:	$syslog $remote_fs
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+# Short-Description:	OLPC XO power management
+### END INIT INFO
+
+set -e
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+NAME=olpc-powerd
+POWERD_PIDFILE=/var/run/$NAME.pid
+SWITCHD_PIDFILE=/var/run/olpc-switchd.pid
+DESC="OLPC XO power management daemon"
+
+test -x /usr/sbin/powerd || exit 0
+
+. /lib/lsb/init-functions
+
+# allow the admin to set SWITCHD_OPTS
+if [ -f /etc/default/olpc-powerd ]; then
+	. /etc/default/olpc-powerd
+fi
+
+do_start()
+{
+	# switchd is required for lid events; not critical, but nice to have
+	start-stop-daemon --start --quiet --oknodo --background \
+			--make-pidfile --pidfile $SWITCHD_PIDFILE \
+			--exec /usr/sbin/olpc-switchd -- $SWITCHD_OPTS
+
+	# powerd is the daemon we really care about..
+	start-stop-daemon --start --quiet --oknodo --background \
+			--make-pidfile --pidfile $POWERD_PIDFILE \
+			--exec /usr/sbin/powerd
+}
+
+do_stop()
+{
+	start-stop-daemon --stop --quiet --oknodo --pidfile $POWERD_PIDFILE \
+			--name powerd
+	start-stop-daemon --stop --quiet --oknodo --pidfile $SWITCHD_PIDFILE \
+			--name olpc-switchd
+}
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting $DESC" "$NAME"
+	do_start
+	log_end_msg $?
+	;;
+  stop)
+	log_daemon_msg "Stopping $DESC" "$NAME"
+	do_stop
+	log_end_msg $?
+	;;
+
+  restart|force-reload)
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_stop
+	sleep 1
+	do_start
+	log_end_msg $?
+	;;
+
+  *)
+	log_success_msg "Usage: $0 {start|stop|restart|force-reload}"
+	exit 1
+	;;
+esac
+
+exit 0

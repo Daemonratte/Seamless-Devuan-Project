@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Heat API CFN (heat-api-cfn)
+After=network-online.target local-fs.target remote-fs.target 
+Wants=network-online.target 
+
+Documentation=man:heat-api-cfn(1)
+
+[Service]
+User=heat
+Group=heat
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=heat lock/heat
+CacheDirectory=heat
+ExecStart=/etc/init.d/heat-api-cfn systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=3Dconnexion Input Devices Userspace Driver
+Documentation=man:spacenavd(8)
+
+[Service]
+ExecStart=/usr/bin/spacenavd -d -v
+
+[Install]
+WantedBy=graphical.target

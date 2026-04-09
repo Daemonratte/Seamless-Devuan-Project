@@ -1,0 +1,70 @@
+#!/bin/sh
+# kFreeBSD do not accept scripts as interpreters, using #!/bin/sh and sourcing.
+if [ true != "$INIT_D_SCRIPT_SOURCED" ] ; then
+    set "$0" "$@"; INIT_D_SCRIPT_SOURCED=true . /lib/init/init-d-script
+fi
+### BEGIN INIT INFO
+# Provides:          prometheus-squid-exporter
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Prometheus exporter for Squid proxy servers
+# Description:       Prometheus exporter which connects to a Squid proxy
+#                    server's cache manager API and exposes metrics such as:
+#                     * Cache hit counters
+#                     * Client HTTP request / byte counters
+#                     * Server HTTP / FTP requests
+#                     * Request error counters
+### END INIT INFO
+
+# Author: Martina Ferrari <tina@debian.org>
+
+DESC="Prometheus exporter for Squid caching proxy"
+NAME=prometheus-squid-exporter
+DAEMON=/usr/bin/$NAME
+USER=proxy
+PIDFILE=/var/run/$NAME/$NAME.pid
+LOGFILE=/var/log/prometheus/$NAME.log
+
+HELPER=/usr/bin/daemon
+HELPER_ARGS="--name=$NAME --output=$LOGFILE --pidfile=$PIDFILE --user=$USER"
+
+ARGS=""
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+do_start_prepare()
+{
+    mkdir -p `dirname $PIDFILE`
+    chown $USER: `dirname $PIDFILE`
+    mkdir -p `dirname $LOGFILE`
+    touch $LOGFILE
+    chown $USER: $LOGFILE
+}
+
+do_start_cmd_override()
+{
+    # Return
+    #   0 if daemon has been started or already running
+    #   2 if daemon could not be started
+    $HELPER $HELPER_ARGS --running && return 0
+    $HELPER $HELPER_ARGS -- $DAEMON $ARGS || return 2
+    return 0
+}
+
+do_stop_cmd_override()
+{
+    # Return
+    #   0 if daemon has been stopped or already stopped
+    #   2 if daemon could not be stopped
+    #   other if a failure occurred
+    $HELPER $HELPER_ARGS --running || return 0
+    $HELPER $HELPER_ARGS --stop || return 2
+    # wait for the process to really terminate
+    for n in 1 2 3 4 5; do
+        sleep $n
+        $HELPER $HELPER_ARGS --running || break
+    done
+    $HELPER $HELPER_ARGS --running || return 0
+    return 2
+}

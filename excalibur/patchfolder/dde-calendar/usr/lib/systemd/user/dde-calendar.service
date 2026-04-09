@@ -1,0 +1,8 @@
+[Unit]
+Description = dde-calendar date service
+
+[Service]
+ExecStart=/usr/bin/dde-calendar
+Type=dbus
+BusName=com.deepin.Calendar
+Slice=app.slice

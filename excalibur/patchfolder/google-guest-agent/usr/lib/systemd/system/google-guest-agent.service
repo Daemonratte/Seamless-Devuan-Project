@@ -1,0 +1,14 @@
+[Unit]
+Description=Google Compute Engine Guest Agent
+# Start before sshd in order to regenerate SSH host keys.
+Before=ssh.service
+After=network-online.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/google_guest_agent
+OOMScoreAdjust=-900
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

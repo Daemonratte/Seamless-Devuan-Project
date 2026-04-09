@@ -1,0 +1,13 @@
+[Unit]
+Description=Anonymous FTP server for 1-wire access
+Documentation=man:owftpd(1)
+
+[Service]
+Type=notify
+NotifyAccess=all
+ExecStart=/usr/bin/owftpd --foreground -c /etc/owfs.conf
+User=Debian-ow
+Group=Debian-ow
+
+[Install]
+WantedBy=multi-user.target

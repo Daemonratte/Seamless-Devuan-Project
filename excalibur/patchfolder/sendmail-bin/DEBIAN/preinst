@@ -1,0 +1,24 @@
+#!/bin/sh
+set -e;
+
+# do we have debconf?
+if [ -f /usr/share/debconf/confmodule ]; then
+	DEBCONF=true;
+	. /usr/share/debconf/confmodule;
+else
+	DEBCONF='';
+	fi;
+
+if [ "$1" = "upgrade" ]; then
+		# Prevent cronjob from running during upgrade...
+		if [ -f /etc/cron.d/sendmail ]; then
+			echo "#preinst" > /etc/cron.d/sendmail;
+			fi;
+fi
+
+# Automatically added by dh_installinit/13.23
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/sendmail" ] ; then
+	chmod +x "/etc/init.d/sendmail" >/dev/null || true
+fi
+# End automatically added section
+

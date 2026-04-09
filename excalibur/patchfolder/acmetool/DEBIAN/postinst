@@ -1,0 +1,47 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "configure" ]; then
+	if [ -d /run/systemd/system ]; then
+		systemd-tmpfiles --create --prefix=/run/acme || true
+	fi
+
+	invoke-rc.d rsyslog restart || true
+fi
+
+# Automatically added by dh_apache2/UNDECLARED
+if true; then
+	if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
+		. /usr/share/apache2/apache2-maintscript-helper
+		for conf in acmetool  ; do
+			apache2_invoke enconf $conf  || exit 1
+		done
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installtmpfiles/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create acmetool.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'acmetool.timer'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'acmetool.timer' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'acmetool.timer'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'acmetool.timer' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'acmetool.timer' >/dev/null || true
+fi
+# End automatically added section
+

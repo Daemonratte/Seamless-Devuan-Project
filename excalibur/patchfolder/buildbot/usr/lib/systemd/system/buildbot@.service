@@ -1,0 +1,18 @@
+[Unit]
+Description=Buildbot master %I
+Documentation=man:buildbot(1) man:buildbot(7) https://docs.buildbot.net/
+ConditionDirectoryNotEmpty=/var/lib/buildbot/masters/%i
+ConditionFileNotEmpty=/var/lib/buildbot/masters/%i/buildbot.tac
+ConditionFileNotEmpty=/var/lib/buildbot/masters/%i/master.cfg
+
+[Service]
+Type=simple
+WorkingDirectory=/var/lib/buildbot/masters/%i
+PrivateTmp=true
+User=buildbot
+Group=buildbot
+ExecStart=/usr/bin/buildbot start --nodaemon
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target

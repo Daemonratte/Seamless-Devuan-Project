@@ -1,0 +1,101 @@
+#!/bin/sh
+
+set -e
+
+#######################
+# CREATE USER AND GROUP
+#######################
+
+if ! getent group | grep -q mrtg; then
+    groupadd --system mrtg
+fi
+
+if ! getent passwd | grep -q mrtg; then
+    useradd --system --home-dir /var/lib/mrtg --gid mrtg mrtg
+fi
+
+chmod 2750 /etc/mrtg
+chmod 0640 /etc/mrtg/mrtg.cfg
+chown mrtg:mrtg /etc/mrtg
+chown mrtg:mrtg /etc/mrtg/mrtg.cfg
+
+#########
+# DEBCONF
+#########
+
+# Source debconf library
+. /usr/share/debconf/confmodule
+
+if [ "$1" = "configure" ]
+then
+    # Fix owner, group and permissions for /var/www/html/mrtg/?
+    db_get mrtg/fix_permissions || RET="false"
+    if [ "$RET" = "true" ]
+    then
+       chown mrtg:www-data /var/www/html/mrtg
+       chmod 0750 /var/www/html/mrtg
+    fi
+
+    # Create /var/www/html/mrtg?
+    db_get mrtg/create_www || RET="false"
+    if [ "$RET" = "true" ]
+    then
+       mkdir -p /var/www/html/mrtg
+       chown mrtg:www-data /var/www/html/mrtg
+       chmod 0750 /var/www/html/mrtg
+    fi
+
+    # Remove old and conflicting file /etc/cron.d/mrtg?
+    db_get mrtg/remove_cron || RET="false"
+    if [ "$RET" = "true" ]
+    then
+       rm -f /etc/cron.d/mrtg
+    fi
+fi
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/mrtg" ]; then
+		update-rc.d mrtg defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native mrtg $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'mrtg.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'mrtg.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'mrtg.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'mrtg.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'mrtg.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

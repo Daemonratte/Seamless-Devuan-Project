@@ -1,0 +1,11 @@
+[Unit]
+Description=Socket for uWSGI app %i
+Documentation=man:uwsgi(1) file:/usr/share/doc/uwsgi-core/README.Debian
+
+[Socket]
+ListenStream=/run/uwsgi/%i.socket
+SocketUser=www-data
+SocketMode=0600
+
+[Install]
+WantedBy=sockets.target

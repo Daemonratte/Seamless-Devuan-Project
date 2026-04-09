@@ -1,0 +1,12 @@
+[Unit]
+Description=Ayatana Indicator Sound Service
+PartOf=graphical-session.target
+PartOf=ayatana-indicators.target lomiri-indicators.target
+After=pipewire-pulse.service pulseaudio.service
+
+[Service]
+ExecStart=/usr/libexec/ayatana-indicator-sound/ayatana-indicator-sound-service
+Restart=on-failure
+
+[Install]
+WantedBy=ayatana-indicators.target lomiri-indicators.target

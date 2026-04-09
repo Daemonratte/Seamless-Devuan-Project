@@ -1,0 +1,60 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          couriergraph
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+
+CONFIG=/etc/default/couriergraph
+MAIL_LOG=/var/log/mail.log
+
+NAME=couriergraph
+DESC="Courier login Statistics"
+DAEMON=/usr/sbin/couriergraph.pl
+
+PIDDIR=/var/run/servergraph
+PIDFILE=$PIDDIR/couriergraph.pid
+RRD_DIR=/var/lib/couriergraph
+RRD_NAME=couriergraph
+
+test -x $DAEMON || exit 0
+
+if [ -f $CONFIG ]; then
+        . $CONFIG
+fi
+
+if [ ! -d $PIDDIR ]; then
+	mkdir -p $PIDDIR
+	chown daemon:root $PIDDIR
+fi
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC: "
+	start-stop-daemon --start --oknodo --quiet --pidfile $PIDFILE \
+		--startas $DAEMON --name couriergraph.pl -N 15 -c daemon:adm -- \
+		-l $MAIL_LOG -d --daemon_rrd=$RRD_DIR --rrd_name=$RRD_NAME
+	echo "$NAME."
+  ;;
+
+  stop)
+	echo -n "Stopping $DESC: "
+	start-stop-daemon --stop --oknodo --pidfile $PIDFILE --name couriergraph.pl --retry 1
+	rm -f $PIDFILE
+	echo "$NAME."
+  ;;
+
+  restart|force-reload)
+	$0 stop
+	$0 start
+  ;;
+
+  *)
+    echo "Usage: $0 start|stop|restart|force-reload"
+    exit 1
+    ;;
+esac
+
+exit 0

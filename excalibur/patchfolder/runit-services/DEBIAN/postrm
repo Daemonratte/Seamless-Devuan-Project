@@ -1,0 +1,94 @@
+#!/bin/sh
+set -e
+
+is_up () {
+# stat --> run | down
+if [ -e "/etc/service/$name/supervise/stat" ]; then
+	stat=$(cat "/etc/service/$name/supervise/stat")
+	if [ "$stat" != run ]; then
+		return 1
+	else
+		return 0
+	fi
+else
+	return 1
+fi
+}
+failpurge=
+case "$1" in
+    purge|remove)
+	for path in /usr/share/runit/sv.now/* ; do
+		name=$(basename "$path")
+		if [ -r /usr/share/runit/sv.now/"$name"/.meta/pkg ]; then
+			ispkg=$(cat /usr/share/runit/sv.now/"$name"/.meta/pkg)
+			if [ "$ispkg" != 'runit-services' ]; then
+				continue # skip: not from this package
+			fi
+		else
+			continue # skip: not from this package
+		fi
+		if [ -r  /usr/share/runit/sv.now/"$name"/.meta/enable ]; then
+			enable=$(cat /usr/share/runit/sv.now/"$name"/.meta/enable)
+		else
+			enable=yes  # dh implicit default
+		fi
+		if [ -r  /usr/share/runit/sv.now/"$name"/.meta/onupgrade ]; then
+			onupgrade=$(cat /usr/share/runit/sv.now/"$name"/.meta/onupgrade)
+			if [ "$onupgrade" = 'nostop' ] || [ "$onupgrade" = 'reload' ]; then
+				if is_up ; then
+					#disable in runit will also stop the service
+					if [ "$1" = 'remove' ]; then
+						echo "warning: disabling $name is dangerous, skipping"
+						echo "Please disable $name manually from a getty"
+						continue
+					else  #purge
+						echo "error: failed to purge $name : still running"
+						echo "please disable $name manually from a getty first with"
+						echo "update-service --remove /etc/sv/$name"
+						echo "then run 'dpkg -P runit-services' "
+						failpurge=1
+						continue
+					fi
+				fi
+			fi
+		else
+			onupgrade=restart # dh implicit default
+		fi
+		if [ -e /usr/lib/runit-helper/runit-helper ]; then
+			NAME=$name ENABLE=$enable ONUPGRADE=$onupgrade \
+				/usr/lib/runit-helper/runit-helper postrm "$@"
+			if [ "$1" = 'purge' ]; then
+				NAME=$name PKG='runit-services' /usr/lib/runit-helper/runit-helper sv_purge
+			fi
+		fi
+	done
+	if [ "$1" = 'purge' ]; then #rsyslog logrotate override
+		rm -f /etc/logrotate.d/aa-rsyslog-runit
+		rm -f /etc/logrotate.d/aa-rsyslog-runit.disabled
+		#sysv override dir and flagfiles
+		if [ -d /etc/runit/override-sysv.d ]; then
+			touch /etc/runit/override-sysv.d/placeholder.pkgrunit #if dir is empty * is not expanded and rm fails
+			for flagfile in /etc/runit/override-sysv.d/*.pkgrunit ; do
+				rm "$flagfile"
+			done
+			rmdir --ignore-fail-on-non-empty /etc/runit/override-sysv.d #remove this when runit 2.1.2-61 reaches oldstable
+		fi
+	fi
+	if [ -n "$failpurge" ] ; then
+		echo "for more details on how to purge this package read"
+		echo "https://salsa.debian.org/debian/runit-services/-/blob/master/README"
+		exit 1
+	fi
+    ;;
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+
+
+
+exit 0

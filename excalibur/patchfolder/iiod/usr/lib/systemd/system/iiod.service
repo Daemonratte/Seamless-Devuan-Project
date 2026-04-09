@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# iiod - Systemd init script
+#
+# Copyright (C) 2016-2024 Analog Devices Inc.
+
+[Unit]
+Description=IIO Daemon
+Requires=systemd-udev-settle.service
+After=network.target systemd-udev-settle.service
+Documentation=man:iiod(8)
+ConditionPathExists=|/sys/bus/iio
+ConditionPathExists=|/sys/class/hwmon
+
+[Service]
+Environment=$IIOD_EXTRA_OPTS=''
+EnvironmentFile=-/etc/default/iiod
+ExecStart=/usr/sbin/iiod $IIOD_EXTRA_OPTS
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=iiod.service

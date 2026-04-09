@@ -1,0 +1,9 @@
+[Unit]
+Description=CONMUX registry
+
+[Service]
+ExecStart=/bin/sh -ec "touch /var/run/conmux-registry && exec /usr/sbin/conmux-registry 63000 /var/run/conmux-registry"
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

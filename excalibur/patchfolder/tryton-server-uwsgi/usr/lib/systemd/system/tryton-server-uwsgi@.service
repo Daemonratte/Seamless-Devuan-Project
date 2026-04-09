@@ -1,0 +1,17 @@
+[Unit]
+Description=Tryton Server uWSGI - %i
+Documentation=man:uwsgi,man:trytond,file:/usr/share/doc/tryton-server,file:/usr/share/doc/tryton-server-doc,https://docs.tryton.org/
+After=remote-fs.target
+After=network.target
+After=postgresql.service
+After=mysql.service
+ConditionPathExists=/etc/tryton/trytond.conf
+
+[Service]
+User=tryton
+Group=tryton
+ExecStart=/usr/bin/uwsgi --ini /etc/tryton/uwsgi.ini
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

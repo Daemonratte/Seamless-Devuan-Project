@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2022 Andrea Pappacoda
+#
+# SPDX-License-Identifier: FSFAP
+
+[Unit]
+Description=Simple utility to dynamically change a DNS record
+Documentation=man:cloudflare-ddns(1)
+After=network-online.target
+Requisite=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/cloudflare-ddns
+User=cloudflare-ddns
+Group=cloudflare-ddns
+
+CacheDirectory=cloudflare-ddns
+ConfigurationDirectory=cloudflare-ddns
+ConfigurationDirectoryMode=0700
+
+# Hardening
+CapabilityBoundingSet=
+ExecPaths=/usr/bin/cloudflare-ddns /usr/lib/x86_64-linux-gnu /usr/lib
+LockPersonality=true
+MemoryDenyWriteExecute=true
+NoExecPaths=/
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+PrivateUsers=true
+ProcSubset=pid
+ProtectClock=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+ProtectSystem=strict
+RemoveIPC=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~ @privileged @resources
+UMask=0077

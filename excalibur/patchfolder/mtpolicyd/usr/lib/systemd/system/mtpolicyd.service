@@ -1,0 +1,12 @@
+[Unit]
+Description=Modular policy daemon for postfix
+Documentation=man:mtpolicyd(1)
+After=network.target nss-lookup.target systemd-resolved.service
+
+[Service]
+Type=forking
+User=mtpolicyd
+ExecStart=/usr/bin/mtpolicyd
+
+[Install]
+WantedBy=multi-user.target

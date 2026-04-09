@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenStack Cluster Installer Status Report
+After=network.service
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/var/lib/openstack-cluster-installer-agent
+ExecStart=/usr/bin/oci-agent-report-status
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

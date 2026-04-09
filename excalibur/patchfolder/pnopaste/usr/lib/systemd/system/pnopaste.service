@@ -1,0 +1,6 @@
+[Unit]
+Description=Remove expired pnopaste entries from database
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/perl /usr/share/pnopaste/bin/expired_delete.pl

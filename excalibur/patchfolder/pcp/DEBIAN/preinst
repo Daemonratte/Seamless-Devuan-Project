@@ -1,0 +1,169 @@
+#!/bin/sh -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmcd/pmcd.conf /etc/pcp/pmcd/pmcd.conf 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmcd/pmcd.conf /etc/pcp/pmcd/pmcd.conf 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmcd/pmcd.options /etc/pcp/pmcd/pmcd.options 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmcd/pmcd.options /etc/pcp/pmcd/pmcd.options 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmcd/rc.local /etc/pcp/pmcd/rc.local 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmcd/rc.local /etc/pcp/pmcd/FILE 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmie/control /etc/pcp/pmie/control 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmie/control /etc/pcp/pmie/control 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmproxy/pmproxy.options /etc/pcp/pmproxy/pmproxy.options 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmproxy/pmproxy.options /etc/pcp/pmproxy/pmproxy.options 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmlogger/control /etc/pcp/pmlogger/control 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmlogger/control /etc/pcp/pmlogger/control 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bash_completion.d/pcp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cron.d/pcp-pmie -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cron.d/pcp-pmlogger -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cron.d/pcp-pmlogger-daily-report -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp.sh -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/container -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/delayacct -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/fdcount -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/guest -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/memory -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/sched -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/swap -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/tcp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/udp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/wchan -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/entropy -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/freespace -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/ipc -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/locks -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/memcache -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/mysql -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/postfix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/redis -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/tcp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/openmetrics/config.d/collectd.url -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/openmetrics/config.d/etcd.url -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/openmetrics/config.d/grafana.url -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/interrupts-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/memory-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/queues-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/syscalls-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/syscalls-percpu-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/memory/tlb-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/networking/socket-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/networking/tcp-activity-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/networking/udp-packets-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/cpu-evctr -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/craylink -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/efs -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/hub -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/kaio -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/node-memory -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/numa -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/numa-summary -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xbow -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xlv-activity -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xlv-stripe-io -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xvm-all -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xvm-ops -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xvm-stats -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/C2 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/C3 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/D3 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/K0 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/S0 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/S1 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmproxy/pmproxy.defaults -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmrep/iostat_v12_3.conf -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmrep/pmrep.conf -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmrep/sar-old-kernel.conf -- "$@"
+# End automatically added section
+
+#
+# The goal here is to collect PCP configuration files from places
+# they may have been stashed away in previous versions
+#
+
+PCP_ETC_DIR=/etc
+for crontab in pmlogger pmie
+do
+    test -f "$PCP_ETC_DIR/cron.d/$crontab" || continue
+    mv -f "$PCP_ETC_DIR/cron.d/$crontab" "$PCP_ETC_DIR/cron.d/pcp-$crontab"
+done
+# Function to do all of the configuration file migration work
+#
+_clean_configs()
+{
+    #
+    # Usage: _clean_configs [-n|-v] new_dir old_dir ...
+    #
+    # Across all the files in the new_dir and old_dir args, match
+    # names and pick the most recently modified version and leave
+    # this (same mode and modification date) in new_dir
+    #
+    # -n option is show-me for benign debugging
+    # -v option is verbose mode for active debugging
+    #
+
+    if [ $# -gt 0 -a X"$1" = "X-n" ]
+    then
+	MKDIR="echo + mkdir "
+	CP="echo + cp "
+	shift
+    else
+	MKDIR=mkdir
+	CP=cp
+    fi
+
+    _verbose=false
+    if [ $# -gt 0 -a X"$1" = "X-v" ]
+    then
+	_verbose=true
+	shift
+    fi
+
+    if [ $# -lt 2 ]
+    then
+	echo >&2 "Usage: _clean_configs [-n|-v] new_dir old_dir ..."
+	return
+    fi
+
+    _new="$1"
+    if [ ! -d "$_new" ]
+    then
+	$verbose && echo >&2 + mkdir -p "$_new"
+	$MKDIR -p "$_new"
+    fi
+
+    shift
+    for _dir
+    do
+	[ "$_dir" = "$_new" ] && continue
+	if [ -d "$_dir" ]
+	then
+	    ( cd "$_dir" ; find . -type f -print ) \
+	    | sed -e 's/^\.\///' \
+	    | while read _file
+	    do
+		_want=false
+		if [ -f "$_new/$_file" ]
+		then
+		    # file exists in both directories, pick the more
+		    # recently modified one
+		    #
+		    _try=`find "$_dir/$_file" -newer "$_new/$_file" -print`
+		    [ -n "$_try" ] && _want=true
+		else
+		    _want=true
+		fi
+		if $_want
+		then
+		    _dest=`dirname $_new/$_file`
+		    if [ ! -d "$_dest" ]
+		    then
+			$verbose && >&2 echo + mkdir "$_dest"
+			$MKDIR "$_dest"
+		    fi
+		    $_verbose && echo >&2 + cp -p "$_dir/$_file" "$_new/$_file"
+		    $CP -p "$_dir/$_file" "$_new/$_file"
+		fi
+	    done
+	fi
+    done
+}
+

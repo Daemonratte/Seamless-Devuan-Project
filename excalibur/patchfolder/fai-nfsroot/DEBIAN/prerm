@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+case "$1" in
+    remove|deconfigure|failed-upgrade)
+        update-alternatives --remove policy-rc.d /usr/bin/policy-rc.d.fai
+        ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'fai.service' 'fai.target' >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

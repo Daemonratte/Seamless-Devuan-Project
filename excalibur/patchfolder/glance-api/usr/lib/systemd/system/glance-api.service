@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Glance Service API (glance-api)
+After=postgresql.service mysql.service keystone.service ntp.service rabbitmq-server.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service ntp.service rabbitmq-server.service network-online.target 
+
+Documentation=man:glance-api(1)
+
+[Service]
+User=glance
+Group=glance
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=glance lock/glance
+CacheDirectory=glance
+ExecStart=/etc/init.d/glance-api systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

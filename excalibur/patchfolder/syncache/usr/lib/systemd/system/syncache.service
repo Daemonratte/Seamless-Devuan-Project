@@ -1,0 +1,16 @@
+[Unit]
+Description=SynCache dRuby object cache server
+Documentation=man:syncache-drb
+After=network.target
+Before=apache2.service lighttpd.service nginx.service
+
+[Service]
+Type=forking
+PIDFile=/run/syncache/syncache.pid
+ExecStartPre=/usr/bin/install -o syncache -g syncache -m 755 -d /run/syncache
+ExecStart=/usr/bin/syncache-drb --pidfile /run/syncache/syncache.pid --user syncache --flush-delay 5
+ExecReload=/bin/kill -HUP $MAINPID
+EnvironmentFile=-/etc/default/syncache
+
+[Install]
+WantedBy=multi-user.target

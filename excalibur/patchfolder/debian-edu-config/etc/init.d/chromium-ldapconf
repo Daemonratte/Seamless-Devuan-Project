@@ -1,0 +1,35 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          chromium-ldapconf
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Should-Start:      $network $syslog $named slapd fetch-ldap-cert
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: Update chromium configuration from LDAP
+# Description:
+#   Update default chromium default setup (currently only homepage)
+#   from LDAP.  Check LDAP every boot to see if the default homepage
+#   should be changed or not.
+### END INIT INFO
+#
+# Author: Petter Reinholdtsen <pere@hungry.com>
+# Date:   2011-12-31
+
+set -e
+
+. /lib/lsb/init-functions
+
+case "$1" in
+    start)
+	/usr/share/debian-edu-config/tools/chromium-ldapconf
+	;;
+    stop)
+	;;
+    restart|force-reload)
+	;;
+    *)
+	echo "Usage: $0 {start|stop|restart|force-reload}"
+	exit 2
+esac
+exit 0

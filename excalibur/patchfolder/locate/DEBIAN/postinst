@@ -1,0 +1,43 @@
+#!/bin/sh
+
+set -e
+
+update-alternatives --quiet --install /usr/bin/locate locate /usr/bin/locate.findutils 20 \
+  --slave /usr/share/man/man1/locate.1.gz locate.1.gz /usr/share/man/man1/locate.findutils.1.gz \
+  --slave /usr/bin/updatedb updatedb /usr/bin/updatedb.findutils \
+  --slave /usr/share/man/man1/updatedb.1.gz updatedb.1.gz /usr/share/man/man1/updatedb.findutils.1.gz
+ 
+
+
+# Automatically added by dh_installsystemd/13.16
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'locate.timer' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'locate.timer'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'locate.timer' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'locate.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.16
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'locate.service' 'locate.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+# vim:tabstop=2:expandtab:shiftwidth=2

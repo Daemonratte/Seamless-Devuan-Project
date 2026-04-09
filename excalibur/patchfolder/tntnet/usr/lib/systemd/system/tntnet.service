@@ -1,0 +1,11 @@
+[Unit]
+Description=Tntnet web server
+After=network.target nss-lookup.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/tntnet.pid
+ExecStart=/usr/bin/tntnet
+
+[Install]
+WantedBy=multi-user.target

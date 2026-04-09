@@ -1,0 +1,12 @@
+[Unit]
+Description=Radio Clock daemon
+Documentation=man:radioclkd(1)
+
+[Service]
+Type=forking
+EnvironmentFile=-/etc/default/radioclk
+PIDFile=/var/run/radioclkd.pid
+ExecStart=/usr/sbin/radioclkd ${PORT}
+
+[Install]
+WantedBy=multi-user.target

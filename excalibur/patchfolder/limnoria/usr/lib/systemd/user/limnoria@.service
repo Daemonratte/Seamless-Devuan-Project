@@ -1,0 +1,14 @@
+# Use sudo systemctl -M instance@ --user restart limnoria@instance.service to restart.
+[Unit]
+Description=Robust and user-friendly Python IRC bot
+Documentation=man:supybot(1)
+Wants=network-online.target oidentd.service
+After=network-online.target oidentd.service
+
+[Service]
+ExecStart=/usr/bin/limnoria %h/%i/%i.conf
+Restart=on-failure
+RestartSec=3s
+
+[Install]
+WantedBy=default.target

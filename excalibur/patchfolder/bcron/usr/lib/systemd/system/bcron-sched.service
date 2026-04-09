@@ -1,0 +1,13 @@
+# this is /usr/lib/systemd/system/bcron-sched.service
+[Unit]
+Description=bcron system scheduler daemon
+After=network.target
+
+[Service]
+# see man systemd.service 
+ExecStart=/usr/bin/daemon --noconfig --name bcron-sched /usr/sbin/bcron-start
+ExecStop=/usr/bin/daemon --noconfig --name bcron-sched --stop
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target 

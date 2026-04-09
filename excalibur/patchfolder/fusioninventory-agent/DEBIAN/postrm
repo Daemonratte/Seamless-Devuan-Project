@@ -1,0 +1,68 @@
+#! /bin/sh
+set -e
+
+# Automatically added by dh_installdeb/13.15.3
+dpkg-maintscript-helper rm_conffile /etc/default/fusioninventory-agent 1:2.4-1 fusioninventory-agent -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cron.daily/fusioninventory-agent 1:2.4-1 fusioninventory-agent -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/init.d/fusioninventory-agent 1:2.4-1 fusioninventory-agent -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/logrotate.d/fusioninventory-agent 1:2.4-1 fusioninventory-agent -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cron.weekly/fusioninventory-agent 1:2.5.1-1 fusioninventory-agent -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'fusioninventory-agent.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+case "$1" in
+  purge)
+    for ext in '~' '%' .bak .ucf-new .ucf-old .ucf-dist;  do
+        for conf in agent inventory-server-plugin ssl-server-plugin server-test-plugin \
+            proxy-server-plugin proxy2-server-plugin
+        do
+            rm -f /etc/fusioninventory/$conf.cfg$ext
+        done
+    done
+
+    # Cleanup var dir
+    rm -rf /var/lib/fusioninventory-agent
+
+    # remove the configuration file itself
+    for conf in agent inventory-server-plugin ssl-server-plugin server-test-plugin \
+        proxy-server-plugin proxy2-server-plugin
+    do
+        rm -f /etc/fusioninventory/$conf.cfg
+    done
+    [ -d /etc/fusioninventory ] && rmdir --ignore-fail-on-non-empty /etc/fusioninventory
+
+    # and finally clear it out from the ucf database
+    if command -v ucf >/dev/null; then
+        for conf in agent inventory-server-plugin ssl-server-plugin server-test-plugin \
+            proxy-server-plugin proxy2-server-plugin
+        do
+            ucf --purge /etc/fusioninventory/$conf.cfg
+        done
+    fi
+    if command -v ucfr >/dev/null; then
+        for conf in agent inventory-server-plugin ssl-server-plugin server-test-plugin \
+            proxy-server-plugin proxy2-server-plugin
+        do
+            ucfr --purge fusioninventory-agent /etc/fusioninventory/$conf.cfg
+        done
+    fi
+
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+
+exit 0

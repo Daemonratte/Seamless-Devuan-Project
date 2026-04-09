@@ -1,0 +1,109 @@
+#!/bin/bash -e
+
+INFO="/var/spool/hylafax/status/any.info"
+
+# Create the faxmaster account if it doesn't exist already
+	if ! id faxmaster >/dev/null 2>&1; then
+    		adduser --system --group --home /var/spool/hylafax --no-create-home --disabled-password \
+			--gecos "HylaFAX administrative mailbox" faxmaster
+	fi
+
+# Those dirs may have been created by the client, but we need to make sure they exist
+	mkdir -p /etc/hylafax
+	mkdir -p /var/spool/hylafax/etc
+
+# Copy the "missing" files over, if they don't already exist
+        cp -n /var/spool/hylafax/etc/* /etc/hylafax
+
+# We need to bind mount them, so changes go to /etc/hylafax
+	mount --bind /etc/hylafax /var/spool/hylafax/etc
+
+# Recover from an old install error
+	if [ -f /etc/hylafax/hosts -a ! -f /etc/hylafax/hosts.hfaxd ]; then
+    		mv /etc/hylafax/hosts /etc/hylafax/hosts.hfaxd
+	fi
+
+# seqf files where created with wrong permissions by some older versions
+# Fix them when we do an update
+	if [ -e /var/spool/hylafax/log/seqf ]; then
+			chmod 644 /var/spool/hylafax/log/seqf
+	fi
+	if [ -e /var/spool/hylafax/docq/seqf ]; then
+			chmod 644 /var/spool/hylafax/docq/seqf
+	fi
+	if [ -e /var/spool/hylafax/doneq/seqf ]; then
+			chmod 644 /var/spool/hylafax/doneq/seqf
+	fi
+	if [ -e /var/spool/hylafax/sendq/seqf ]; then
+			chmod 644 /var/spool/hylafax/sendq/seqf
+	fi
+	if [ -e /var/spool/hylafax/recvq/seqf ]; then
+			chmod 644 /var/spool/hylafax/recvq/seqf
+	fi
+	if [ -e /var/spool/hylafax/pollq/seqf ]; then
+			chmod 644 /var/spool/hylafax/pollq/seqf
+	fi
+
+# Add getty symlinks
+	if [ -e /sbin/mgetty ]; then
+    	[ -e /etc/hylafax/getty-link ] \
+		|| ln -s /sbin/mgetty /etc/hylafax/getty-link
+    	[ -e /etc/hylafax/egetty-link ] \
+		|| ln -s /sbin/mgetty /etc/hylafax/egetty-link
+	fi
+	if [ -e /usr/sbin/vgetty ]; then
+    	[ -e /etc/hylafax/vgetty-link ] \
+		|| ln -s /usr/sbin/vgetty /etc/hylafax/vgetty-link
+	fi
+
+# Change owner and group to uucp so that the FIFO pipes could be created.
+	chown uucp:uucp /var/spool/hylafax
+
+	if [ ! -e /etc/hylafax/setup.cache ]
+	then
+
+	# If we are installing from scratch, there is no config file and the rest of this
+	# script will fail. So we have to create one.
+		if [ ! -e /etc/hylafax/config ]; then
+		cat > /etc/hylafax/config << EOF
+LogFacility:		daemon
+CountryCode:		1
+AeraCode:		408
+LongDistancePrefix:	0
+DialStringRules:	"etc/dialrules"
+ServerTracing:		1
+EOF
+
+		fi
+
+	echo >&2
+	echo "Hmm.. Looks like HylaFAX is not configured yet." >&2
+	echo "You need to run 'faxsetup' as root." >&2
+	echo "If you have not configured your modem, you also" >&2
+	echo "may have to run 'faxaddmodem'." >&2
+	echo "Then run 'dpkg-reconfigure hylafaxplus-server'" >&2
+	echo >&2
+
+	else
+		update-rc.d hylafax defaults > /dev/null
+	fi
+
+        # Force update of info file, so "faxstat -i" reports correct data
+        # after an update.
+        if [ -e "$INFO" ]; then
+             > "$INFO"
+             VERSION=$(awk '/# VERSION/ {print $3}' /usr/sbin/faxsetup)
+             DATE=$(awk '/# DATE/ {print $3,$4,$5,$6,$7,$8}' /usr/sbin/faxsetup)
+             TARGET=$(awk '/# TARGET/ {print $3}' /usr/sbin/faxsetup)
+             echo "HylaFAX+ version $VERSION built $DATE for $TARGET" \
+             > "$INFO"
+             echo faxmaster >> "$INFO"
+             echo >> "$INFO"
+	fi
+
+	invoke-rc.d hylafax restart || :
+exit 0
+
+#This is to satisfy lintian.
+
+

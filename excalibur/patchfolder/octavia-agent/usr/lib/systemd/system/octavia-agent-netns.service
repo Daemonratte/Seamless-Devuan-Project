@@ -1,0 +1,13 @@
+[Unit]
+Description=Configure amphora-haproxy network namespace
+StopWhenUnneeded=true
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/octavia-agent-netns-start
+ExecStop=/usr/sbin/octavia-agent-netns-stop
+RemainAfterExit=yes
+TimeoutSec=0
+
+[Install]
+WantedBy=octavia-agent.service

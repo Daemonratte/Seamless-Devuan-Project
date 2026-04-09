@@ -1,0 +1,12 @@
+[Unit]
+Description=Caching Additional Network Information Daemon
+After=network.target
+Documentation=man:canid(1)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/canid
+
+
+[Install]
+WantedBy=multi-user.target

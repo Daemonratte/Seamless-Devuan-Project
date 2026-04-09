@@ -1,0 +1,23 @@
+[Unit]
+Description=ffproxy daemon
+Documentation=man:ffproxy(8)
+
+[Service]
+DynamicUser=true
+NoNewPrivileges=true
+
+ConfigurationDirectory=ffproxy
+RuntimeDirectory=ffproxy
+PIDFile=/run/ffproxy/ffproxy.pid
+
+Type=forking
+ExecStart=/usr/bin/ffproxy -n /run/ffproxy -D /etc/ffproxy
+
+Restart=always
+RestartSec=60
+
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

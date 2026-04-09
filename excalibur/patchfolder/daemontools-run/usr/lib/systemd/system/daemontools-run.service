@@ -1,0 +1,10 @@
+[Unit]
+Description=Daemontools service supervision
+Documentation=https://cr.yp.to/daemontools.html
+
+[Service]
+ExecStart=/usr/bin/svscanboot /etc/service/
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

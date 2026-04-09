@@ -1,0 +1,431 @@
+#!/bin/sh
+# Start or stop HylaFAX
+#
+# This script start and stop hylafax daemons.
+# It is driven by a configuration file sourced by this shell
+# and called /etc/default/hylafax.
+
+### BEGIN INIT INFO
+# Provides:          hylafax
+# Required-Start:    $syslog $remote_fs
+# Required-Stop:     $syslog $remote_fs
+# Should-Start:      $local_fs $network iaxmodem
+# Should-Stop:       $local_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and stop the hylafax server
+# Description:       Start hylafax daemons. Otherwise stop all
+#                    hylafax daemons except for daemon started
+#                    by init.
+### END INIT INFO
+
+# 28-Dec-2003 Ross Boylan
+# Add "init" option to USE_FAXGETTY
+# This will cause this script to assume that faxgetty is already
+# running from the inittab file
+
+# 19-sep-2006 Giuseppe Sacco
+# Added support for lsb message handling
+
+# 10-may-2009 Giuseppe Sacco
+# Added support for mounting /etc/hylafax on /var/spool/hylafax/etc
+# Currently this script use the "bind" option only when the
+# system support it and only when no daemon is run via init.
+
+# 26-aug-2018 Giuseppe Sacco
+# Removed RUN_HYLAFAX from /etc/default/hylafax. Instead, the init.d
+# script is shipped as disabled.
+# see debian policy change in 4.1.3
+
+. /lib/lsb/init-functions
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+HYLAFAX_HOME=/var/spool/hylafax
+FAXGETTY=/usr/sbin/faxgetty
+FAXMODEM=/usr/sbin/faxmodem
+PIDFILE=/var/run/hfaxd.pid
+
+NEWPROT=
+SNPP=
+
+test -x /usr/sbin/faxq || exit 0
+test -x /usr/sbin/hfaxd || exit 0
+
+if [ -f /etc/hylafax/setup.cache ];
+then
+  #
+  # Check if old protocol should be started
+  grep -qE "^HFAXD_OLD_PROTOCOL='(1|yes)'" /etc/hylafax/setup.cache
+  if [ $? -eq 0 ];
+  then
+	echo "Hylafax old protocol is not available anymore starting from hylafax 6.0.0" >&2
+	exit 1
+  fi
+
+  #
+  # Check if new protocol server should be started
+  grep -qE "^HFAXD_SERVER='(1|yes)'" /etc/hylafax/setup.cache
+  if [ $? -eq 0 ];
+  then
+    NEWPROT="-i 4559"
+  fi
+
+  #
+  # Check if SNPP server should be started
+  grep -qE "^HFAXD_SNPP_SERVER='(1|yes)" /etc/hylafax/setup.cache
+  if [ $? -eq 0 ];
+  then
+    SNPP="-s 444"
+  fi
+else
+  echo "ERROR: You must run faxsetup before starting hylafax." 1>&2
+  exit 1
+fi
+
+if [ -z "$NEWPROT$SNPP" -a "$1" != stop ]
+then
+  if [ -z "$HFAXD_FROM_INET" -o "$HFAXD_FROM_INET" != true ]
+  then
+    echo "You must specify at least one protocol NEW or SNPP in"
+    echo "/etc/hylafax/setup.cache using the command faxsetup,"
+    echo "otherwise you might only run hylafax via inetd."
+    exit 1
+  fi
+fi
+
+if [ -r /etc/default/hylafax ]; then
+  . /etc/default/hylafax
+fi
+
+if [ -d /run/systemd/system ]
+then
+	echo "This SysV init script should only be used when systemd is not available. Use systemd hylafax.service instead." >&2
+	exit 1
+fi
+
+# This function print on stdout all devices used by
+# hylafax. It enumerated the devices based on all
+# configuration files found in /etc/hylafax
+echo_fax_devices()
+{
+for device in config.*
+do
+	if [ "$device" != 'config.*' ]
+	then
+		dev=${device##config.}
+		# the next line is a patch included in #283111 for
+		# handling devfs file names.
+		dev=$(echo "$dev"|sed 's,_,/,g')
+		if [ \( -f "$device" -a -e "/dev/$dev" \) -o \
+			\( "$dev" = faxCAPI -a -e /dev/capi20 \) ]
+		then
+			echo "$dev"
+		fi
+	fi
+done
+}
+
+# This function check if this kernel and the mount command
+# support the option "bind"
+# This is a separate function because it should support
+# different commands when running on different kernels
+# like hurd and *bsd
+check_for_mount_bind()
+{
+  supported=0
+  TMPD=`mktemp -d /tmp/hylafax.XXXXXXXXXX` || return $supported
+  mkdir "$TMPD/directory"
+  mkdir "$TMPD/directory2"
+  touch "$TMPD/directory/file"
+  mount --bind "$TMPD/directory" "$TMPD/directory2"
+  if [ -f "$TMPD/directory2/file" ]
+  then
+    supported=1
+    umount "$TMPD/directory2"
+  fi
+  rm "$TMPD/directory/file"
+  rmdir "$TMPD/directory" "$TMPD/directory2" "$TMPD"
+  echo $supported
+}
+
+# mount the /etc/hylafax filesystem on /var/spool/hylafax/etc
+# This is a separate function because it should support
+# different commands when running on different kernels
+# like hurd and *bsd
+mountbind()
+{
+  mount --bind "$1" "$2"
+}
+
+# umount the /etc/hylafax filesystem from /var/spool/hylafax/etc
+# This is a separate function because it should support
+# different commands when running on different kernels
+# like hurd and *bsd
+#
+# Note: in some upgrade corner cases, the volume is monted many times
+# on the same mount point. So, this is a loop that umount all of them.
+umountbind()
+{
+  if type findmnt >/dev/null 2>&1
+  then
+    while [ 0 -lt $(findmnt --noheadings --target "$1" | grep -Fc '[/etc/hylafax]') ]
+    do
+      umount "$1"
+    done
+  else
+     umount "$1" 2>/dev/null || true
+  fi
+}
+
+# This function may be used for debugging: it prints a command
+# on stderr and then execute it. Comment out the first line to
+# avoid "debugging information". Do not touch the last line
+# since it execute the command
+x()
+{
+  echo + "$@" 1>&2
+  eval "$@"
+}
+
+
+# Check for updated files in /etc/hylafax and copy them
+# to /var/spool/hylafax/etc .
+# Updates on authorizations and ownership are also
+# copied.
+update_dir()
+{
+  # This function won't copy dot-files.
+  for src in "$1/"*
+  do
+    if [ "$src" != "${src%%\~}" ] || [ "$src" != "${src%%.bak}" ]
+    then
+      continue
+    fi
+    dst="$2/"$(basename $src)
+    if [ ! -e "$dst" ] ;
+    then
+      x /bin/cp -a "\"$src\"" "\"$dst\""
+    else
+      if [ -d "$dst" ];
+      then
+        update_dir "$src" "$dst"
+      else
+        if [ -L "$dst" -a \
+           '(' ! -L "$src" -o x$(readlink "$dst") != x$(readlink "$src") ')' ];
+        then
+          x /bin/rm -f "\"$dst\""
+          x /bin/cp -a "\"$src\"" "\"$dst\""
+        else
+          if [ "$src" -nt "$dst" ];
+          then
+            # The configuration file has been changed in $src
+            x /bin/cp -p "\"$src\"" "\"$dst\""
+          else
+            if [ "$dst" -nt "$src" ];
+            then
+              # The configuration file has been changed in $dst
+              echo "ERROR: $dst is newer than $src" 1>&2
+              echo "Please send a bug report on the hylafax-server package" 1>&2
+              exit 1
+	    else
+	      # in some cases, user change ownership/access right to files in /etc/hylafax.
+	      # this will copy these rights to files in /var/spool/hylafax/etc
+	      chmod --reference="$src" "$dst"
+	      chown --reference="$src" "$dst"
+            fi
+          fi
+        fi
+      fi
+    fi
+  done
+
+  # remove all files from /var/spool/hylafax/etc that have been deleted
+  # in /etc/hylafax (see #514950)
+  for src in "$2/"*
+  do
+    if [ "$src" != "${src%%\~}" ] || [ "$src" != "${src%%.bak}" ]
+    then
+      continue
+    fi
+    dst="$1/"$(basename $src)
+    if [ ! -e "$dst" ]
+    then
+      x /bin/rm "$src"
+    fi
+  done
+}
+
+# mount using bind option only if kernel support it and only if faxgetty is
+# not run via init or, if it is run via init but no devices are
+# configured
+mountbind_or_updatedir()
+{
+  devices="`echo_fax_devices`"
+  if [ $(check_for_mount_bind) -eq 1 ] && [ "${USE_FAXGETTY}" != "init" -o -z "$devices" ]
+  then
+    mountbind $1 $2
+  else
+    update_dir $1 $2
+  fi
+}
+
+# This function is called when starting the hylafax server. 
+# It clone the /etc directory into the chroot() directory
+copy_slash_etc()
+{
+  SPOOL=$(awk -F= '$1=="SPOOL" { gsub(/'"'"'/,"",$2); print $2; exit}' /etc/hylafax/setup.cache)
+
+  if [ -z "$SPOOL" ];
+  then
+    echo "ERROR: You must run faxsetup before starting hylafax" 1>&2
+    echo "and be sure to check that the SPOOL variable is assigned." 1>&2
+    exit 1
+  fi
+
+  if [ -d "$SPOOL/etc" ];
+  then
+    mountbind_or_updatedir "/etc/hylafax" "$SPOOL/etc"
+  else
+    echo "Can't find directory $SPOOL/etc" 1>&2
+    exit 1
+  fi
+
+}
+
+# Stop all daemons, except for what executed via init
+daemon_stop()
+{
+    log_daemon_msg "Stopping HylaFAX" faxq
+
+    p=$(env PS_PERSONALITY=linux ps --no-headers -C faxq -o pid)
+    if [ -n "$p" ]
+    then
+        start-stop-daemon --stop --exec /usr/sbin/faxq
+        sleep 1
+        p=$(env PS_PERSONALITY=linux ps --no-headers -C faxq -o pid)
+        [ -n "$p" ] && kill $p
+    fi
+
+    log_progress_msg "hfaxd"
+
+    p=$(env PS_PERSONALITY=linux ps --no-headers -C hfaxd -o pid)
+    if [ -n "$p" ]
+    then
+        start-stop-daemon --stop --exec /usr/sbin/hfaxd --pidfile $PIDFILE -- $BINDTO $NEWPROT $SNPP
+ 	sleep 1
+ 	p=$(env PS_PERSONALITY=linux ps --no-headers -C hfaxd -o pid)
+ 	[ -n "$p" ] && kill $p
+    fi
+
+    if [ ${USE_FAXGETTY} = "yes" ]; then
+        log_progress_msg "faxgetty"
+        killall faxgetty 2> /dev/null || true
+    fi
+
+    # wait maximum sixty seconds for server processes to shutdown
+    try=0
+    while [ $try -lt 60 ] && [ 0 -lt $(env PS_PERSONALITY=linux ps --no-headers -Chfaxd,faxq | wc -l) ]
+    do
+       sleep 1
+       try=$(($try+1))
+    done
+
+    umountbind $(awk -F= '$1=="SPOOL" { gsub(/'"'"'/,"",$2); printf("%s/etc",$2); exit}' /etc/hylafax/setup.cache)
+
+    if [ 0 -eq "$(env PS_PERSONALITY=linux ps --no-headers -Chfaxd,faxq | wc -l)" ]
+    then
+        log_end_msg 0
+    else
+        log_end_msg 1
+    fi
+}
+
+# Start all daemons, except for what executed via init
+daemon_start()
+{
+    if [ ${USE_FAXGETTY} = "yes" ]
+    then
+      count=$(env PS_PERSONALITY=linux ps --no-headers -Chfaxd,faxq,faxgetty | wc -l)
+    else
+      count=$(env PS_PERSONALITY=linux ps --no-headers -Chfaxd,faxq | wc -l)
+    fi
+
+    if [ $count -eq 0 ];
+    then
+      log_daemon_msg "Starting HylaFAX" "syncing directories..."
+      copy_slash_etc
+      log_progress_msg "faxq"
+      start-stop-daemon --start --exec /usr/sbin/faxq
+
+      if [ -z "$HFAXD_FROM_INET" -o "$HFAXD_FROM_INET" != true ]
+      then
+        log_progress_msg "hfaxd"
+        start-stop-daemon --start --exec /usr/sbin/hfaxd \
+		--make-pidfile --pidfile $PIDFILE \
+		--background -- -d $BINDTO $NEWPROT $SNPP
+      fi
+
+      cd ${HYLAFAX_HOME}/etc
+      devices="`echo_fax_devices`"
+      if [ ${USE_FAXGETTY} = "yes" ] && [ -n "$devices" ]; then
+        log_progress_msg "faxgetty"
+        for device in $devices none; do
+          [ "$device" = none ] && continue
+          ${FAXGETTY} $FAXGETTYARGS `echo $device | cut -d . -f 2` &
+        done
+      elif [ ${USE_FAXGETTY} != "init" ] && [ -n "$devices" ]; then
+        log_progress_msg "faxmodem"
+        for device in $devices none; do
+          [ "$device" = none ] && continue
+          ${FAXMODEM} `echo $device | cut -d . -f 2` >/dev/null 2>&1 </dev/null &
+        done
+      fi
+      # do nothing for "init"
+    else
+      echo "Not starting HylaFAX daemons since they are already running." 1>&2
+      exit 0
+    fi  
+
+    log_end_msg 0
+}
+
+case "$1" in
+  start)
+	daemon_start
+    ;;
+  stop)
+	daemon_stop
+    ;;
+  restart|force-reload)
+	daemon_stop
+	sleep 1
+	daemon_start
+    ;;
+  status)
+	# test if user is root. If not root then exit with "unknown"
+	if [ `id -u` -ne 0 ]
+	then
+		echo Status can be checked only by root user.
+		# 4: program or service status is unknown
+		exit 4
+	fi
+
+	SPOOL=$(awk -F= '$1=="SPOOL" { gsub(/'"'"'/,"",$2); print $2; exit}' /etc/hylafax/setup.cache)
+	if [ -p $SPOOL/FIFO ] && fuser $SPOOL/FIFO >/dev/null 2>&1
+	then
+		echo running
+		# 0: program is running or service is OK
+		exit 0
+	else
+		echo stopped
+		# 3: program is not running
+		exit 3
+	fi
+    ;;
+  *)
+    echo "Usage: /etc/init.d/hylafax {start|stop|restart|force-reload|status}"
+    exit 1
+    ;;
+esac
+
+exit 0

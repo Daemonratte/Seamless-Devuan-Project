@@ -1,0 +1,163 @@
+#!/bin/sh -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmcd/pmcd.conf /etc/pcp/pmcd/pmcd.conf 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmcd/pmcd.conf /etc/pcp/pmcd/pmcd.conf 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmcd/pmcd.options /etc/pcp/pmcd/pmcd.options 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmcd/pmcd.options /etc/pcp/pmcd/pmcd.options 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmcd/rc.local /etc/pcp/pmcd/rc.local 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmcd/rc.local /etc/pcp/pmcd/FILE 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmie/control /etc/pcp/pmie/control 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmie/control /etc/pcp/pmie/control 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmproxy/pmproxy.options /etc/pcp/pmproxy/pmproxy.options 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmproxy/pmproxy.options /etc/pcp/pmproxy/pmproxy.options 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /var/lib/pcp/config/pmlogger/control /etc/pcp/pmlogger/control 3.7.0\~ pcp -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/pmlogger/control /etc/pcp/pmlogger/control 3.6.1\~ pcp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/bash_completion.d/pcp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cron.d/pcp-pmie -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cron.d/pcp-pmlogger -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/cron.d/pcp-pmlogger-daily-report -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp.sh -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/container -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/delayacct -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/fdcount -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/guest -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/memory -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/sched -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/swap -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/tcp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/udp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/columns/wchan -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/entropy -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/freespace -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/ipc -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/locks -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/memcache -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/mysql -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/postfix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/redis -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/htop/meters/tcp -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/openmetrics/config.d/collectd.url -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/openmetrics/config.d/etcd.url -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/openmetrics/config.d/grafana.url -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/interrupts-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/memory-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/queues-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/syscalls-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/kernel/syscalls-percpu-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/memory/tlb-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/networking/socket-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/networking/tcp-activity-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/networking/udp-packets-irix -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/cpu-evctr -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/craylink -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/efs -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/hub -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/kaio -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/node-memory -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/numa -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/numa-summary -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xbow -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xlv-activity -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xlv-stripe-io -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xvm-all -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xvm-ops -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/sgi/xvm-stats -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/C2 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/C3 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/D3 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/K0 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/S0 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmlogconf/v1.0/S1 -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmproxy/pmproxy.defaults -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmrep/iostat_v12_3.conf -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmrep/pmrep.conf -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pcp/pmrep/sar-old-kernel.conf -- "$@"
+# End automatically added section
+
+
+
+# figure out what sort if init|systemctl|... we're using to
+# launch daemons and services
+do_systemctl=false
+do_systemd_helper=false
+do_update_rc=false
+do_invoke_rc=false
+if which systemctl >/dev/null 2>&1
+then
+    # we have a systemctl executable, but it might be disabled,
+    # e.g. on MX Linux
+    systemctl -q is-active local-fs.target >/dev/null 2>&1 && do_systemctl=true
+fi
+if $do_systemctl
+then
+    which deb-systemd-helper >/dev/null 2>&1 && do_systemd_helper=true
+else
+    # not using systemctl(1), maybe need to install System-V style
+    # init script links with update-rc.d(1) and start/stop with
+    # invoke-rc.d(1)
+    which update-rc.d >/dev/null 2>&1 && do_update_rc=true
+    which invoke-rc.d >/dev/null 2>&1 && do_invoke_rc=true
+fi
+# only need to check pmcd.service, if it is here they will all
+# be here ... the real service files may have already been removed
+# by now, so check the "dangling" symlinks
+#
+if [ -L /etc/systemd/system/multi-user.target.wants/pmcd.service ]
+then
+    :
+else
+    do_systemd_helper=false
+    do_systemctl=false
+fi
+# ditto for the System-V variant for pmlogger
+if [ -f /etc/init.d/pmlogger ]
+then
+    :
+else
+    do_update_rc=false
+    do_invoke_rc=false
+fi
+
+systemd_units='
+pcp-geolocate.service
+pcp-reboot-init.service
+pmproxy.service
+pmlogger_farm_check.timer pmlogger_farm_check.service
+pmlogger_farm.service
+pmlogger_daily.timer pmlogger_daily.service
+pmlogger_check.timer pmlogger_check.service
+pmlogger.service
+pmie_farm_check.timer pmie_farm_check.service
+pmie_daily.timer pmie_daily.service
+pmie_check.timer pmie_check.service
+pmie.service
+pmfind.timer pmfind.service
+pmcd.service'
+
+if [ "$1" = remove ]
+then
+    if $do_systemd_helper
+    then
+	for unit in $systemd_units
+	do
+	    deb-systemd-helper remove $unit >/dev/null
+	done
+    elif $do_update_rc
+    then
+	update-rc.d pmproxy remove >/dev/null
+	update-rc.d pmie remove >/dev/null
+	update-rc.d pmlogger remove >/dev/null
+	update-rc.d pmcd remove >/dev/null
+    fi
+fi
+
+if [ "$1" = purge ]
+then
+    if $do_systemd_helper
+    then
+	for unit in $systemd_units
+	do
+	    deb-systemd-helper purge $unit >/dev/null
+	done
+    fi
+fi

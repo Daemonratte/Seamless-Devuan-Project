@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Cyborg conductor
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:cyborg-conductor(1)
+
+[Service]
+User=cyborg
+Group=cyborg
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=cyborg lock/cyborg
+CacheDirectory=cyborg
+ExecStart=/etc/init.d/cyborg-conductor systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

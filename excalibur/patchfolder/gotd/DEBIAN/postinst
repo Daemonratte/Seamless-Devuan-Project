@@ -1,0 +1,45 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure)
+        id -g _gotd > /dev/null 2>&1 || \
+            addgroup --system --force-badname _gotd
+        id _gotd > /dev/null 2>&1 || \
+            adduser --system --home /var/lib/gotd/empty \
+                    --no-create-home --disabled-password \
+                    --gecos "Game of Trees daemon" \
+                    --force-badname \
+                    --ingroup _gotd _gotd
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure|reconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'gotd.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'gotd.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'gotd.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'gotd.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'gotd.service' >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

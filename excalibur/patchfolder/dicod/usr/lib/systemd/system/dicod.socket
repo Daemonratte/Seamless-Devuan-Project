@@ -1,0 +1,11 @@
+[Unit]
+Description=Dicod dictionary server socket
+Before=dicod.service
+Conflicts=dicod.service
+
+[Socket]
+ListenStream=2628
+Accept=yes
+
+[Install]
+WantedBy=sockets.target

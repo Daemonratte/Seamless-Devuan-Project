@@ -1,0 +1,102 @@
+#! /bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+THIS_PACKAGE=slim
+DEFAULT_DISPLAY_MANAGER_FILE=/etc/X11/default-display-manager
+
+# debconf is not a registry, so we only fiddle with the default file if it
+# does not exist
+if [ ! -e "$DEFAULT_DISPLAY_MANAGER_FILE" ]; then
+  if db_get shared/default-x-display-manager; then
+    # workaround debconf passthru bug (#379198)
+    if [ -z "$RET" ]; then
+      $RET="$THIS_PACKAGE"
+    fi
+    if [ "$THIS_PACKAGE" != "$RET" ]; then
+      echo "Please be sure to run \"dpkg --configure $RET\"."
+    fi
+    if db_get "$RET"/daemon_name; then
+      echo "$RET" > $DEFAULT_DISPLAY_MANAGER_FILE
+    fi
+  fi
+fi
+
+# remove the displaced old default display manager file if it exists
+if [ -e "$DEFAULT_DISPLAY_MANAGER_FILE.dpkg-tmp" ]; then
+  rm "$DEFAULT_DISPLAY_MANAGER_FILE.dpkg-tmp"
+fi
+
+# set the default theme location
+update-alternatives --install /usr/share/slim/themes/desktop-slim-theme \
+	desktop-slim-theme /usr/share/slim/themes/default 1
+
+# debconf hangs if slim gets started below without this
+db_stop || true
+
+# update-rc.d levels
+S=30
+K=01
+
+if [ -x /etc/init.d/slim ]; then
+  update-rc.d slim defaults $S $K >/dev/null 2>&1
+fi
+
+if [ "$1" = "configure" ];
+then
+  invoke-rc.d dbus reload || true
+fi
+
+DEFAULT_SERVICE=/etc/systemd/system/display-manager.service
+# set default-display-manager systemd service link according to our config
+if [ "$1" = configure ] && [ -d /etc/systemd/system/ ]; then
+  if [ -e "$DEFAULT_DISPLAY_MANAGER_FILE" ]; then
+    SERVICE=/lib/systemd/system/$(basename $(cat "$DEFAULT_DISPLAY_MANAGER_FILE")).service
+    if [ -h "$DEFAULT_SERVICE" ] && [ $(readlink "$DEFAULT_SERVICE") = /dev/null ]; then
+      echo "Display manager service is masked" >&2
+    elif [ -e "$SERVICE" ]; then
+      ln -sf "$SERVICE" "$DEFAULT_SERVICE"
+    else
+      echo "WARNING: $SERVICE is the selected default display manager but does not exist" >&2
+      rm -f "$DEFAULT_SERVICE"
+    fi
+  else
+    rm -f "$DEFAULT_SERVICE"
+  fi
+fi
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'slim.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'slim.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'slim.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'slim.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'slim.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

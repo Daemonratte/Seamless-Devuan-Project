@@ -1,0 +1,12 @@
+#!/usr/bin/env /lib/runit/invoke-run
+#Copyright: 2022 Lorenzo Puliti <plorenzo@disroot.org>
+#License: CC0-1.0
+
+[ $START_DAEMON = true ]  || exit 161
+test -f /proc/mdstat || exit 162
+
+mkdir -p /run/mdadm
+
+exec 2>&1
+
+exec /sbin/mdadm --monitor --scan  $DAEMON_OPTIONS

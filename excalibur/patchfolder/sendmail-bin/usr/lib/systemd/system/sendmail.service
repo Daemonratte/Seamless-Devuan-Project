@@ -1,0 +1,23 @@
+[Unit]
+Description=LSB: powerful, efficient, and scalable Mail Transport Agent
+Before=multi-user.target
+Before=graphical.target
+After=remote-fs.target
+After=network-online.target
+After=nss-lookup.target
+
+[Service]
+Type=forking
+Restart=no
+TimeoutSec=5min
+IgnoreSIGPIPE=no
+KillMode=process
+GuessMainPID=no
+RemainAfterExit=yes
+SuccessExitStatus=5 6
+ExecStart=/etc/init.d/sendmail start
+ExecStop=/etc/init.d/sendmail stop
+
+[Install]
+WantedBy=multi-user.target
+Alias=sendmail.service

@@ -1,0 +1,12 @@
+[Unit]
+Description=Graphite Carbon Relay %i
+After=network.target
+Documentation=https://graphite.readthedocs.io
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/carbon-relay --config=/etc/carbon/carbon.conf --instance %i --pidfile=/run/carbon-relay-%i.pid --logdir=/var/log/carbon/ start
+PIDFile=/run/carbon-relay-%i.pid
+
+[Install]
+WantedBy=multi-user.target

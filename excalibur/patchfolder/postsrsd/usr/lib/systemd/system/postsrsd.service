@@ -1,0 +1,12 @@
+[Unit]
+Description=PostSRSd Daemon
+Documentation=man:postsrsd(8)
+
+[Service]
+Type=simple
+Restart=always
+
+ExecStart=/usr/share/postsrsd/postsrsd-systemd-launcher
+
+[Install]
+WantedBy=multi-user.target

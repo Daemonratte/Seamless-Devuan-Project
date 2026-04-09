@@ -1,0 +1,31 @@
+[Unit]
+Description=InterNetNews
+Documentation=man:innd(8)
+Requires=inn.socket
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+Restart=on-abort
+ExecStart=/etc/news/boot
+ExecReload=/usr/sbin/ctlinnd -t 20 reload all 'by systemd'
+ExecStop=-/usr/sbin/ctlinnd -s -t 20 throttle 'system is going down'
+ExecStop=-/usr/sbin/ctlinnd -s -t 20 shutdown 'system is going down'
+User=news
+Group=news
+ConfigurationDirectory=news
+LogsDirectory=news
+LogsDirectoryMode=775
+RuntimeDirectory=innd
+StateDirectory=news
+StateDirectoryMode=775
+ReadWritePaths=/var/spool/news/
+ProtectSystem=full
+ProtectControlGroups=yes
+ProtectHome=yes
+LimitNOFILE=infinity
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,12 @@
+[Unit]
+Description=Downtime record keeper
+
+[Service]
+EnvironmentFile=-/etc/default/downtimed
+ExecStart=/usr/sbin/downtimed $DOWNTIMED_OPTS
+ExecReload=/bin/kill -HUP $MAINPID
+Type=forking
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

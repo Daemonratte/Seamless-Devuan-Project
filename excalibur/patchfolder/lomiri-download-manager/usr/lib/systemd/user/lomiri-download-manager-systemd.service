@@ -1,0 +1,7 @@
+[Unit]
+Description=Lomiri Download Manager Service
+
+[Service]
+Type=dbus
+BusName=com.lomiri.applications.Downloader
+ExecStart=/usr/bin/lomiri-download-manager

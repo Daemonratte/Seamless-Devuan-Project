@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p dnf-plugins-core 
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p dnf-plugins-core  || true
+fi
+
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'dnf-system-upgrade.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'dnf-system-upgrade.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'dnf-system-upgrade.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'dnf-system-upgrade.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'dnf-system-upgrade.service' >/dev/null || true
+fi
+# End automatically added section

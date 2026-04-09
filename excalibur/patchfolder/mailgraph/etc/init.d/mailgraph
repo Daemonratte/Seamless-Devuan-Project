@@ -1,0 +1,74 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          mailgraph
+# Required-Start:    $local_fs $remote_fs
+# Required-Stop:     $local_fs $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Mail statistics frontend for Postfix
+# Description: mailgraph is a very simple mail statistics rrdtool frontend for
+#  postfix, sendmail or exim that produces daily, weekly, monthly and
+#  yearly graphs of received/sent and bounced/rejected mail.
+### END INIT INFO
+
+MAILGRAPH_CONFIG="/etc/default/mailgraph"
+NAME="mailgraph"
+DAEMON="/usr/sbin/mailgraph"
+PID_FILE="/var/run/mailgraph.pid"
+RRD_DIR="/var/lib/mailgraph"
+
+# Default values
+BOOT_START=true
+MAIL_LOG=/var/log/mail.log
+IGNORE_LOCALHOST=false
+EXTRA_OPTIONS=""
+HTTP_USER=www-data
+HTTP_GROUP=www-data
+
+[ -r $MAILGRAPH_CONFIG ] && . $MAILGRAPH_CONFIG
+[ -x $DAEMON ] || exit 0
+
+[ "$BOOT_START" = "true" ]  || exit 0
+[ "$IGNORE_LOCALHOST" = "true" ] && IGNORE_OPTION="--ignore-localhost"
+
+. /lib/lsb/init-functions
+
+case "$1" in
+        start)
+                # Check that the data directory is writable by the user running
+                # the HTTP daemon
+                if [ -d $RRD_DIR ]; then
+                    chown $HTTP_USER:$HTTP_GROUP $RRD_DIR
+                    chmod 755 $RRD_DIR
+                fi
+
+                log_begin_msg "Starting $DESC:" "$NAME"
+                if [ -f $PID_FILE ]; then
+                        log_action_cont_msg " already running"
+                        log_end_msg 1
+                else
+                        start-stop-daemon --start --quiet --background --pidfile $PID_FILE --exec $DAEMON -- \
+                              --logfile $MAIL_LOG --daemon --daemon_pid=$PID_FILE \
+                              --daemon_rrd=$RRD_DIR $IGNORE_OPTION $EXTRA_OPTIONS
+                        log_end_msg $?
+                fi
+        ;;
+        stop)
+                log_begin_msg "Stopping $DESC:" "$NAME"
+                start-stop-daemon --stop --pidfile $PID_FILE
+                rm -f $PID_FILE
+                log_end_msg $?
+        ;;
+        status)
+                status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+        ;;
+        restart|force-reload)
+                $0 stop
+                $0 start
+        ;;
+        *)
+                echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+                exit 3
+        ;;
+esac

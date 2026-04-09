@@ -1,0 +1,20 @@
+; https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+; https://www.freedesktop.org/software/systemd/man/systemd.service.html
+
+[Unit]
+Description=YubiHSM connector
+Documentation=https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Restart=on-abnormal
+User=yubihsm-connector
+Group=yubihsm-connector
+ExecStart=/usr/bin/yubihsm-connector -c /etc/yubihsm-connector.yaml
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

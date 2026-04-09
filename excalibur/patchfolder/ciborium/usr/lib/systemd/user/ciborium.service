@@ -1,0 +1,11 @@
+[Unit]
+Description=Lomiri external storage device manager
+After=ubuntu-touch-session.target lomiri.service
+PartOf=ubuntu-touch-session.target lomiri.service
+
+[Service]
+ExecStart=/usr/lib/ciborium/ciborium
+Restart=on-failure
+
+[Install]
+WantedBy=ubuntu-touch-session.target lomiri.service

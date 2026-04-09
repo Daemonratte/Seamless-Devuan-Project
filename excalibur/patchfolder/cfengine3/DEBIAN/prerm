@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_systemd_start/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'cf-apache.service' 'cf-execd.service' 'cf-hub.service' 'cf-monitord.service' 'cf-postgres.service' 'cf-reactor.service' 'cf-serverd.service' 'cfengine3.service' >/dev/null || true
+fi
+# End automatically added section

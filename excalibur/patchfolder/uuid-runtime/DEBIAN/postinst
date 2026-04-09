@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+# add uuidd user/group if needed.
+if ! getent group uuidd >/dev/null; then
+	addgroup --system uuidd
+fi
+if ! getent passwd uuidd >/dev/null; then
+	adduser --system --quiet --ingroup uuidd \
+		--home /run/uuidd --no-create-home \
+		uuidd
+fi
+
+chown uuidd:uuidd /var/lib/libuuid
+chmod 2775 /var/lib/libuuid
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/uuidd" ]; then
+		update-rc.d uuidd defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native uuidd $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+

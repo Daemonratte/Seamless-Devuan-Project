@@ -1,0 +1,22 @@
+[Unit]
+Description=OpenStack Nova Scheduler (nova-scheduler)
+After=postgresql.service mysql.service keystone.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service network-online.target 
+
+Documentation=man:nova-scheduler(1)
+
+[Service]
+User=nova
+Group=nova
+Type=notify
+WorkingDirectory=~
+RuntimeDirectory=nova lock/nova
+CacheDirectory=nova
+ExecStart=/etc/init.d/nova-scheduler systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target

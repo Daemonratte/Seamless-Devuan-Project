@@ -1,0 +1,37 @@
+[Unit]
+Description=OpenBSD BGP Daemon
+Documentation=man:openbgpd(8)
+After=network.target
+ConditionPathExists=/etc/bgpd.conf
+
+[Service]
+EnvironmentFile=-/etc/default/openbgpd
+Type=forking
+ExecStartPre=/usr/sbin/bgpd -n $DAEMON_OPTS
+ExecStart=/usr/sbin/bgpd $DAEMON_OPTS
+ExecReload=/usr/sbin/bgpctl reload "systemd"
+Restart=on-failure
+RuntimeDirectory=openbgpd
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=@system-service chroot
+
+[Install]
+WantedBy=multi-user.target

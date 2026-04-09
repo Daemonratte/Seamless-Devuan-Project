@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.1
+dpkg-maintscript-helper rm_conffile /etc/vdr/plugins/order.conf 2.2.0-1 -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/vdr" ] ; then
+	chmod +x "/etc/init.d/vdr" >/dev/null || true
+fi
+# End automatically added section

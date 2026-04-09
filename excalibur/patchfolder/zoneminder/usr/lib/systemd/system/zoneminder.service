@@ -1,0 +1,27 @@
+# ZoneMinder systemd unit file
+# This file is intended to work with Debian distributions
+
+[Unit]
+Description=ZoneMinder CCTV recording and surveillance system
+After=network.target mysql.service
+Wants=mysql.service
+Wants=fcgiwrap.service
+After=local-fs.target
+Wants=local-fs.target
+After=remote-fs.target
+Wants=remote-fs.target
+After=time-sync.target
+Documentation=http://zoneminder.readthedocs.org/en/latest/
+
+[Service]
+#Environment=TZ=:/etc/localtime
+User=www-data
+Type=forking
+ExecStart=/usr/bin/zmpkg.pl start
+ExecReload=/usr/bin/zmpkg.pl restart
+ExecStop=/usr/bin/zmpkg.pl stop
+PIDFile=/var/run/zm/zm.pid
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target

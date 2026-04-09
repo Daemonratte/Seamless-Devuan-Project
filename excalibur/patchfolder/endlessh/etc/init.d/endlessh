@@ -1,0 +1,57 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          endlessh
+# Required-Start:    $local_fs $network
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: endlessh tarpit
+# Description:       Endless SSH tarpit
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+DAEMON=/usr/bin/endlessh
+PIDFILE=/var/run/endlessh.pid
+
+case "$1" in
+  start)
+    log_daemon_msg "Starting SSH tarpit" "endlessh"
+    start-stop-daemon --start --background              \
+                      --make-pidfile --pidfile $PIDFILE \
+                      --exec $DAEMON
+    log_end_msg $?
+    ;;
+  stop)
+    log_daemon_msg "Stoping SSH tarpit" "endlessh"
+    killproc -p $PIDFILE $DAEMON
+
+    RETVAL=$?
+    [ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
+    log_end_msg $RETVAL
+    ;;
+
+  restart)
+      $0 stop
+      $0 start
+      ;;
+
+  reload|force-reload)
+      log_daemon_msg "Reloading configuration files for periodic command scheduler" "cron"
+      killproc -p $PIDFILE $DAEMON HUP
+      log_end_msg 0
+      ;;
+
+  status)
+      status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+      ;;
+
+
+  *)
+    echo "Usage: /etc/init.d/endlessh {start|stop|reload|status}"
+    exit 1
+    ;;
+esac
+
+exit 0

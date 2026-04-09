@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.23
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/repmgrd" ] ; then
+	chmod -x "/etc/init.d/repmgrd" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d repmgrd remove >/dev/null
+fi
+# End automatically added section

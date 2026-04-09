@@ -1,0 +1,35 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+	purge)
+		deluser --quiet curvedns >/dev/null || true
+		rm -rf /var/lib/curvedns
+		rm -f /etc/curvedns/README /etc/curvedns/curvedns_private_key.hex
+		;;
+esac
+
+# Automatically added by dh_installinit/13.14.1
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/curvedns" ] ; then
+	chmod -x "/etc/init.d/curvedns" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d curvedns remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.14.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.14.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'curvedns.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+
+

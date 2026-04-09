@@ -1,0 +1,13 @@
+[Unit]
+Description=Prometheus exporter for Varnish
+Documentation=https://prometheus.io/docs/introduction/overview/
+
+[Service]
+Restart=always
+User=prometheus
+Group=varnish
+EnvironmentFile=-/etc/default/prometheus-varnish-exporter
+ExecStart=/usr/bin/prometheus-varnish-exporter --raw $ARGS
+
+[Install]
+WantedBy=multi-user.target

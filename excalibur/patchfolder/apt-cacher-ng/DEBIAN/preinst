@@ -1,0 +1,23 @@
+#!/bin/sh -e
+
+LASTVERSION=0.7.19-2~
+
+NAME=apt-cacher-ng
+CFG=/etc/$NAME
+
+case "$1" in
+   install|upgrade)
+      if dpkg --compare-versions "$2" le "$LASTVERSION"; then
+         for cfn in backends_debvol backends_ubuntu backends_debian ; do
+            mkdir -p $CFG/oldconffiles
+            mv -f $CFG/$cfn $CFG/oldconffiles 2>/dev/null ||:
+         done
+      fi
+esac
+
+# Automatically added by dh_installinit/13.16
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/apt-cacher-ng" ] ; then
+	chmod +x "/etc/init.d/apt-cacher-ng" >/dev/null || true
+fi
+# End automatically added section
+

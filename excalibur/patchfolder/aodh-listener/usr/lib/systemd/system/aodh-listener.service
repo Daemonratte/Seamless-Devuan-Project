@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Aodh Listener (aodh-listener)
+After=mongodb.service rabbitmq-server.service frr.service network-online.target local-fs.target remote-fs.target 
+Wants=mongodb.service rabbitmq-server.service frr.service network-online.target 
+
+Documentation=man:aodh-listener(1)
+
+[Service]
+User=aodh
+Group=aodh
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=aodh lock/aodh
+CacheDirectory=aodh
+ExecStart=/etc/init.d/aodh-listener systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

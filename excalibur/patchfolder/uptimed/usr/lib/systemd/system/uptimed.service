@@ -1,0 +1,11 @@
+[Unit]
+Description=uptime record daemon
+After=time-sync.target ntp.service openntpd.service
+Documentation=man:uptimed(8) man:uptimed.conf(5)
+
+[Service]
+ExecStart=/usr/sbin/uptimed -f
+User=daemon
+
+[Install]
+WantedBy=multi-user.target

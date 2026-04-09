@@ -1,0 +1,19 @@
+
+[Unit]
+Description=The samhain Service
+After=network.target remote-fs.target nss-user-lookup.target
+Documentation=man:samhain(8)
+
+
+[Service]
+Type=forking
+PIDFile=/run/samhain.pid
+ExecStart=/usr/sbin/samhain start
+ExecStop=/usr/sbin/samhain stop
+ExecReload=/usr/sbin/samhain reload
+PIDFile=/run/samhain/samhain.pid
+Restart=on-abort
+TimeoutStartSec=infinity
+
+[Install]
+WantedBy=multi-user.target

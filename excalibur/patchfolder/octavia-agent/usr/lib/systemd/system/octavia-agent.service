@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Octavia Agent (octavia-agent)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service octavia-agent-certs-ramfs.service amphora-netns.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service octavia-agent-certs-ramfs.service amphora-netns.service network-online.target 
+
+Documentation=man:octavia-agent(1)
+
+[Service]
+User=root
+Group=root
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=octavia lock/octavia
+CacheDirectory=octavia
+ExecStart=/etc/init.d/octavia-agent systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

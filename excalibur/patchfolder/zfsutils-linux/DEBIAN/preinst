@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/zfs-import" ] ; then
+	chmod +x "/etc/init.d/zfs-import" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/zfs-mount" ] ; then
+	chmod +x "/etc/init.d/zfs-mount" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/zfs-load-key" ] ; then
+	chmod +x "/etc/init.d/zfs-load-key" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/zfs-share" ] ; then
+	chmod +x "/etc/init.d/zfs-share" >/dev/null || true
+fi
+# End automatically added section

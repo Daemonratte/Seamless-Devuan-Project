@@ -1,0 +1,10 @@
+#!/usr/bin/env /lib/runit/invoke-run
+#Copyright: 2005-2008 Gerrit Pape <pape@smarden.org>
+#           2022 Lorenzo Puliti <plorenzo@disroot.org>
+#License: BSD-3-Clause
+
+sv start default-syslog ||  true
+
+exec 1>&2
+
+exec /usr/sbin/cron -f

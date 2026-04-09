@@ -1,0 +1,69 @@
+#!/bin/sh
+
+set -e
+
+CONFIGFILE="/etc/exabgp/exabgp.env"
+TMPCONF="/etc/exabgp/exabgp.env.dpkg-tmp"
+
+gen_env_config() {
+    echo "Generating /etc/exabgp/exabgp.env."
+    trap 'rm -f $TMPCONF' TERM INT EXIT QUIT
+    exabgp --fi >> "$TMPCONF" 2>/dev/null
+    sed -i "s#nobody#exabgp#" "$TMPCONF"
+    ucf $TMPCONF $CONFIGFILE
+    rm -f $TMPCONF
+}
+
+case "$1" in
+configure)
+    adduser --quiet --system --group --disabled-login --home /run/exabgp exabgp
+    gen_env_config
+    ;;
+esac
+
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/exabgp" ]; then
+		update-rc.d exabgp defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native exabgp $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'exabgp.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'exabgp.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'exabgp.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'exabgp.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'exabgp.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

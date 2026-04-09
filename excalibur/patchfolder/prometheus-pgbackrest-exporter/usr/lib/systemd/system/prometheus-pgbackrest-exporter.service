@@ -1,0 +1,12 @@
+[Unit]
+Description=Prometheus exporter for PgBackRest
+Documentation=https://github.com/woblerr/pgbackrest_exporter
+
+[Service]
+User=postgres
+EnvironmentFile=/etc/default/prometheus-pgbackrest-exporter
+ExecStart=/usr/bin/prometheus-pgbackrest-exporter $ARGS
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,128 @@
+#!/bin/sh
+# /etc/init.d/opensmtpd
+#
+# Written by Daniel Walrond <debian@djw.org.uk>
+#        and Ryan Kavanagh <rak@debian.org>
+
+### BEGIN INIT INFO
+# Provides:          opensmtpd mail-transport-agent
+# Required-Start:    $local_fs $remote_fs $syslog $network
+# Required-Stop:     $local_fs $remote_fs $syslog $network
+# Should-Start:      postgresql mysql dovecot
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: opensmtpd Mail Transport Agent
+# Description:       OpenSMTPD
+### END INIT INFO
+
+# Do not "set -e"; /lib/lsb/init-functions included below may fail if "set -e"
+# is in effect and echoing status messages to the console fails.
+set -u
+
+DEFAULT=/etc/default/opensmtpd
+
+DAEMON="/usr/sbin/smtpd"
+CONFIG="/etc/smtpd.conf"
+PIDFILE="/run/smtpd.pid"
+CONTROL="/usr/sbin/smtpctl"
+DESC="opensmtpd"
+test -f "${DEFAULT}" && . "${DEFAULT}"
+
+test -x "${DAEMON}" || exit 0
+
+. /lib/lsb/init-functions
+
+smtpd_start()
+{
+  if start-stop-daemon \
+      --start \
+      --pidfile "${PIDFILE}" \
+      --exec "${DAEMON}" \
+      -- -f "${CONFIG}"; then
+    log_progress_msg "opensmtpd"
+    return 0
+  else
+    log_progress_msg "opensmtpd"
+    return 1
+  fi
+}
+
+smtpd_stop()
+{
+  if start-stop-daemon --stop --pidfile "${PIDFILE}" -- -f "${CONFIG}"; then
+    log_progress_msg "opensmtpd"
+    return 0
+  else
+    log_progress_msg "opensmtpd"
+    return 1
+  fi
+}
+
+smtpd_config_check()
+{
+# ${DAEMON} -n checks the config file's validity
+if "${DAEMON}" -f "${CONFIG}" -n >/dev/null 2>&1; then
+  return 0
+else
+  log_end_msg 1
+  "${DAEMON}" -f "${CONFIG}" -n
+  return 1
+fi
+}
+
+case "$1" in
+start)
+  log_daemon_msg "Starting MTA"
+  # Although smtpd checks the config automatically on startup,
+  # check it manually ourselves so that error messages are
+  # printed after our "failed!" instead of between it and
+  # "Starting MTA"
+  if smtpd_config_check; then
+    smtpd_start
+    log_end_msg $?
+  fi
+  ;;
+stop)
+  log_daemon_msg "Stopping MTA"
+  smtpd_stop
+  log_end_msg $?
+  ;;
+restart)
+  log_daemon_msg "Stopping MTA for restart"
+  # If the check fails, the log_end_msg in smtpd_config_check
+  # will output "failed!" for us.
+  if smtpd_config_check; then
+    smtpd_stop
+    log_end_msg $?
+    log_daemon_msg "Restarting MTA"
+    smtpd_start
+    log_end_msg $?
+  fi
+  ;;
+force-reload)
+  log_daemon_msg "Stopping MTA for reload"
+  smtpd_stop
+  log_end_msg $?
+  log_daemon_msg "Restarting MTA"
+  smtpd_start
+  log_end_msg $?
+  ;;
+check)
+  log_daemon_msg "Checking MTA configuration"
+  if smtpd_config_check; then
+    log_progress_msg "success"
+    log_end_msg $?
+  fi
+  ;;
+status)
+  status_of_proc "${DAEMON}" "MTA ${DESC}"
+  ;;
+*)
+  echo "Usage: $0 {start|stop|restart|force-reload|status|check}"
+  exit 1
+  ;;
+esac
+
+exit 0
+
+# vim:set sw=2:

@@ -1,0 +1,16 @@
+[Unit]
+Description=gearman job control server
+Documentation=http://gearman.info/
+
+[Service]
+EnvironmentFile=-/etc/default/gearman-job-server
+ExecStartPre=/usr/bin/install -d -o gearman /run/gearman
+PermissionsStartOnly=true
+User=gearman
+Type=forking
+Restart=always
+PIDFile=/run/gearman/gearmand.pid
+ExecStart=/usr/sbin/gearmand --pid-file=/run/gearman/gearmand.pid $PARAMS
+
+[Install]
+WantedBy=multi-user.target

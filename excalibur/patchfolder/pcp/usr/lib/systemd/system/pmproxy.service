@@ -1,0 +1,15 @@
+[Unit]
+Description=Proxy for Performance Metrics Collector Daemon
+Documentation=man:pmproxy(1)
+After=network-online.target valkey.service redis.service avahi-daemon.service pmcd.service
+
+[Service]
+Type=notify
+NotifyAccess=all
+Restart=always
+ExecStart=/etc/pcp/pmproxy/rc start-systemd
+Group=pcp
+User=pcp
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,26 @@
+[Unit]
+Description=robust, scalable and extensible realtime platform (XMPP server + MQTT broker + SIP service)
+Documentation=https://www.process-one.net/en/ejabberd/docs/
+After=epmd.service network.target
+Requires=epmd.service
+
+[Service]
+Type=notify
+User=ejabberd
+Group=ejabberd
+LimitNOFILE=65536
+Restart=on-failure
+RestartSec=5
+ExecStart=/bin/sh -c '/usr/sbin/ejabberdctl foreground'
+ExecStop=/bin/sh -c '/usr/sbin/ejabberdctl stop && /usr/sbin/ejabberdctl stopped'
+ExecReload=/bin/sh -c '/usr/sbin/ejabberdctl reload_config'
+NotifyAccess=all
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target

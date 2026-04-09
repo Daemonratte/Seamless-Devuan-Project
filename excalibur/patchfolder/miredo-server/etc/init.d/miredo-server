@@ -1,0 +1,97 @@
+#! /bin/sh
+# $Id: miredo-server.init 240 2010-01-30 20:38:04Z remi $
+#
+# miredo-server start/stop script for Debian GNU/Linux
+# Author: Rémi Denis-Courmont <remi (at) remlab (dot) net>
+#
+# chkconfig: 345 17 83
+# description: Starts and stops the miredo-server daemon \
+#	       used to provide a Teredo server.
+#
+### BEGIN INIT INFO
+# Provides:          miredo-server
+# Required-Start:    $local_fs $remote_fs $network $syslog $time
+# Required-Stop:     $local_fs $remote_fs $syslog
+# Short-Description: Teredo server
+# Description:       miredo-server daemon to provide a Teredo server
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+DESC="Teredo server daemon"
+NAME=miredo-server
+DAEMON=/usr/sbin/$NAME
+DAEMON_ARGS=""
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+[ -x "$DAEMON" ] || exit 0
+
+# Source defaults.
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Ensure configuration is readable.
+[ -r /etc/miredo/$NAME.conf ] || exit 0
+
+. /lib/lsb/init-functions
+
+check_start() {
+	if [ "x$START_MIREDO_SERVER" != "xtrue" ]; then
+		echo "START_MIREDO_SERVER is set to false in /etc/default/$NAME"
+		echo "$DAEMON not starting"
+		exit 0
+	fi
+	if [ -e /proc/sys/kernel/modprobe ]; then
+		`cat /proc/sys/kernel/modprobe` ipv6 2>/dev/null
+	fi
+}
+
+check_chroot_dir() {
+	if ! [ -d "/var/run/$NAME" ]; then
+		mkdir -p "/var/run/$NAME"
+		chmod 0755 "/var/run/$NAME"
+	fi
+}
+
+
+case "$1" in
+  start|force-start)
+	[ "x$1" = "xforce-start" ] && START_MIREDO_SERVER=true
+	check_start
+	check_chroot_dir
+	log_daemon_msg "Starting $DESC" "$NAME"
+	start-stop-daemon --start --quiet --pidfile "$PIDFILE" \
+		--exec "$DAEMON" --oknodo -- $DAEMON_ARGS
+	log_end_msg $?
+	;;
+  stop|force-stop)
+	log_daemon_msg "Stopping $DESC" "$NAME"
+	start-stop-daemon --stop --quiet --pidfile "$PIDFILE" \
+		--exec "$DAEMON" --retry 1 --oknodo
+	log_end_msg $?
+	;;
+  reload|force-reload)
+	log_daemon_msg "Reloading $DESC" "$NAME"
+	start-stop-daemon --stop --signal 1 --quiet --pidfile "$PIDFILE" \
+		--exec "$DAEMON"
+	log_end_msg $?
+	;;
+  restart)
+	check_start # avoid stopping if would not restart
+	$0 stop
+	sleep 1
+	$0 start
+	;;
+  status)
+    status_of_proc -p "$PIDFILE" "$DAEMON" "$NAME" && exit 0 || exit $?
+    ;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|force-start|stop|force-stop|restart|reload|force-reload|status}" >&2
+	exit 1
+	;;
+esac
+
+exit $?
+

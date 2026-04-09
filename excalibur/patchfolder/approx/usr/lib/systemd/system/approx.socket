@@ -1,0 +1,13 @@
+[Unit]
+Description=caching proxy server for Debian archive files
+Documentation=man:approx(8)
+
+[Socket]
+ListenStream=9999
+Accept=yes
+# debootstrap makes many requests in a small timeframe,
+# disable the default burst limit
+TriggerLimitBurst=0
+
+[Install]
+WantedBy=sockets.target

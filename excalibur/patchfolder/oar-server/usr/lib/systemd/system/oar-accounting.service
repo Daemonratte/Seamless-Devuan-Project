@@ -1,0 +1,8 @@
+[Unit]
+Description=OAR accounting service
+Documentation=man:oar-server(8)
+After=oar-server.service
+
+[Service]
+User=root
+ExecStart=/usr/sbin/oaraccounting

@@ -1,0 +1,11 @@
+[Unit]
+Description=Gophernicus gopher server
+Documentation=man:gophernicus
+
+[Service]
+EnvironmentFile=-/etc/default/gophernicus
+EnvironmentFile=-/etc/sysconfig/gophernicus
+ExecStart=/usr/sbin/gophernicus $OPTIONS
+SuccessExitStatus=1
+StandardInput=socket
+User=_gophernicus

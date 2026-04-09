@@ -1,0 +1,23 @@
+[Unit]
+Description=Dqcache
+Documentation=man:dqcache
+After=network.target auditd.service
+ConditionPathExists=!/etc/dqcache/disable_dqcache
+
+[Service]
+EnvironmentFile=-/etc/default/dqcache
+ExecStartPre=/bin/sh -ec "( cd $ROOT/servers; test -f '@' || cp -pr '.@' '@' )"
+ExecStart=/usr/sbin/dqcache-start $ROOT dqcache /usr/sbin/dqcache
+KillMode=process
+Restart=always
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_SETGID CAP_SETUID CAP_CHOWN CAP_SYS_CHROOT
+SystemCallFilter=~ptrace
+PrivateDevices=yes
+StandardError=journal
+
+#disable log
+#StandardOutput=null
+#StandardError=null
+
+[Install]
+WantedBy=multi-user.target

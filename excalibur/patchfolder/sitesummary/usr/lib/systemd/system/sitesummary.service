@@ -1,0 +1,6 @@
+[Unit]
+Description=Regular sitesummary maintenance
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/sitesummary/sitesummary-maintenance

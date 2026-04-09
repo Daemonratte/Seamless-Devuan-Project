@@ -1,0 +1,12 @@
+[Unit]
+Description=undernet irc daemon
+
+[Service]
+RuntimeDirectory=ircd
+LimitNOFILE=262140
+ExecStart=/usr/sbin/ircd-ircu
+Type=forking
+User=irc
+
+[Install]
+WantedBy=multi-user.target

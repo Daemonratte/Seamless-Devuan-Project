@@ -1,0 +1,182 @@
+#!/bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          arpon
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Anti ARP poisoning daemon
+# Description:       Anti ARP poisoning daemon
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+NAME=arpon
+DAEMON=/usr/sbin/$NAME
+DESC="anti ARP poisoning daemon"
+LOGDIR=/var/log/arpon  # Log directory to use
+PIDDIR=/run/
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+# Load arpon defaults
+if [ -f /etc/default/$NAME ] ; then
+	. /etc/default/$NAME
+fi
+
+#
+# Function that starts the daemon
+#
+start_instances()
+{
+	# Return
+	#   0 if daemons for all interfaces have been started
+	#   1 if daemons for all interfaces have been started, but at least one
+	#     was already running
+	#   2 if at least one daemon could not have been stopped
+	local RET=0
+	local IFACE
+	local EXITCODE
+	# make sure the log directory exists
+	mkdir -p "${LOGDIR}"
+	for IFACE in $INTERFACES ; do
+		log_progress_msg "$IFACE"
+		start-stop-daemon --start --quiet --background --make-pidfile \
+			--pidfile "${PIDDIR}/${NAME}-${IFACE}.pid" \
+			--exec "$DAEMON" -- -i "$IFACE" $DAEMON_ARGS
+		EXITCODE=$?
+		RET=$(($RET|$EXITCODE))
+	done
+	return $RET
+}
+
+stop_instances()
+{
+	# Return
+	#   0 if daemons for all interfaces have been stopped
+	#   1 if daemons for all interfaces have been stopped, but for at least one
+	#     interface it was stopped already
+	#   2 if at least one daemon could not have been stopped
+	local RET=0
+	local IFACE
+	local EXITCODE
+	for IFACE in $INTERFACES ; do
+		log_progress_msg "$IFACE"
+		start-stop-daemon --stop --quiet --remove-pidfile \
+			--pidfile "${PIDDIR}/${NAME}-${IFACE}.pid" \
+			--exec "$DAEMON" --retry=TERM/30/KILL/5
+		EXITCODE=$?
+		RET=$(($RET|$EXITCODE))
+	done
+	return $RET
+}
+
+reload_instances()
+{
+	# no return value as there is no suitable way to determine if the signal
+	# was processed properly
+	local IFACE
+	for IFACE in $INTERFACES ; do
+		log_progress_msg "$IFACE"
+		start-stop-daemon --stop --quiet \
+			--pidfile "${PIDDIR}/${NAME}-${IFACE}.pid" \
+			--exec "$DAEMON" --signal=HUP
+	done
+	return 0
+}
+
+get_status()
+{
+	# Return
+	#   0      if daemons for all interfaces are running
+	#   1/3    if the daemon for at least one interface is not running
+	#   4/5/7  if the status of at least one daemon could not be determined
+	local RET=0
+	local IFACE
+	local EXITCODE
+	for IFACE in $INTERFACES ; do
+		start-stop-daemon --status --quiet \
+			--pidfile "${PIDDIR}/${NAME}-${IFACE}.pid" \
+			--exec "$DAEMON"
+		EXITCODE=$?
+		RET=$(($RET|$EXITCODE))
+	done
+	return $RET
+}
+
+case "$1" in
+	start)
+		log_daemon_msg "Starting $NAME ($DESC) on interfaces"
+		start_instances
+		case "$?" in
+			0|1)
+				log_end_msg 0
+				;;
+			*)
+				log_end_msg 1
+				;;
+		esac
+		;;
+	stop)
+		log_daemon_msg "Stopping $NAME ($DESC) on interfaces"
+		stop_instances
+		case "$?" in
+			0|1)
+				log_end_msg 0
+				;;
+			*)
+				log_end_msg 1
+				;;
+		esac
+		;;
+	restart)
+		log_daemon_msg "Restarting $NAME ($DESC) on interfaces"
+		log_progress_msg "stopping:"
+		stop_instances
+		case "$?" in
+			0|1)
+				log_progress_msg "starting:"
+				start_instances
+				case "$?" in
+					0)
+						log_end_msg 0
+						;;
+					*)
+						log_end_msg 1
+						;;
+				esac
+				;;
+			*)
+				log_end_msg 1
+				;;
+		esac
+		;;
+	reload|force-reload)
+		log_daemon_msg "Reloading $NAME ($DESC) configuration for interfaces"
+		reload_instances
+		log_end_msg 0
+		;;
+	status)
+		get_status
+		case "$?" in
+			0)
+				log_success_msg "$NAME is running on all configured interfaces"
+				;;
+			1|3)
+				log_failure_msg "$NAME is not running on all configured interfaces"
+				;;
+			*)
+				log_failure_msg "Could not determine if $NAME is running"
+				;;
+		esac
+		;;
+	*)
+		N=/etc/init.d/$NAME
+		echo "Usage: $N {start|stop|restart|reload|force-reload|status}" >&2
+		exit 1
+		;;
+esac
+
+exit 0

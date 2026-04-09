@@ -1,0 +1,18 @@
+[Unit]
+Description=curvedns daemon
+Documentation=man:curvedns(8) man:curvedns-keygen(1)
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/var/lib/curvedns/numeric_uid_gid
+EnvironmentFile=/etc/default/curvedns
+EnvironmentFile=/etc/curvedns/curvedns_private_key.hex
+ExecStart=/usr/sbin/curvedns ${IP} ${PORT} ${REMOTEIP} ${REMOTEPORT}
+Restart=always
+SystemCallFilter=~ptrace
+PrivateDevices=yes
+
+[Install]
+WantedBy=multi-user.target
+

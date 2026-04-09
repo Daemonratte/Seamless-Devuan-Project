@@ -1,0 +1,15 @@
+[Unit]
+Description=Firebird Database Server ( SuperServer )
+After=network.target
+Conflicts=firebird3.0-classic.socket
+Documentation=https://firebirdsql.org/en/firebird-rdbms/
+
+[Service]
+User=firebird
+Group=firebird
+Type=forking
+ExecStart=/usr/sbin/fbguard --fb-ver 3.0 -daemon -forever
+RuntimeDirectory=firebird3.0
+
+[Install]
+WantedBy=multi-user.target

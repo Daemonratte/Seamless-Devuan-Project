@@ -1,0 +1,52 @@
+#!/bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+. /usr/share/dbconfig-common/dpkg/prerm
+
+init_service_failed () {
+    db_input high mailman3/init_service_failed || true
+    db_go
+}
+
+case "$1" in
+    remove|upgrade|deconfigure)
+    ;;
+
+    failed-upgrade)
+    ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'mailman3.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/mailman3" ] ; then
+	invoke-rc.d --skip-systemd-native mailman3 stop || init_service_failed
+fi
+# End automatically added section
+
+# Automatically added by dh_python3
+if command -v py3clean >/dev/null 2>&1; then
+	py3clean -p mailman3 
+else
+	dpkg -L mailman3 | sed -En -e '/^(.*)\/(.+)\.py$/s,,rm "\1/__pycache__/\2".*,e'
+	find /usr/lib/python3/dist-packages/ -type d -name __pycache__ -empty -print0 | xargs --null --no-run-if-empty rmdir
+fi
+
+# End automatically added section
+
+
+# database removal has to happen after service is stopped
+dbc_go mailman3 "$@"
+
+db_stop
+exit 0

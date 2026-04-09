@@ -1,0 +1,13 @@
+[Unit]
+Description=Email greylisting daemon
+Documentation=man:greylistd(8)
+Before=exim4.service
+Requires=greylistd.socket
+
+[Service]
+User=greylist
+Group=greylist 
+ExecStart=/usr/sbin/greylistd
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+[Unit]
+Documentation=man:natlog(1)
+Description=NATlog logging daemon
+After=network-online.target
+After=remote-fs.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/default/natlog
+TimeoutSec=2min
+KillMode=process
+ExecStart=/usr/bin/natlog -S -p ${PIDFILE} ${DAEMON_ARGS}
+ExecStop=/usr/bin/natlog -p ${PIDFILE} --terminate
+
+[Install]
+WantedBy=multi-user.target

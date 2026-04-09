@@ -1,0 +1,16 @@
+[Unit]
+Description=Buildbot worker %I
+Documentation=man:buildbot-worker(1) man:buildbot-worker(7) https://docs.buildbot.net/
+ConditionDirectoryNotEmpty=/var/lib/buildbot/workers/%i
+ConditionFileNotEmpty=/var/lib/buildbot/workers/%i/buildbot.tac
+
+[Service]
+Type=simple
+WorkingDirectory=/var/lib/buildbot/workers/%i
+PrivateTmp=true
+User=buildbot
+Group=buildbot
+ExecStart=/usr/bin/buildbot-worker start --nodaemon
+
+[Install]
+WantedBy=multi-user.target

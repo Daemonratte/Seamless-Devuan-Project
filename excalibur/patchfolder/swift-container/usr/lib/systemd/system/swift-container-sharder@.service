@@ -1,0 +1,24 @@
+[Unit]
+Description=OpenStack Swift container sharder
+PartOf=swift-container-sharder.service
+ReloadPropagatedFrom=swift-container-sharder.service
+ConditionFileNotEmpty=/etc/swift/container-server/%i.conf
+AssertFileNotEmpty=/etc/swift/account.ring.gz
+AssertFileNotEmpty=/etc/swift/container.ring.gz
+AssertPathExistsGlob=/etc/swift/object*.ring.gz
+Documentation=man:swift-container-sharder(1)
+
+
+[Service]
+User=swift
+Group=swift
+WorkingDirectory=~
+CacheDirectory=swift
+RuntimeDirectory=swift lock/swift
+ExecStart=/usr/bin/swift-container-sharder /etc/swift/container-server/%i.conf
+Restart=on-failure
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,11 @@
+[Unit]
+Description=Policy and Charging Rules Function (EPC / LTE)
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/nextepc-pcrfd -f /etc/nextepc/pcrf.conf
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

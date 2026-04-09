@@ -1,0 +1,16 @@
+[Unit]
+Description=Ziproxy Compressing HTTP Proxy Server
+After=network-online.target nss-lookup.target
+Documentation=man:ziproxy(1)
+Documentation=http://ziproxy.sourceforge.net/support.html
+
+[Service]
+Type=forking
+PIDFile=ziproxy.pid
+EnvironmentFile=/etc/default/ziproxy
+ExecStart=/usr/bin/ziproxy $DAEMON_OPTS -d -p /run/ziproxy.pid
+Restart=no
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

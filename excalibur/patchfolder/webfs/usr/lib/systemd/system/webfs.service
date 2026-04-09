@@ -1,0 +1,13 @@
+[Unit]
+Description=Webfs simple HTTP server
+After=network.target network-online.target
+Requires=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+ExecStart=/usr/libexec/webfsdsrv
+
+[Install]
+WantedBy=multi-user.target

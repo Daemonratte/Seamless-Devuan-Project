@@ -1,0 +1,17 @@
+[Unit]
+Description=Basic Little Book of Answers
+Documentation=https://github.com/DCSO/balboa
+After=network.target
+
+[Service]
+User=balboa
+Group=balboa
+SyslogIdentifier=balboa
+EnvironmentFile=-/etc/default/balboa
+ExecStart=/usr/bin/balboa serve $BALBOA_ARGS
+ExecStop=/usr/bin/pkill balboa
+PIDFile=/run/balboa/balboa.pid
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

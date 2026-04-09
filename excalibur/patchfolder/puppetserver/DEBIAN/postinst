@@ -1,0 +1,56 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "configure" ]; then
+
+    # Set correct permissions and ownership for puppetserver directories
+
+    # cadir
+    if ! dpkg-statoverride --list /etc/puppet/puppetserver >/dev/null 2>&1; then
+        dpkg-statoverride --update --add puppet puppet 0750 /etc/puppet/puppetserver
+    fi
+
+    # logdir
+    if ! dpkg-statoverride --list /var/log/puppetserver >/dev/null 2>&1; then
+        dpkg-statoverride --update --add puppet puppet 0750 /var/log/puppetserver
+    fi
+
+    # vardir
+    if ! dpkg-statoverride --list /var/lib/puppetserver >/dev/null 2>&1; then
+        dpkg-statoverride --update --add puppet puppet 0750 /var/lib/puppetserver
+    fi
+
+fi
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'puppetserver.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'puppetserver.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'puppetserver.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'puppetserver.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'puppetserver.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'puppetserver.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

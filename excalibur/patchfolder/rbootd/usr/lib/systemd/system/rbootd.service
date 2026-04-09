@@ -1,0 +1,14 @@
+[Unit]
+Description=Remote Boot Daemon
+Documentation=man:rbootd(8)
+After=network.target
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/default/rbootd
+ExecStart=/usr/sbin/rbootd
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target
+Alias=rbootd.service

@@ -1,0 +1,101 @@
+#! /bin/sh
+# postrm script for oar-server
+#
+# see: dh_installdeb(1)
+
+set -e
+#set -x
+
+case "$1" in
+	remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+	  true
+        ;;
+	purge)
+            # Remove the possible conffiles
+            for conffile in /etc/oar/epilogue \
+                            /etc/oar/prologue \
+                            /etc/oar/pam_oar_adopt.conf \
+                            /etc/oar/sshd_config; do
+                # we mimic dpkg as closely as possible, so we remove configuration
+                # files with dpkg backup extensions too:
+                ### Some of the following is from Tore Anderson:
+                for ext in '~' '%' .bak .dpkg-tmp .dpkg-new .dpkg-old .dpkg-dist .ucf-old .ucf-new .ucf-dist;  do
+                    rm -f $conffile$ext
+                done
+                # remove the configuration file itself
+                rm -f $conffile
+                # and finally clear it out from the ucf database
+                if which ucf >/dev/null; then
+                        ucf --purge $conffile
+                fi
+                if which ucfr >/dev/null; then
+                    ucfr --purge oar-node $conffile
+                fi
+            done
+
+            # Remove the ssh keys.
+            rm -f /etc/oar/oar_ssh_host_dsa_key
+            rm -f /etc/oar/oar_ssh_host_dsa_key.pub
+            rm -f /etc/oar/oar_ssh_host_rsa_key
+            rm -f /etc/oar/oar_ssh_host_rsa_key.pub
+        ;;
+  *)
+    echo "postrm called with unknown argument \`$1'" >&2
+    exit 1
+esac
+
+# Automatically added by dh_installdeb/13.24.1
+dpkg-maintscript-helper rm_conffile /etc/init.d/oar-node 2.5.10\~g5k10-2 oar-node -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/default/oar-node 2.5.10\~g5k10-2 oar-node -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'oar-node-script.service' 'oar-node.service' 'oar-nodecheck.timer' 'oar.target' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'oar-nodecheck.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'oar-node-script.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'oar.target' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

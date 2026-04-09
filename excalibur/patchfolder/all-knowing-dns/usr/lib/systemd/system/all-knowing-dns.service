@@ -1,0 +1,12 @@
+[Unit]
+Description=Tiny DNS server for IPv6 Reverse DNS
+After=network.target
+Documentation=https://metacpan.org/release/AllKnowingDNS
+
+[Service]
+ExecStart=/usr/bin/all-knowing-dns
+DynamicUser=true
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,116 @@
+#! /bin/sh
+# ex: et sw=4 ts=4 sts=4
+
+set -e
+
+HOME_DIR=/var/lib/buildbot
+WORKERS_DIR=$HOME_DIR/workers
+SLAVES_DIR=$HOME_DIR/slaves
+
+USER_NAME=buildbot
+USER_DESCR="Buildbot system user"
+
+handle_old_slave()
+{
+    local basedir="$1"
+    local pid
+
+    echo "Buildbot slave instance in $basedir has been created with a 0.x version and cannot be automatically upgraded."
+    echo "Please see buildbot-worker(7) for instructions."
+
+    if [ -r "$basedir/twistd.pid" ]; then
+        pid=$(cat $basedir/twistd.pid)
+    fi
+    if kill -0 "$pid" >/dev/null 2>&1; then
+        echo "Stopping buildbot slave in $basedir (PID $pid) ..."
+        kill -TERM "$pid" || true
+    fi
+}
+
+restart_worker()
+{
+    local basedir="$1"
+    local name="$(basename $basedir)"
+
+    if ! [ -d "$basedir" ]; then
+        return
+    fi
+
+    if [ "$(dirname $basedir)" = "$SLAVES_DIR" ]; then
+        handle_old_slave "$basedir"
+        return
+    fi
+
+    if [ -d /run/systemd/system ]; then
+        if systemctl is-active --quiet "buildbot-worker@$name.service"; then
+            echo "Restarting buildbot worker instance in $basedir ..."
+            deb-systemd-invoke restart "buildbot-worker@$name.service" >/dev/null
+        fi
+    else
+        if invoke-rc.d buildbot-worker status "$name" >/dev/null 2>&1; then
+            echo "Restarting buildbot worker instance in $basedir ..."
+            invoke-rc.d buildbot-worker restart "$name" >/dev/null
+        fi
+    fi
+}
+
+case "$1" in
+    configure)
+        # Create builbot user account if not exist
+        if ! getent passwd buildbot>/dev/null; then
+            echo "Creating $USER_DESCR ..."
+            useradd \
+                --system \
+                --shell /bin/false \
+                --no-create-home \
+                --user-group \
+                --comment "$USER_DESCR" \
+                --home-dir "$HOME_DIR" \
+                "$USER_NAME"
+        fi
+
+        mkdir -p $HOME_DIR
+        mkdir -p $WORKERS_DIR
+
+        # Fix permissions
+        chown $USER_NAME: $HOME_DIR $WORKERS_DIR
+
+        existing_workers=$(find $WORKERS_DIR -mindepth 1 -maxdepth 1 -type d -print -quit)
+
+        if [ -z "$1" ]; then
+            # first install
+            if [ -z "$existing_workers" ]; then
+                echo "No worker instances are configured. See buildbot-worker(7) for instructions."
+            fi
+        else
+            # package upgrade
+            for inst in $SLAVES_DIR/* $WORKERS_DIR/*; do
+                restart_worker $inst
+            done
+        fi
+
+        update-rc.d buildbot-worker defaults >/dev/null
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p buildbot-worker 
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p buildbot-worker  || true
+fi
+
+# End automatically added section
+
+
+exit 0

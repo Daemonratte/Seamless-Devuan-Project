@@ -1,0 +1,70 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "configure" ]
+then
+DIRS="bak/charinfo bak/charsave bnmail chanlogs charinfo
+      charsave ladders reports status teams users"
+
+for DIR in $DIRS; do
+    mkdir -p /var/lib/pvpgn/$DIR
+done
+
+fi
+
+# Automatically added by dh_installdeb/13.24.1
+dpkg-maintscript-helper rm_conffile /etc/pvpgn/ad.conf 1.99.7.2.1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pvpgn/bnetd_default_user.cdb 1.99.7.2.1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pvpgn/bnhelp.conf 1.99.7.2.1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pvpgn/bnmotd.txt 1.99.7.2.1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pvpgn/d2server.ini 1.99.7.2.1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pvpgn/news.txt 1.99.7.2.1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pvpgn/sql_DB_layout2.conf 1.99.7.2.1\~ -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/pvpgn/versioncheck.conf 1.99.7.2.1\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "$DPKG_ROOT" ] && [ -x "/etc/init.d/pvpgn" ]; then
+		update-rc.d pvpgn defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native pvpgn $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'pvpgn.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'pvpgn.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'pvpgn.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'pvpgn.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'pvpgn.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+

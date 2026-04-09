@@ -1,0 +1,14 @@
+[Unit]
+Description=Crossfire networked graphical RPG/adventure game server
+RequiresMountsFor=/var/log/crossfire /var/games/crossfire /usr/share/games/crossfire
+After=network.target
+
+[Service]
+ExecStart=/usr/sbin/crossfire-server -log /var/log/crossfire/logfile
+User=games
+Group=games
+StandardOutput=null
+UMask=002
+
+[Install]
+WantedBy=multi-user.target

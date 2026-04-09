@@ -1,0 +1,14 @@
+[Unit]
+Description=fair transponder daemon
+Documentation=man:transponder(8)
+Wants=network-online.target
+After=network-online.target
+ConditionFileExists=/etc/fair.conf
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/default/fair
+ExecStart=/usr/sbin/transponder $BALANCERS
+
+[Install]
+WantedBy=multi-user.target

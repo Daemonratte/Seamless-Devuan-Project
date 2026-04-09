@@ -1,0 +1,8 @@
+[Unit]
+Description=leafnode: Fetch news
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=news
+ExecStart=/usr/sbin/fetchnews

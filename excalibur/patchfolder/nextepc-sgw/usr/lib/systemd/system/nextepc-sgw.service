@@ -1,0 +1,11 @@
+[Unit]
+Description=Serving Gateway (EPC / LTE)
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/nextepc-sgwd -f /etc/nextepc/sgw.conf
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

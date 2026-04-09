@@ -1,0 +1,13 @@
+[Unit]
+Description=Courier Web Admin Daemon
+Requires=courier-authdaemon.service
+After=courier-authdaemon.service
+
+[Service]
+Type=forking
+ExecStart=courierlogger -pid=/run/courier/webadmin.pid -start /usr/lib/courier/courier/webmail/webadmin daemon
+ExecStop=courierlogger -pid=/run/courier/webadmin.pid -stop
+PIDFile=/run/courier/webadmin.pid
+
+[Install]
+WantedBy=multi-user.target

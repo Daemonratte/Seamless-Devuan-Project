@@ -1,0 +1,3 @@
+#!/usr/bin/env /lib/runit/invoke-run
+exec 2>&1
+exec chpst -Utinydns -d "${DATALIMIT}" /usr/sbin/tinydns

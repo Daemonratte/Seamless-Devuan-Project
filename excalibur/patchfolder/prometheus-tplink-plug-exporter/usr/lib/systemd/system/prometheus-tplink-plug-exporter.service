@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus Exporter for TPLink Kasa Smart Plugs
+Documentation=https://github.com/fffonion/tplink-plug-exporter
+After=network-online.target
+
+[Service]
+Restart=always
+User=prometheus
+EnvironmentFile=/etc/default/prometheus-tplink-plug-exporter
+ExecStart=/usr/bin/prometheus-tplink-plug-exporter $ARGS
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

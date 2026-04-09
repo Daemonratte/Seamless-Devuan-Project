@@ -1,0 +1,7 @@
+[Unit]
+Description=Lomiri Upload Manager Service
+
+[Service]
+Type=dbus
+BusName=com.lomiri.applications.Uploader
+ExecStart=/usr/bin/lomiri-upload-manager

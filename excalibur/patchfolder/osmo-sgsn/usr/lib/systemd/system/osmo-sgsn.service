@@ -1,0 +1,17 @@
+[Unit]
+Description=Osmocom SGSN (Serving GPRS Support Node)
+Wants=osmo-hlr.service
+After=osmo-hlr.service
+After=osmo-hnbgw.service
+Documentation=https://projects.osmocom.org/projects/osmosgsn
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/osmo-sgsn -c /etc/osmocom/osmo-sgsn.cfg
+RestartSec=2
+PrivateTmp=true
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

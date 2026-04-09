@@ -1,0 +1,35 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          firefox-ldapconf
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Should-Start:      $network $syslog $named slapd fetch-ldap-cert
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: Update firefox configuration from LDAP
+# Description:
+#   Update default firefox default setup (currently only start page)
+#   from LDAP.  Check LDAP every boot to see if the default start page
+#   should be changed or not.
+### END INIT INFO
+#
+# Author: Petter Reinholdtsen <pere@hungry.com>
+# Date:   2011-12-31
+
+set -e
+
+. /lib/lsb/init-functions
+
+case "$1" in
+    start)
+	/usr/share/debian-edu-config/tools/firefox-ldapconf
+	;;
+    stop)
+	;;
+    restart|force-reload)
+	;;
+    *)
+	echo "Usage: $0 {start|stop|restart|force-reload}"
+	exit 2
+esac
+exit 0

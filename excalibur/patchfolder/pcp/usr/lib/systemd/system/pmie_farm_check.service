@@ -1,0 +1,15 @@
+[Unit]
+Description=Check and migrate non-primary pmie farm instances
+Documentation=man:pmiectl(1)
+ConditionPathExists=!/etc/cron.d/pcp-pmie
+
+[Service]
+Type=exec
+Restart=no
+TimeoutStartSec=4h
+TimeoutStopSec=120
+# needs to run as root:root not pcp:pcp, pmlogctl will handle the
+# switch to pcp:pcp if any pmlogger needs to be launched, so NO
+# User= nor Group= here
+ExecStart=/usr/bin/pmiectl -m check
+WorkingDirectory=/var/lib/pcp

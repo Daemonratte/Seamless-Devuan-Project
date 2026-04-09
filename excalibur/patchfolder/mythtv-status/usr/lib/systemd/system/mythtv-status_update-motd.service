@@ -1,0 +1,7 @@
+[Unit]
+Description=mythtv-status MOTD update
+Documentation=man:mythtv-update-motd(8)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/mythtv-update-motd

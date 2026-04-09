@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.14.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/gkrellmd" ] ; then
+	chmod +x "/etc/init.d/gkrellmd" >/dev/null || true
+fi
+# End automatically added section

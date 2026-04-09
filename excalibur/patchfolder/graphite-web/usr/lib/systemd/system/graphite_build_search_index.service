@@ -1,0 +1,7 @@
+[Unit]
+Description=Build graphite search index
+Documentation= man:graphite-build-search-index
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/graphite-build-search-index

@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installsystemd/13.16
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'thinkfan-sleep.service' 'thinkfan-wakeup.service' 'thinkfan.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.16
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = remove ] && [ -x "/etc/init.d/thinkfan" ] ; then
+	invoke-rc.d --skip-systemd-native thinkfan stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_installdeb/13.16
+dpkg-maintscript-helper rm_conffile /etc/thinkfan.conf 1.2.1-1\~ thinkfan -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/systemd/system/thinkfan.service.d/override.conf 1.2.1-2\~ thinkfan -- "$@"
+dpkg-maintscript-helper rm_conffile /etc/thinkfan.yaml 1.2.1-3.1\~ thinkfan -- "$@"
+# End automatically added section

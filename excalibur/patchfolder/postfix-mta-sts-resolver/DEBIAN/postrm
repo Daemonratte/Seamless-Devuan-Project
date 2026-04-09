@@ -1,0 +1,41 @@
+#!/bin/sh
+
+set -e
+
+
+USERNAME=_mta-sts
+VARLIB=/var/lib/mta-sts/
+
+if [ "$1" = "purge" ]; then
+    rm -rf $VARLIB
+
+    if [ -x "$(command -v deluser)" ]; then
+        deluser --quiet --system $USERNAME > /dev/null || true
+        delgroup --quiet --system $USERNAME > /dev/null || true
+    else
+        echo >&2 "not removing $USERNAME system account because deluser command was not found"
+    fi
+fi
+
+
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/postfix-mta-sts-resolver" ] ; then
+	chmod -x "/etc/init.d/postfix-mta-sts-resolver" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d postfix-mta-sts-resolver remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'postfix-mta-sts-resolver.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

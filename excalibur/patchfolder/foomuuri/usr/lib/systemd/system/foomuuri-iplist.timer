@@ -1,0 +1,9 @@
+[Unit]
+Description=Multizone bidirectional nftables firewall - Refresh iplist entries
+Documentation=https://github.com/FoobarOy/foomuuri/wiki
+Requires=foomuuri.service
+PartOf=foomuuri.service
+
+[Timer]
+OnActiveSec=3m
+OnUnitActiveSec=15m

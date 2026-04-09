@@ -1,0 +1,67 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          dnsproxy
+# Required-Start:    $remote_fs $syslog $named
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Init script for dnsproxy
+# Description:       This is the init script for dnsproxy.
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/sbin/dnsproxy
+NAME=dnsproxy
+DESC=dnsproxy
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+DODTIME=1                   # Time to wait for the server to die, in seconds
+                            # If this value is set too low you might not
+                            # let some servers to die gracefully and
+                            # 'restart' will not work
+
+# Include dnsproxy defaults if available
+if [ -f /etc/default/$NAME ] ; then
+	. /etc/default/$NAME
+fi
+DAEMON_OPTS="$DAEMON_OPTS -d"
+
+case "$1" in
+    start)
+        log_daemon_msg "Starting $DESC" "$NAME"
+        start_daemon $DAEMON $DAEMON_OPTS
+        log_end_msg $?
+	;;
+    stop)
+        log_daemon_msg "Stopping $DESC" "$NAME"
+        start-stop-daemon --stop --exec $DAEMON
+        RETVAL=$?
+        log_end_msg $RETVAL
+	;;
+    restart|reload|force-reload)
+        log_daemon_msg "Restarting $DESC" "$NAME"
+        $0 stop
+	[ -n "$DODTIME" ] && sleep $DODTIME
+        $0 start
+	;;
+    status)
+        start-stop-daemon --status --exec $DAEMON
+        RETVAL=$?
+        if [ "$RETVAL" = "0" ]; then
+            echo "$NAME is running."
+        else
+            echo "$NAME is not running."
+        fi
+        exit $RETVAL
+	;;
+    *)
+	N=/etc/init.d/$NAME
+	log_action_msg "Usage: $N {start|stop|restart|reload|force-reload|status}"
+	exit 1
+	;;
+esac
+
+exit 0

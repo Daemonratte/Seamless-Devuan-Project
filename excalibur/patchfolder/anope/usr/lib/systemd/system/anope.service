@@ -1,0 +1,19 @@
+[Unit]
+Description=anope IRC services
+After=network.target
+
+[Service]
+Type=forking
+PIDFile=/run/anope/anope.pid
+RuntimeDirectory=anope
+# Service supports reloading via SIGHUP, but ExecReload= not set to kill
+# because signals are asynchronous and reload command should block until
+# reload actually finishes which we have no idea about.
+Environment="DAEMON_ARGS=--confdir=/etc/anope --dbdir=/var/lib/anope/db --logdir=/var/log/anope --modulesdir=/usr/lib/anope --localedir=/usr/share/anope/locale"
+EnvironmentFile=-/etc/default/anope
+ExecStart=/usr/sbin/anope $DAEMON_ARGS
+User=irc
+Group=irc
+
+[Install]
+WantedBy=multi-user.target

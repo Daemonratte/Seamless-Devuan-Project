@@ -1,0 +1,15 @@
+[Unit]
+Description=PostgreSQL listener
+
+[Service]
+User=pglisten
+Group=pglisten
+Type=forking
+WorkingDirectory=/var/lib/pglistener
+ExecStart=/usr/bin/pglistener /etc/pglistener/pglistener.cfg /etc/pglistener/conf.d
+RuntimeDirectory=pglistener
+PIDFile=/run/pglistener/pglistener.pid
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target

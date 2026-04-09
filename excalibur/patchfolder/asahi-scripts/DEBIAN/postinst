@@ -1,0 +1,47 @@
+#!/bin/sh
+
+set -e
+
+case "${1}" in
+	configure)
+		if [ -z "$2" ] || dpkg --compare-versions -- "$2" le-nl "20240822-1~"; then
+			# use udevadm to start macsmc-battery-charge-control-end-threshold.path
+			# on new installs or upgrades from versions prior to 20240822-1
+			if command -v udevadm >/dev/null 2>&1; then
+				udevadm trigger --action=change --subsystem-match=power_supply || true
+			fi
+		fi
+		;;
+
+	abort-upgrade|abort-remove|abort-deconfigure)
+
+		;;
+
+	triggered)
+		update-m1n1 || exit 0
+
+		;;
+
+	*)
+		echo "postinst called with unknown argument \`${1}'" >&2
+		exit 1
+		;;
+esac
+
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'macsmc-battery-charge-control-end-threshold.path' 'macsmc-battery-charge-control-end-threshold.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,12 @@
+[Unit]
+Description=Recover slashem save files
+Documentation=man:recover(6) man:slashem(6)
+RequiresMountsFor=/var/games/slashem
+ConditionPathExistsGlob=/var/games/slashem/*.0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/games/slashem/recover-all
+
+[Install]
+WantedBy=multi-user.target

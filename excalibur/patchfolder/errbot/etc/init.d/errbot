@@ -1,0 +1,89 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          errbot
+# Required-Start:    $local_fs $network $remote_fs $syslog
+# Required-Stop:     $local_fs $network $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Chatbot designed to be simple to extend with plugins written in Python
+# Description:       Errbot is a chatbot. It allows you to start scripts interactively from your
+#                    chatrooms for any reason: random humour, chatops, starting a build, monitoring
+#                    commits, triggering alerts...
+### END INIT INFO
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+
+NAME=errbot
+DAEMON=/usr/bin/errbot
+DESC="Errbot chat bot"
+PIDFILE=/var/lib/$NAME/data/err.pid
+SCRIPTNAME=/etc/init.d/$NAME
+CONFIGFILE=/etc/$NAME/config-template.py
+
+if test -f /etc/default/$NAME; then
+	. /etc/default/$NAME
+fi
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+. /lib/init/vars.sh
+
+. /lib/lsb/init-functions
+
+errbot_start()
+{
+	if [ -f "$PIDFILE" ]; then
+		log_failure_msg "$DESC is running already."
+		exit 1
+	fi
+
+	if ! id $USER >/dev/null 2>&1; then
+		log_failure_msg "USER $USER does not exist."
+		exit 1
+	fi
+
+	start-stop-daemon --start --exec $DAEMON --chuid $NAME -- -c $CONFIGFILE -d -p $PIDFILE
+}
+
+errbot_stop()
+{
+	if [ -f "$PIDFILE" ]; then
+		start-stop-daemon --stop --signal INT --user $NAME --pidfile $PIDFILE
+		rm -f $PIDFILE
+	fi
+}
+
+errbot_status() {
+	if [ ! -e $PIDFILE ]; then
+		status_of_proc "${DAEMON}" "${DESC}"
+	else
+		status_of_proc -p "${PIDFILE}" "${DAEMON}" "${DESC}"
+	fi
+}
+
+case "$1" in
+  start)
+  	log_begin_msg "Starting ${DESC}"
+	errbot_start
+	log_end_msg $?
+	;;
+  stop)
+  	log_begin_msg "Stopping ${DESC}"
+	errbot_stop
+	log_end_msg $?
+	;;
+  status)
+  	erbot_status
+	;;
+  restart|reload|force-reload)
+  	log_begin_msg "Restarting ${DESC}"
+	errbot_stop
+	errbot_start
+	log_end_msg $?
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}"
+	exit 1
+	;;
+esac

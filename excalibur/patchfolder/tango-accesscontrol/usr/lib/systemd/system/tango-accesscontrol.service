@@ -1,0 +1,19 @@
+# based on https://tango-controls.readthedocs.io/en/9.3.5/tutorials-and-howtos/how-tos/how-to-integrate-with-systemd.html
+[Unit]
+Description=Tango Control System - AccessControl device server
+Wants=tango-db
+After=tango-db
+StopWhenUnneeded=true
+
+[Service]
+Restart=on-failure
+RestartSec=3
+User=tango
+Group=tango
+Type=simple
+# TODO: check for a running tango-database
+# TODO: ping network (but it is difficult to parse variables in ExecStartPre commands)
+ExecStart=/usr/lib/tango/TangoAccessControl 1
+
+[Install]
+WantedBy=multi-user.target

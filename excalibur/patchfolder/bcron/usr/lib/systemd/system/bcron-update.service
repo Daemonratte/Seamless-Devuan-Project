@@ -1,0 +1,13 @@
+# this is /usr/lib/systemd/system/bcron-update.service
+[Unit]
+Description=update system crontabs
+After=network.target
+
+[Service]
+# see man systemd.service 
+ExecStart=/usr/sbin/bcron-update-start
+ExecStop=/usr/sbin/bcron-update-stop
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target 

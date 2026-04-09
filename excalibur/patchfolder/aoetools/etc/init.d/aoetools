@@ -1,0 +1,217 @@
+#!/bin/sh
+#
+#       Based on a example file to build /etc/init.d/ scripts,
+#        written by Miquel van Smoorenburg <miquels@cistron.nl>
+#        and later modified by Ian Murdock <imurdock@gnu.ai.mit.edu>.
+#
+#       Also based on init script mountnfs.sh from initscripts package.
+#
+#       Modified for aoetools by David Martínez Moreno <ender@debian.org>.
+#       Copyright 2006-2014.  Under GPLv2.
+#
+#       Support for LVM and other mount points contributed by Glen W. Mabey.
+#       Support for RAID contributed by Gabor Kiss.
+#
+### BEGIN INIT INFO
+# Provides:          aoe aoetools
+# Required-Start:    $local_fs $network
+# Required-Stop:     $local_fs $network
+# Should-Start:
+# Default-Start:     S
+# Default-Stop:      0 6
+# Short-Description: Begin AoE discovery and mount related filesystems.
+# Description:       Begin AoE discovery and mount filesystems residing
+#                    on AoE volumes.
+### END INIT INFO
+
+NAME=aoetools
+DESC="AoE devices discovery and mounting AoE filesystems"
+
+# shellcheck source=/dev/null
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+
+. /lib/lsb/init-functions
+
+# Include aoetools defaults if available
+[ -f /etc/default/aoetools ] && . /etc/default/aoetools
+
+set -e
+
+mdadm="$(command -v mdadm || :)"
+vgchange="$(command -v vgchange || :)"
+
+create_fs_list() {
+    # We start with a list from /etc/default/aoetools.
+    waitaoe="$AOEMOUNTS"
+
+    [ -f /etc/fstab ] || return
+    #
+    # Read through fstab line by line. If it contains /dev/etherd, set the flag
+    # for mounting file systems over AoE.
+    #
+
+    exec 9<&0 </etc/fstab
+
+    # shellcheck disable=SC2034 # fstype is indeed not used
+    while read -r device mountpoint fstype fsopts rest; do
+        case "$fsopts" in
+            noauto | *,noauto | noauto,* | *,noauto,*)
+                continue
+                ;;
+        esac
+        case "$device" in
+            '' | \#*)
+                continue
+                ;;
+            /dev/etherd/*)
+                waitaoe="$waitaoe $mountpoint"
+                ;;
+        esac
+    done
+
+    exec 0<&9 9<&-
+}
+
+do_start() {
+    # We exit if the user does not want us to try this.
+    if [ "$INTERFACES" = "none" ]; then
+        log_action_msg "INTERFACES='none' in /etc/default/aoetools, not started."
+        exit 0
+    fi
+
+    # Usually aoe is a module, so we will try to load it.
+    if [ -n "$INTERFACES" ]; then
+        modprobe aoe aoe_iflist="$INTERFACES" >/dev/null 2>&1 || true
+    else
+        modprobe aoe >/dev/null 2>&1 || true
+    fi
+
+    # Also, if udev is being used, the /dev/etherd devices
+    # are not created until aoe module insertion, so...
+    sleep 1 # ...we give udev a chance to populate /dev/etherd/.
+
+    if [ ! -c /dev/etherd/discover ]; then
+        log_failure_msg "Missing devices under /dev/etherd/.  Please run  aoe-mkdevs /dev/etherd and try again." >&2
+        exit 1
+    fi
+
+    # Try to set up interfaces for discovery, if any.
+    if [ -n "$INTERFACES" ]; then
+        # shellcheck disable=SC2086 # See warning in /etc/default/aoetools
+        aoe-interfaces $INTERFACES
+    fi
+
+    aoe-discover
+
+    create_fs_list
+
+    if [ -n "$waitaoe" ]; then
+        echo
+    fi
+
+    if [ "$mdadm" ] && [ -n "$RAID_ARRAYS" ]; then
+        echo
+        echo "/sbin/mdadm is not present. Please install mdadm package and try again." >&2
+        echo "RAID_ARRAYS option is ignored." >&2
+        RAID_ARRAYS=''
+    fi
+
+    if [ -n "$RAID_ARRAYS" ]; then
+        echo "Assembling RAID arrays..."
+        for md in $RAID_ARRAYS; do
+            /sbin/mdadm --assemble "$md" --scan
+        done
+    fi
+
+    if [ "$vgchange" ] && [ -n "$LVMGROUPS" ]; then
+        echo
+        echo "The LVM2 tools are not present.  Please install lvm2 package and try again." >&2
+        echo "We will not honour LVMGROUPS." >&2
+        LVMGROUPS=''
+    fi
+
+    if [ -n "$LVMGROUPS" ]; then
+        echo "Assembling LVM2 groups..."
+        for vg in $LVMGROUPS; do
+            vgchange --available=y "$vg"
+        done
+    fi
+
+    if [ -n "$waitaoe" ]; then
+        for mountpt in $waitaoe; do
+            echo "Mounting $mountpt..."
+            mount "$mountpt"
+            #log_action_begin_msg "Waiting for $mountpt."
+        done
+    else
+        echo "Nothing to mount."
+    fi
+}
+
+do_stop() {
+    create_fs_list
+
+    if [ -n "$waitaoe" ]; then
+        for mountpt in $waitaoe; do
+            if awk '{print $2}' </proc/mounts | grep -qFx "$mountpt"; then
+                echo "Unmounting $mountpt..."
+                umount "$mountpt"
+            fi
+        done
+    fi
+
+    if [ -n "$LVMGROUPS" ]; then
+        for vg in $LVMGROUPS; do
+            vgchange --available=n "$vg"
+        done
+    fi
+
+    if [ "$mdadm" ] && [ -n "$RAID_ARRAYS" ]; then
+        echo "Stopping RAID arrays..."
+        for md in $RAID_ARRAYS; do
+            /sbin/mdadm --stop "/dev/$md"
+        done
+    fi
+
+    # Removing the module prevents LVM's "Shutting down LVM Volume Groups..."
+    # from hanging when an LVM has been setup on a device in /dev/etherd/.
+    modprobe --remove aoe >/dev/null 2>&1 || true
+}
+
+do_status() {
+    local aoe_mounts
+
+    if lsmod | grep -qFx 'aoe'; then
+        echo 'The aoe module is loaded.'
+    fi
+    # FIXME: Make something smarter like detect udev or a monolithic kernel.
+
+    aoe_mounts="$(grep '/dev/etherd/' /proc/mounts || true)"
+    if [ -n "$aoe_mounts" ]; then
+        echo 'The following AoE file systems are mounted:'
+        echo "$aoe_mounts" | awk '{print $2}'
+    else
+        echo 'No AoE file systems mounted.'
+    fi
+}
+
+case "$1" in
+    start | restart | reload | force-reload)
+        printf '%s' "Starting $DESC: "
+        do_start
+        ;;
+    stop)
+        echo "Stopping $DESC: "
+        do_stop
+        ;;
+    status)
+        do_status
+        ;;
+    *)
+        N=/etc/init.d/$NAME
+        echo "Usage: $N {start|stop|restart|reload|force-reload|status}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

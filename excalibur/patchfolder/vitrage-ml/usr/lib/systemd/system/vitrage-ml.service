@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Vitrage RCAaaS Machine Learning
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:vitrage-ml(1)
+
+[Service]
+User=vitrage
+Group=vitrage
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=vitrage lock/vitrage
+CacheDirectory=vitrage
+ExecStart=/etc/init.d/vitrage-ml systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

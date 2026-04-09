@@ -1,0 +1,17 @@
+[Unit]
+Description=APRS to DAPNET portal
+Documentation=file:/usr/share/doc/a2d/system-service-doc.txt
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/lib/python3/dist-packages/a2d
+ExecStart=/usr/bin/python3 -m gunicorn app:app -c /usr/lib/python3/dist-packages/a2d/gunicorn_config.py
+
+Restart=always
+ExecReload=/bin/kill -HUP $MAINPID
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+[Unit]
+Description=MPD_sima autoqueue utility
+Documentation=man:mpd-sima
+After=network.target
+
+[Service]
+User=mpd-sima
+Type=simple
+EnvironmentFile=-/etc/default/mpd-sima
+ExecStart=/usr/bin/mpd-sima --var_dir=/var/lib/mpd-sima/ --config=/etc/mpd-sima.cfg
+#ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+#Restart=on-failure
+
+## Some hardening
+# disallow writing to /usr, /boot, /etc
+ProtectSystem=full
+# sets up tmp in a new file system namespace
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
+# vim: ft=systemd

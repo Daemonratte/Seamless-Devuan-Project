@@ -1,0 +1,9 @@
+[Unit]
+Description=NNTP server for small sites (socket)
+
+[Socket]
+ListenStream=119
+Accept=yes
+
+[Install]
+WantedBy=sockets.target

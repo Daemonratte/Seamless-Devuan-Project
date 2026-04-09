@@ -1,0 +1,48 @@
+[Unit]
+Description=Wesnoth 1.18 Multiplayer Server Daemon
+Documentation=https://www.wesnoth.org/wiki/ServerAdministration
+Documentation=man:wesnothd-1.18(6)
+After=network.target
+# Other wesnothd installations use the same port by default
+# Conflicts=wesnothd-1.12.service wesnothd-1.10.service
+
+[Service]
+# If wesnothd is started from within the game it runs under a different user
+# Deleting the pipe resets owner, group and mode
+ExecStartPre=/bin/rm -f /run/wesnothd/socket
+
+ExecStart=/usr/games/wesnothd-1.18
+# You can use -c to specify the same configuration file
+# which is used when starting wesnothd from within the wesnoth UI
+# e.g. -c /home/user/.local/share/wesnoth/1.14/lan_server.cfg
+# (and make sure wesnothd has the required access permissions)
+
+ExecReload=/bin/kill -s SIGHUP $MAINPID
+
+ExecStopPost=/bin/rm -f /run/wesnothd/socket
+
+SyslogIdentifier=Wesnothd-1.18
+WorkingDirectory=/run/wesnothd
+User=_wesnoth
+Group=_wesnoth
+
+# Additional security-related features
+# (when using the -c option, do not use ProtectHome)
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/run/wesnothd
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictRealtime=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+ProtectControlGroups=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,91 @@
+# Templated service file for redis-sentinel(1)
+#
+# Each instance of redis-sentinel requires its own configuration file:
+#
+#   $ cp /etc/redis/sentinel.conf /etc/redis/sentinel-myname.conf
+#   $ chown redis:redis /etc/redis/sentinel-myname.conf
+#
+# Ensure each instance is using their own database:
+#
+#   $ sed -i -e 's@^dbfilename .*@dbfilename dump-myname.rdb@' /etc/redis/sentinel-myname.conf
+#
+# We then listen exlusively on UNIX sockets to avoid TCP port collisions:
+#
+#   $ sed -i -e 's@^port .*@port 0@' /etc/redis/sentinel-myname.conf
+#   $ sed -i -e 's@^\(# \)\{0,1\}unixsocket .*@unixsocket /run/sentinel-myname/redis-sentinel.sock@' /etc/redis/sentinel-myname.conf
+#
+# ... and ensure we are logging, etc. in a unique location:
+#
+#   $ sed -i -e 's@^logfile .*@logfile /var/log/redis/redis-sentinel-myname.log@' /etc/redis/sentinel-myname.conf
+#   $ sed -i -e 's@^pidfile .*@pidfile /run/redis-myname/redis-sentinel.pid@' /etc/redis/sentinel-myname.conf
+#
+# We can then start the service as follows, validating we are using our own
+# configuration:
+#
+#   $ systemctl start redis-sentinel@myname.service
+#   $ redis-cli -s /run/sentinel-myname/redis-sentinel.sock info | grep config_file
+#
+#  -- Chris Lamb <lamby@debian.org>  Mon, 09 Oct 2017 22:17:24 +0100
+[Unit]
+Description=Advanced key-value store (%I)
+After=network.target
+Documentation=http://redis.io/documentation, man:redis-sentinel(1)
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/redis-sentinel /etc/redis/sentinel-%i.conf --supervised systemd --daemonize no
+PIDFile=/run/sentinel-%i/redis-sentinel.pid
+TimeoutStopSec=0
+Restart=always
+User=redis
+Group=redis
+RuntimeDirectory=sentinel-%i
+RuntimeDirectoryMode=2755
+
+UMask=007
+PrivateTmp=true
+LimitNOFILE=65535
+PrivateDevices=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=-/var/lib/redis
+ReadWritePaths=-/var/log/redis
+ReadWritePaths=-/var/run/sentinel-%i
+
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+NoNewPrivileges=true
+PrivateUsers=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+RemoveIPC=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~ @privileged @resources
+
+# redis-sentinel can write to its own config file when in cluster mode so we
+# permit writing there by default. If you are not using this feature, it is
+# recommended that you remove this line.
+ReadWriteDirectories=-/etc/redis
+
+# This restricts this service from executing binaries other than redis-sentinel
+# itself. This is really effective at e.g. making it impossible to an
+# attacker to spawn a shell on the system, but might be more restrictive
+# than desired. If you need to, you can permit the execution of extra
+# binaries by adding an extra ExecPaths= directive with the command
+# systemctl edit redis-sentinel.service
+NoExecPaths=/
+ExecPaths=/usr/bin/redis-sentinel /usr/lib /lib
+
+[Install]
+WantedBy=multi-user.target

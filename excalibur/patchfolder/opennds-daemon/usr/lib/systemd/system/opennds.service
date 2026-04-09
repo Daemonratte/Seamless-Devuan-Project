@@ -1,0 +1,15 @@
+[Unit]
+Description=openNDS Captive Portal
+Documentation=man:opennds
+After=network.target
+StartLimitIntervalSec=10
+StartLimitBurst=10
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/opennds -b
+Restart=on-failure
+RestartSec=20
+
+[Install]
+WantedBy=multi-user.target

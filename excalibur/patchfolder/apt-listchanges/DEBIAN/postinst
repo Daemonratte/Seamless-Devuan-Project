@@ -1,0 +1,76 @@
+#!/bin/sh
+# vim:set fileencoding=utf-8 et ts=4 sts=4 sw=4:
+
+set -e
+
+PREFERENCES=/etc/apt/listchanges.conf
+PYTHON3=/usr/bin/python3
+
+. /usr/share/debconf/confmodule
+
+if [ "$1" = "configure" ]
+then
+    "$PYTHON3" -m apt_listchanges.debconf_helper postinst "$PREFERENCES" "$2"
+    ucfr 'apt-listchanges' "$PREFERENCES"
+    # Ignore whitespace-only difference (see #823514)
+    diff -qwB "$PREFERENCES".new "$PREFERENCES" >/dev/null 2>&1 || \
+      ucf --debconf-ok "$PREFERENCES".new "$PREFERENCES"
+    rm -f "$PREFERENCES".new
+
+    if dpkg --compare-versions "$2" lt 4.1; then
+        # Purge old pre-4.0 NDBM listchanges.db
+        dbfile=/var/lib/apt/listchanges.db
+        if [ -f $dbfile ]; then
+            rm -f $dbfile $dbfile-new $dbfile-old
+        fi
+    fi
+    if dpkg --compare-versions "$2" lt 4.1; then
+        deb-systemd-helper enable apt-listchanges.timer >/dev/null || true
+    fi
+fi
+
+[ -z "$DEBCONF_RECONFIGURE" ] || exit 0
+
+
+# Automatically added by dh_python3
+if command -v py3compile >/dev/null 2>&1; then
+	py3compile -p apt-listchanges 
+fi
+if command -v pypy3compile >/dev/null 2>&1; then
+	pypy3compile -p apt-listchanges  || true
+fi
+
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'apt-listchanges.timer' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'apt-listchanges.timer'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'apt-listchanges.timer' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'apt-listchanges.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'apt-listchanges.service' 'apt-listchanges.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

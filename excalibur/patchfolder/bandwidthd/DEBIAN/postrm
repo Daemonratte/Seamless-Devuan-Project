@@ -1,0 +1,64 @@
+#!/bin/sh
+
+set -e
+
+if [ "$BANDWIDTHD_PACKAGE_DEBUG" != "" ]; then
+	echo "bandwidthd.postrm: $*"
+fi
+
+if [ "$1" = "purge" ] ; then
+
+	CONF="/etc/bandwidthd/bandwidthd.conf"
+
+	if which ucf > /dev/null 2>&1; then
+		ucf --purge $CONF
+	fi
+
+	if [ -f $CONF ]; then
+		rm -f $CONF
+	fi
+
+	rm -f /var/lib/bandwidthd/log.*.cdf
+	rm -f /var/lib/bandwidthd/htdocs/*-R.png
+	rm -f /var/lib/bandwidthd/htdocs/*-S.png
+	rm -f /var/lib/bandwidthd/htdocs/index*.html
+	rm -f /var/lib/bandwidthd/htdocs/Subnet-*.html
+	rm -f /var/lib/bandwidthd/htdocs/Total-*.png
+
+fi
+
+# Automatically added by dh_installinit/13.15.3
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/bandwidthd" ] ; then
+	chmod -x "/etc/init.d/bandwidthd" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d bandwidthd remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.15.3
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.15.3
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+dpkg-maintscript-helper mv_conffile \
+	/etc/apache2/conf.d/bandwidthd /etc/apache2/conf-available/bandwidthd.conf 2.0.1+cvs20090917-6~ bandwidthd -- "$@"
+

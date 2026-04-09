@@ -1,0 +1,174 @@
+#!/bin/sh -e
+#
+# summary of how this script can be called:
+#    * <postinst> `configure' <most-recently-configured-version>
+#    * <old-postinst> `abort-upgrade' <new version>
+#    * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#    <new-version>
+#    * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#      <failed-install-package> <version> `removing'
+#      <conflicting-package> <version>
+# for details, see /usr/share/doc/packaging-manual/
+#
+# quoting from the policy:
+#     Any necessary prompting should almost always be confined to the
+#     post-installation script, and should be protected with a conditional
+#     so that unnecessary prompting doesn't happen if a package's
+#     installation fails and the `postinst' is called with `abort-upgrade',
+#     `abort-remove' or `abort-deconfigure'.
+
+umask 022
+
+case "$1" in
+    configure)
+		ucf /usr/share/yp/templates/var_yp_Makefile /var/yp/Makefile
+		ucf /usr/share/yp/templates/etc_netgroup /etc/netgroup
+		ucf /usr/share/yp/templates/etc_ypserv.conf /etc/ypserv.conf
+		ucf /usr/share/yp/templates/etc_ypserv.securenets /etc/ypserv.securenets
+        ;;
+    *)
+        ;;
+esac
+
+# Automatically added by dh_installinit/13.15.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/ypserv" ]; then
+		update-rc.d ypserv defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native ypserv $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.15.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/yppasswdd" ]; then
+		update-rc.d yppasswdd defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native yppasswdd $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.15.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/ypxfrd" ]; then
+		update-rc.d ypxfrd defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native ypxfrd $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'ypserv.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'ypserv.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'ypserv.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'ypserv.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'ypserv.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'yppasswdd.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'yppasswdd.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'yppasswdd.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'yppasswdd.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'yppasswdd.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'ypxfrd.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'ypxfrd.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'ypxfrd.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'ypxfrd.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'ypxfrd.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'ypxfr_1perday.timer'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'ypxfr_1perday.timer' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'ypxfr_1perday.timer'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'ypxfr_1perday.timer' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'ypxfr_1perday.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'ypxfr_1perhour.timer'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'ypxfr_1perhour.timer' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'ypxfr_1perhour.timer'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'ypxfr_1perhour.timer' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'ypxfr_1perhour.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'ypxfr_2perday.timer'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'ypxfr_2perday.timer' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'ypxfr_2perday.timer'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'ypxfr_2perday.timer' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'ypxfr_2perday.timer' >/dev/null || true
+fi
+# End automatically added section
+

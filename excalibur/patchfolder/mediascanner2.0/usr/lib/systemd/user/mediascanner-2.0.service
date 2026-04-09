@@ -1,0 +1,13 @@
+[Unit]
+Description=Media Scanner
+PartOf=ubuntu-touch-session.target lomiri.service
+Before=ubuntu-touch-session.target lomiri.service
+
+[Service]
+Type=dbus
+BusName=com.lomiri.MediaScanner2.Daemon
+ExecStart=/usr/bin/mediascanner-service-2.0
+Restart=on-failure
+
+[Install]
+WantedBy=ubuntu-touch-session.target lomiri.service

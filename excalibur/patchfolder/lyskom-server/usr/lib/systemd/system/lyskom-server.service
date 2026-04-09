@@ -1,0 +1,18 @@
+[Unit]
+Description=LysKOM conference system
+Documentation=info:lyskomd
+After=remote-fs.target network.target time-sync.target
+
+[Service]
+Type=simple
+User=lyskom
+PermissionsStartOnly=true
+ExecStart=/usr/sbin/lyskomd
+ExecReload=/bin/kill -WINCH $MAINPID
+PIDFile=/run/lyskom-server/pid
+TimeoutStopSec=21min
+Restart=on-failure
+RuntimeDirectory=lyskom-server
+
+[Install]
+WantedBy=multi-user.target

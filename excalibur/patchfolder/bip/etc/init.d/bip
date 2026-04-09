@@ -1,0 +1,129 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          bip
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Bip irc proxy init script
+# Description:       This file should be used to start and stop bip in system
+#                    mode.
+### END INIT INFO
+
+# Author: Arnaud Cornet <arnaud.cornet@gmail.com>
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Bip IRC proxy"
+NAME=bip
+VARRUN=/run/$NAME
+PIDFILE=$VARRUN/$NAME.pid
+DAEMON=/usr/bin/$NAME
+DAEMON_HOME=/var/lib/$NAME
+DAEMON_CONFIG=/etc/bip/bip.conf
+DAEMON_ARGS="-f $DAEMON_CONFIG -s $DAEMON_HOME"
+DAEMON_USER=bip
+DAEMON_GROUP=bip
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Exit if the configuration is missing
+[ -f "$DAEMON_CONFIG" ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+. /lib/lsb/init-functions
+
+
+bip_start()
+{
+	if [ ! -e $VARRUN ] ; then
+		# /run can be cleaned at reboot
+		mkdir -p $VARRUN
+		chown $DAEMON_USER:$DAEMON_GROUP $VARRUN
+	fi
+	# Return
+	#   0 if daemon has been started
+	#   1 if daemon was already running
+	#   2 if daemon could not be started
+	start-stop-daemon --start --quiet --chuid $DAEMON_USER:$DAEMON_GROUP --pidfile "$PIDFILE" --exec $DAEMON --test > /dev/null \
+		|| return 1
+	start-stop-daemon --start --quiet --chuid $DAEMON_USER:$DAEMON_GROUP --pidfile "$PIDFILE" --exec $DAEMON -- $DAEMON_ARGS \
+		|| return 2
+	return 0
+}
+
+bip_stop()
+{
+	start-stop-daemon --stop --quiet --user $DAEMON_USER --pidfile "$PIDFILE" --retry=TERM/30/KILL/5
+	RETVAL="$?"
+
+	# cleanup in case it dies
+	rm -f $PIDFILE
+
+	return "$RETVAL"
+}
+
+bip_reload()
+{
+	start-stop-daemon --stop --quiet --user $DAEMON_USER --pidfile "$PIDFILE" --signal 1
+}
+
+case "$1" in
+start)
+	log_daemon_msg "Starting $DESC" "$NAME"
+	bip_start
+	case "$?" in
+	0) log_end_msg 0 ; exit 0 ;;
+	1) log_warning_msg " (already running)." ; exit 0 ;;
+	2) log_end_msg 1 ; exit 1 ;;
+	esac
+;;
+stop)
+	log_daemon_msg "Stopping $DESC" "$NAME"
+	bip_stop
+	case "$?" in
+	0) log_end_msg 0 ; exit 0 ;;
+	1) log_warning_msg " (not running)." ; exit 0 ;;
+	2) log_end_msg 1 ; exit 1 ;;
+	esac
+;;
+reload|force-reload)
+	log_daemon_msg "Reloading $DESC" "$NAME"
+	bip_reload
+	log_end_msg $?
+;;
+restart)
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	bip_stop
+	[ $? = 2 ] && log_failure_msg " (failed to stop)." && exit 1
+	sleep 1
+	bip_start
+	case "$?" in
+	0) log_end_msg 0 ; exit 0 ;;
+	1) log_failure_msg " (failed -- old process is still running)." ; exit 1 ;;
+	2) log_failure_msg " (failed to start)." ; exit 1 ;;
+	esac
+;;
+status)
+	# /run/bip/bip.pid is perm'd 600, so only use -p if readable
+	if [ -r "$PIDFILE" ]; then
+		status_of_proc -p "$PIDFILE" "$DAEMON" "$NAME" && exit 0 || exit $?
+	else
+		status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+	fi
+;;
+*)
+	echo "Usage: /etc/init.d/$NAME {start|stop|reload|restart|status}"
+	exit 3
+;;
+esac
+
+:

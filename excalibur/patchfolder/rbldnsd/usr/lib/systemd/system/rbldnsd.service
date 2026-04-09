@@ -1,0 +1,35 @@
+[Unit]
+Description=DNSBL name server
+Documentation=man:rbldnsd(8)
+After=network.target
+# Do not start the daemon unless some zone has been installed
+ConditionPathExistsGlob=/var/lib/rbldns/*
+
+[Service]
+Type=notify
+ExecStart=/usr/sbin/rbldnsd.wrapper
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+StateDirectory=rbldns
+PrivateTmp=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=mnt
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=@system-service chroot unshare mount
+
+[Install]
+WantedBy=multi-user.target

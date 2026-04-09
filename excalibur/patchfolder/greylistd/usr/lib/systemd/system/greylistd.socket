@@ -1,0 +1,13 @@
+[Unit]
+Description=Email greylisting socket
+PartOf=greylistd.service
+
+[Socket]
+ListenStream=/var/run/greylistd/socket
+SocketMode=0660
+SocketUser=greylist
+SocketGroup=greylist
+Service=greylistd.service
+
+[Install]
+WantedBy=sockets.target

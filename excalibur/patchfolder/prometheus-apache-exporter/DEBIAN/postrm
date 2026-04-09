@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+  purge)
+        rm -f /var/log/prometheus/prometheus-apache-exporter.log* \
+              /run/prometheus/prometheus-apache-exporter.pid
+        ;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/prometheus-apache-exporter" ] ; then
+	chmod -x "/etc/init.d/prometheus-apache-exporter" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d prometheus-apache-exporter remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'prometheus-apache-exporter.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

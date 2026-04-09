@@ -1,0 +1,4 @@
+#!/bin/sh
+exec 2>&1
+sv up bcron-update
+exec chpst -Ucron unixserver -U "${BCRON_SOCKET:-/var/run/bcron-spool}" bcron-spool

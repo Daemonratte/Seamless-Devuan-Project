@@ -1,0 +1,10 @@
+# systemd service definition for json2file-go
+[Unit]
+Description=json2file-go socket
+
+[Socket]
+ListenStream=/run/json2file-go/socket
+SocketUser=www-data
+SocketGroup=www-data
+SocketMode=0660
+NoDelay=true

@@ -1,0 +1,15 @@
+[Unit]
+Description=Userland out-of-memory killer daemon
+Documentation=man:oomd(1) https://github.com/facebookincubator/oomd#configuration
+After=system.slice
+ConditionFileIsExecutable=/usr/bin/oomd
+
+[Service]
+EnvironmentFile=-/etc/default/oomd
+ExecStart=/usr/bin/oomd $DAEMON_OPTS
+Restart=always
+SyslogIdentifier=oomd
+MemoryLow=64M
+
+[Install]
+WantedBy=multi-user.target

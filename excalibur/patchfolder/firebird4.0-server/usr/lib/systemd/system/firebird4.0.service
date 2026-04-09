@@ -1,0 +1,14 @@
+[Unit]
+Description=Firebird Database Server
+After=network.target
+Documentation=https://firebirdsql.org/en/firebird-rdbms/
+
+[Service]
+User=firebird
+Group=firebird
+Type=forking
+ExecStart=/usr/sbin/fbguard --fb-ver 4.0 -daemon -forever
+RuntimeDirectory=firebird4.0
+
+[Install]
+WantedBy=multi-user.target

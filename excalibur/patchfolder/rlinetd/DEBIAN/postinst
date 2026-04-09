@@ -1,0 +1,41 @@
+#!/bin/sh
+# vim:ts=2:sts=2:et
+
+set -e
+
+INETD_SCR="/etc/init.d/inetd"
+INETD_CONF="/etc/inetd.conf"
+RLINCONFDIR="/etc/rlinetd.d/"
+UCFDIR="/var/lib/rlinetd/ucf/"
+
+
+if [ "$1" = "configure" ]; then
+  if [ -f "$INETD_CONF" ] && [ -z "`ls -1 $UCFDIR`" ]; then
+
+    # source debconf library
+    . /usr/share/debconf/confmodule
+    db_get rlinetd/convert_from_inetd
+    if [ "x$RET" = "xtrue" ] ; then
+      inetd2rlinetd --add-from-comment -f "$INETD_CONF" "$RLINCONFDIR"
+    fi
+
+    inetd2rlinetd --add-from-comment --force-overwrite -f "$INETD_CONF" "$UCFDIR"
+
+    db_stop
+  fi
+fi
+
+# Automatically added by dh_installinit/13.20
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -z "${DPKG_ROOT:-}" ] && [ -x "/etc/init.d/rlinetd" ]; then
+		update-rc.d rlinetd defaults >/dev/null
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		invoke-rc.d --skip-systemd-native rlinetd $_dh_action || exit 1
+	fi
+fi
+# End automatically added section
+

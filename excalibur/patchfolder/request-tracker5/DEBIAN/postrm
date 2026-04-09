@@ -1,0 +1,79 @@
+#! /bin/sh
+
+set -e
+
+RTVER=5
+RT=request-tracker${RTVER}
+
+if [ -f /usr/share/debconf/confmodule ]; then
+		. /usr/share/debconf/confmodule
+fi
+if [ -f /usr/share/dbconfig-common/dpkg/postrm ]; then
+		. /usr/share/dbconfig-common/dpkg/postrm 
+		dbc_go ${RT} $@
+fi
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/request-tracker5" ] ; then
+	chmod -x "/etc/init.d/request-tracker5" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d request-tracker5 remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'request-tracker5.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.24.2
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+
+
+# /var/cache is where we keep cached data
+# Also remove log files for tidiness.
+
+case "$1" in
+	"purge") rm -rf \
+		/var/cache/${RT}/ \
+		/var/log/${RT}/
+        rm -f \
+		/etc/${RT}/RT_SiteConfig.pm \
+		/etc/${RT}/RT_SiteConfig.pm.ucf-* \
+		/etc/${RT}/RT_SiteConfig.d/50-debconf.pm \
+		/etc/${RT}/RT_SiteConfig.d/50-debconf.pm.ucf-* \
+		/etc/${RT}/RT_SiteConfig.d/50-debconf.ucf-* \
+		/etc/${RT}/RT_SiteConfig.d/51-dbconfig-common.pm \
+		/etc/${RT}/RT_SiteConfig.d/51-dbconfig-common.pm.ucf-* \
+		/etc/${RT}/RT_SiteConfig.d/51-dbconfig-common.ucf-* \
+		/etc/cron.d/request-tracker5
+	if which ucf >/dev/null 2>&1
+	then
+        # managed by the postinst script
+		ucf --purge /etc/${RT}/RT_SiteConfig.d/50-debconf.pm
+        # managed by dbconfig-generate-include
+		ucf --purge /etc/${RT}/RT_SiteConfig.d/51-dbconfig-common.pm
+		ucf --purge /etc/${RT}/RT_SiteConfig.pm
+		ucf --purge /etc/cron.d/request-tracker5
+	fi
+    # clean up the ucf registry too
+    if which ucfr >/dev/null 2>&1
+    then
+        ucfr --purge ${RT} /etc/${RT}/RT_SiteConfig.d/50-debconf.pm
+        ucfr --purge ${RT} /etc/${RT}/RT_SiteConfig.d/51-dbconfig-common.pm
+        ucfr --purge ${RT} /etc/${RT}/RT_SiteConfig.pm
+        ucfr --purge ${RT} /etc/cron.d/request-tracker5
+    fi
+	;;
+esac

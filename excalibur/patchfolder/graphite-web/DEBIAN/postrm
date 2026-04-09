@@ -1,0 +1,40 @@
+#!/bin/sh
+
+set -e
+
+DIRS="/var/log/graphite"
+
+case "${1}" in
+	purge)
+		rm -rf /var/log/graphite
+		rm -f /var/lib/graphite/graphite.db
+
+		for i in $DIRS; do
+			if dpkg-statoverride --list $i >/dev/null 2>&1; then
+				dpkg-statoverride --remove $i
+			fi
+		done
+	;;
+	remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+	;;
+	*)
+		echo "postrm called with unknown argument \`${1}'" >&2
+		exit 1
+	;;
+esac
+
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.20
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'graphite_build_search_index.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

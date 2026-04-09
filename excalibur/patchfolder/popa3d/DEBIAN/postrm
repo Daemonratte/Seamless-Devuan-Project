@@ -1,0 +1,37 @@
+#!/bin/sh
+# post-removal script for popa3d
+
+set -e
+
+if [ "$1" = "purge" ]; then
+	if which update-inetd >/dev/null 2>&1 ; then
+		update-inetd --pattern "popa3d" --remove pop3
+	fi
+
+	# removing popa3d user & group
+	if which userdel >/dev/null 2>&1 ; then
+		userdel -r popa3d 2>/dev/null || true
+		groupdel popa3d 2>/dev/null || true
+	fi
+	rm -f /etc/default/popa3d
+else
+	if which update-inetd >/dev/null 2>&1 ; then
+		update-inetd --pattern "popa3d" --disable pop3
+	fi
+fi
+
+# Automatically added by dh_installinit/13.11.4
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/popa3d" ] ; then
+	chmod -x "/etc/init.d/popa3d" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d popa3d remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf/13.11.4
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+

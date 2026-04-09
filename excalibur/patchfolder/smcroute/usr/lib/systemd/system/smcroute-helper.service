@@ -1,0 +1,12 @@
+[Unit]
+Description=SMCRoute compat helper, runs /etc/smcroute/startup.sh
+Documentation=file:/usr/share/doc/smcroute/NEWS.Debian.gz
+After=network-online.target smcroute.service
+Requires=smcroute.service
+
+[Service]
+Type=oneshot
+ExecStart=-/etc/smcroute/startup.sh
+
+[Install]
+WantedBy=multi-user.target

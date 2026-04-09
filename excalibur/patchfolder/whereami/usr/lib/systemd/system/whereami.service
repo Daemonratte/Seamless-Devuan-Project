@@ -1,0 +1,15 @@
+[Unit]
+Description=
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RuntimeDirectory=whereami
+RuntimeDirectoryPreserve=yes
+RemainAfterExit=yes
+ExecStart=/usr/sbin/whereami --run_from init --syslog --hint netstart
+ExecStop=/usr/sbin/whereami --run_from init --syslog shutdown
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=OmniDB server daemon
+After=network.target
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/omnidb-server -C /usr/share/omnidb/config.py
+User=omnidb
+Group=omnidb
+
+[Install]
+WantedBy=multi-user.target

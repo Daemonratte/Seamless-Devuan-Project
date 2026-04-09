@@ -1,0 +1,12 @@
+[Unit]
+Description=ha_logd logging daemon
+Documentation=man:ha_logd(8)
+
+[Service]
+ExecStart=/usr/lib/heartbeat/ha_logd -c /etc/logd.cf
+ExecStartPre=/bin/rm -f /run/logd.pid
+ExecStopPost=/bin/rm -f /run/logd.pid
+PIDFile=/run/logd.pid
+
+[Install]
+WantedBy=multi-user.target

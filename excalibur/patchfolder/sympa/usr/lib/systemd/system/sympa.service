@@ -1,0 +1,24 @@
+[Unit]
+Description=SYMPA mailing list manager
+Wants=sympa-bulk.service sympa-archived.service sympa-bounced.service sympa-task_manager.service
+Documentation=man:sympa_msg(8)
+
+[Service]
+User=sympa
+Group=sympa
+
+PermissionsStartOnly=true
+ExecStartPre=-/bin/mkdir -p /run/sympa
+ExecStartPre=-/bin/chown sympa:sympa /run/sympa
+
+Type=forking
+ExecStart=/usr/lib/sympa/bin/sympa_msg.pl
+PIDFile=/run/sympa/sympa_msg.pid
+
+Restart=on-failure
+RestartSec=15
+
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

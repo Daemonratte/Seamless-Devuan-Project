@@ -1,0 +1,22 @@
+[Unit]
+Description=Prometheus exporter for BIND
+Documentation=https://github.com/prometheus-community/bind_exporter
+
+[Service]
+Restart=on-failure
+User=prometheus
+EnvironmentFile=/etc/default/prometheus-bind-exporter
+ExecStart=/usr/bin/prometheus-bind-exporter $ARGS
+
+# systemd hardening options
+PrivateDevices=true
+PrivateTmp=true
+PrivateUsers=true
+ProtectClock=true
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

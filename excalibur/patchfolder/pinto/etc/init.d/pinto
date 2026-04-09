@@ -1,0 +1,110 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:          pinto
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and stop the web interface to a Pinto repository
+# Description:       Controls the pinto perl module repository daemon "pintod".
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/pintod
+NAME=pintod
+PIDFILE=/var/run/pinto/$NAME.pid
+DESC="pinto perl module repository"
+
+umask 0037
+
+test -f $DAEMON || exit 0
+
+set -e
+
+. /lib/lsb/init-functions
+
+check_started() {
+    if [ -f "$PIDFILE" ]; then
+        pid="$(cat $PIDFILE)"
+        if [ "$pid" ] && kill -0 $pid >/dev/null 2>/dev/null; then
+            return 0    # Is started
+        fi
+    fi
+    return 1      # Isn't started
+}
+
+start() {
+    if ! check_started; then
+        log_daemon_msg "Starting $DESC" "$NAME"
+
+        # Could be removed during boot
+        test -e /var/run/pinto || install -m 750 -o pinto -g pinto -d /var/run/pinto
+
+        if ! START_ERROR=`start-stop-daemon --chuid pinto -u pinto --start \
+            --pidfile $PIDFILE --exec $DAEMON -- \
+            --root=/var/lib/pinto/repository/default/ --auth backend=Passwd \
+            --auth path=/etc/pinto/htpasswd.users \
+            --access-log=/var/log/pinto/access.log \
+            --error-log=/var/log/pinto/error.log --daemonize \
+            --pid $PIDFILE 2>&1`; then
+            echo -n " "
+            log_action_end_msg 1 "$START_ERROR"
+            exit 0
+        else
+            log_end_msg 0
+        fi
+    else
+        log_warning_msg "already running!"
+    fi
+}
+
+stop() {
+    log_daemon_msg "Stopping $DESC" "$NAME"
+    killproc -p $PIDFILE /usr/bin/starman
+    RETVAL=$?
+    [ $RETVAL = 0 ] && rm -f $PIDFILE
+    log_end_msg "$RETVAL"
+}
+
+restart() {
+    stop
+    sleep 1
+    start
+}
+
+status() {
+    log_action_begin_msg "checking $DAEMON"
+    if check_started; then
+        log_action_end_msg 0 "running"
+    else
+        if [ -e "$PIDFILE" ]; then
+            log_action_end_msg 1 "$DAEMON failed"
+            exit 1
+        else
+            log_action_end_msg 1 "not running"
+            exit 3
+        fi
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart|reload|force-reload)
+        restart
+        ;;
+    status)
+        status
+        ;;
+    *)
+        log_warning_msg "Usage: $0 {start|stop|restart|reload|force-reload|status}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

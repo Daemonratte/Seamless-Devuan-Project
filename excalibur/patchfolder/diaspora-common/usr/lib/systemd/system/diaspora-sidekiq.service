@@ -1,0 +1,20 @@
+[Unit]
+Description=Diaspora Sidekiq Worker
+PartOf=diaspora.target
+Requires=redis-server.service
+Wants=postgresql.service
+After=redis-server.service postgresql.service
+PartOf=diaspora.service
+ReloadPropagatedFrom=diaspora.service
+
+[Service]
+Type=simple
+User=diaspora
+WorkingDirectory=/usr/share/diaspora
+EnvironmentFile=/etc/diaspora/diaspora.conf
+SyslogIdentifier=diaspora-sidekiq
+ExecStart=/bin/bash -lc "bin/bundle exec sidekiq"
+Restart=always
+
+[Install]
+WantedBy=diaspora.target

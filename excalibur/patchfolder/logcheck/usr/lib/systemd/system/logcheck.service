@@ -1,0 +1,12 @@
+[Unit]
+Description=logcheck
+Documentation=man:logcheck(8)
+
+[Service]
+User=logcheck
+Type=oneshot
+ExecStart=/usr/sbin/logcheck
+# This is needed to allow the mail to be delivered by exim4 - otherwise it sits in the queue for up to 30 minutes (see #1106030).
+# A sleep as short as half a second usually works, but be conservative to allow plenty of time for exim4 to process the queue.
+ExecStart=/usr/bin/sleep 10
+Nice=10

@@ -1,0 +1,21 @@
+[Unit]
+Description=emptty display manager on %I
+Documentation=man:emptty(1)
+After=systemd-user-sessions.service plymouth-quit-wait.service
+After=getty@%i.service
+Conflicts=getty@%i.service
+ConditionPathExists=/dev/%I
+
+[Service]
+ExecStart=/usr/bin/emptty --daemon --tty %I --config /etc/emptty/conf-%I
+Type=idle
+Restart=always
+IgnoreSIGPIPE=no
+SendSIGHUP=yes
+TTYPath=/dev/%I
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+
+[Install]
+WantedBy=multi-user.target

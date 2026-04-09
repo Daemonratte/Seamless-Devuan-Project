@@ -1,0 +1,58 @@
+#!/bin/sh
+set -e
+
+setperm() {
+    user="$1"
+    group="$2"
+    mode="$3"
+    file="$4"
+    shift 4
+    # only do something when no setting exists
+    if ! dpkg-statoverride --list "$file" >/dev/null 2>&1; then
+      chown "$user":"$group" "$file"
+      chmod "$mode" "$file"
+    fi
+}
+
+case "$1" in
+    configure)
+
+    if ! getent passwd icingadb > /dev/null ; then
+        echo 'Adding system-user for icingadb' 1>&2
+        adduser --system --group --home /etc/icingadb \
+                --disabled-login --force-badname icingadb > /dev/null
+    fi
+
+    setperm icingadb icingadb 0750 /etc/icingadb
+    setperm icingadb icingadb 0640 /etc/icingadb/config.yml
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'icingadb.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'icingadb.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'icingadb.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'icingadb.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'icingadb.service' >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+upgrade_rpki_client() {
+  # in 8.9 /var/cache/rpki-client/ was moved to /var/lib/rpki-client/cache/
+  dpkg --compare-versions "$2" ge 8.9 || return 0
+
+  [ -d /var/cache/rpki-client/ ] || return 0
+  [ ! -d /var/lib/rpki-client/cache/ ] || return 0
+  mv /var/cache/rpki-client/ /var/lib/rpki-client/cache/
+}
+
+case "$1" in
+  upgrade)
+    upgrade_rpki_client "$@"
+    ;;
+esac
+
+
+

@@ -1,0 +1,62 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.15.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/ypserv" ] ; then
+	chmod +x "/etc/init.d/ypserv" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.15.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/yppasswdd" ] ; then
+	chmod +x "/etc/init.d/yppasswdd" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.15.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/ypxfrd" ] ; then
+	chmod +x "/etc/init.d/ypxfrd" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'ypserv.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'yppasswdd.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'ypxfr_1perday.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'ypxfr_1perhour.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'ypxfr_2perday.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'ypxfrd.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'ypxfr_1perday.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'ypxfr_1perhour.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.2
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'ypxfr_2perday.timer' >/dev/null || true
+fi
+# End automatically added section

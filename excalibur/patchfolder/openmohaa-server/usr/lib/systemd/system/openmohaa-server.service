@@ -1,0 +1,26 @@
+[Unit]
+Description=OpenMoHAA game server
+After=network.target
+Documentation=man:mohaa-server(6)
+# This server and the @server instance would try to use the same
+# configuration, and fight over their home directory
+Conflicts=openmohaa-server@server.service
+
+[Service]
+Type=simple
+User=_openmohaa-server
+Environment=DAEMON_OPTS=
+EnvironmentFile=-/etc/default/openmohaa-server
+ExecStart=/usr/games/mohaa-server +set com_homepath server.openmohaa $DAEMON_OPTS +exec etc/openmohaa-server/server.cfg
+Restart=on-failure
+RestartPreventExitStatus=72
+# hardening
+CapabilityBoundingSet=
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

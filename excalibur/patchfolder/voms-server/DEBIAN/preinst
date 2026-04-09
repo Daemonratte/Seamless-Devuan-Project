@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e
+
+# Version 2.1.0~rc0-4 starts using defaults-disabled
+# Remove rc.d links if upgrading from an older version and the service is
+# disabled in /etc/default
+
+if [ -n "$2" ] ; then
+	if dpkg --compare-versions "$2" "<<" "2.1.0~rc0-4" ; then
+		[ -r /etc/default/voms ] && . /etc/default/voms
+		if [ -n "${RUN}" ] && [ "${RUN}" != "yes" ] ; then
+			update-rc.d -f voms remove >/dev/null
+		fi
+	fi
+fi
+
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/voms" ] ; then
+	chmod +x "/etc/init.d/voms" >/dev/null || true
+fi
+# End automatically added section
+

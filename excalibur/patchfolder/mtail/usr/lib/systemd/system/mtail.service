@@ -1,0 +1,25 @@
+[Unit]
+Description=MTail
+Documentation=https://google.github.io/mtail/
+
+[Service]
+Type=simple
+Restart=on-failure
+User=mtail
+
+Environment=HOST=::
+Environment=PORT=3903
+Environment=EXTRA_ARGS=
+EnvironmentFile=/etc/default/mtail
+
+ExecCondition=/usr/bin/test -n "${LOGS}"
+ExecStart=/bin/sh -c 'exec /usr/bin/mtail --progs /etc/mtail --logtostderr $${HOST:+--address $$HOST} $${PORT:+--port $$PORT} --logs "$LOGS" $EXTRA_ARGS'
+ExecReload=/bin/kill -HUP $MAINPID
+TimeoutStopSec=20s
+
+# Limit memory leaks
+MemoryMax=1G
+MemorySwapMax=0
+
+[Install]
+WantedBy=multi-user.target

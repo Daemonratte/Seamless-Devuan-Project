@@ -1,0 +1,28 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    purge)
+	rm -rf /var/lib/errbot
+	;;
+
+    upgrade|remove|failed-upgrade|abort-install|abort-upgrade|disappear)
+	;;
+
+    *)
+	echo "postrm called with unknown argument $1"
+	exit 1
+	;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/errbot" ] ; then
+	chmod -x "/etc/init.d/errbot" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d errbot remove >/dev/null
+fi
+# End automatically added section
+
+

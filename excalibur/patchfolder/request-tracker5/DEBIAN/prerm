@@ -1,0 +1,70 @@
+#! /bin/sh
+
+set -e
+
+alts() {
+    for bin in \
+        /usr/bin/rt-crontool \
+        /usr/sbin/rt-attributes-viewer \
+        /usr/sbin/rt-clean-attributes \
+        /usr/sbin/rt-clean-sessions \
+        /usr/sbin/rt-clean-shorteners \
+        /usr/sbin/rt-dump-initialdata \
+        /usr/sbin/rt-dump-metadata \
+        /usr/sbin/rt-email-dashboards \
+        /usr/sbin/rt-email-digest \
+        /usr/sbin/rt-email-expiring-auth-tokens \
+        /usr/sbin/rt-email-group-admin \
+        /usr/sbin/rt-externalize-attachments \
+        /usr/sbin/rt-fulltext-indexer \
+        /usr/sbin/rt-importer \
+        /usr/sbin/rt-ldapimport \
+        /usr/sbin/rt-munge-attachments \
+        /usr/sbin/rt-passwd \
+        /usr/sbin/rt-preferences-viewer \
+        /usr/sbin/rt-search-attributes \
+        /usr/sbin/rt-serializer \
+        /usr/sbin/rt-session-viewer \
+        /usr/sbin/rt-setup-database \
+        /usr/sbin/rt-setup-fulltext-index \
+        /usr/sbin/rt-shredder \
+        /usr/sbin/rt-validate-aliases \
+        /usr/sbin/rt-validator
+    do
+        alt=`basename $bin`
+        update-alternatives --remove $alt $bin-5
+    done
+}
+
+. /usr/share/debconf/confmodule
+
+if [ ! -e /usr/share/dbconfig-common/internal/dbc-no-thanks ]; then
+    . /usr/share/dbconfig-common/dpkg/prerm
+    dbc_go request-tracker5 $@
+fi
+
+case "$1" in
+    "remove") alts
+        ;;
+esac
+
+# Automatically added by dh_installinit/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -x "/etc/init.d/request-tracker5" ] ; then
+	invoke-rc.d --skip-systemd-native request-tracker5 stop || exit 1
+fi
+# End automatically added section
+# Automatically added by dh_usrlocal/13.24.2
+(
+	while read dir; do
+		rmdir "$dir" 2>/dev/null || true
+	done
+) << DATA
+/usr/local/share/request-tracker5/html
+/usr/local/share/request-tracker5/lib
+/usr/local/share/request-tracker5/plugins
+/usr/local/share/request-tracker5/po
+/usr/local/share/request-tracker5/static
+/usr/local/share/request-tracker5
+DATA
+# End automatically added section
+

@@ -1,0 +1,14 @@
+[Unit]
+Description=Libervia PubSub service
+Wants=prosody.service
+Documentation=man:stpubsub(1)
+
+[Service]
+Environment=PYTHONPATH=/usr/share/libervia
+WorkingDirectory=/usr/share/libervia/sat_pubsub
+ExecStart=/usr/bin/twistd3 --nodaemon --pidfile= sat_pubsub
+DynamicUser=yes
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

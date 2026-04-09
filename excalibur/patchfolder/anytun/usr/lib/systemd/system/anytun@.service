@@ -1,0 +1,20 @@
+[Unit]
+Description=secure anycast tunneling daemon for %i
+PartOf=anytun.service
+Requires=anytun-controld@%i.service
+Documentation=man:anytun(8)
+
+[Service]
+Type=simple
+PIDFile=/run/anytun/%i.pid
+Environment="NAME=%i" "DAEMONOPTS=-D --username anytun"
+ExecStart=/usr/lib/anytun-launcher vpn
+Restart=on-failure
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+DeviceAllow=/dev/net/tun rw
+DevicePolicy=closed
+
+[Install]
+WantedBy=multi-user.target

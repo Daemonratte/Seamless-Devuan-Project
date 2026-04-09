@@ -1,0 +1,18 @@
+# This init script exists so that MySQL or PostgreSQL database servers,
+# if present, will be started before Apache. This is a workaround for the problem in RT
+# where if mod_perl is being used, inability to contact the database server when Apache is
+# being started will cause the web server to fail to start up.
+
+[Unit]
+Description=Dummy service to enforce web/database server startup ordering
+After=mysql postgresql
+Before=apache2
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/bin/true
+
+[Install]
+WantedBy=multi-user.target
+Alias=request-tracker5.service

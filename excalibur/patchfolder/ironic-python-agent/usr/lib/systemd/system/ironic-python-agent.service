@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Ironic Python Agent (ironic-python-agent)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service chrony.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service chrony.service network-online.target 
+
+Documentation=man:ironic-python-agent(1)
+
+[Service]
+User=root
+Group=root
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=ironic-python-agent lock/ironic-python-agent
+CacheDirectory=ironic-python-agent
+ExecStart=/etc/init.d/ironic-python-agent systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,18 @@
+[Unit]
+Description=debug-me server
+Documentation=https://debug-me.branchable.com/
+
+[Service]
+Environment='DAEMON_PARAMS=--server /var/log/debug-me/ --delete-old-logs'
+EnvironmentFile=-/etc/default/debug-me
+ExecStart=/usr/bin/debug-me $DAEMON_PARAMS
+InaccessiblePaths=/home
+ReadWritePaths=/var/log/debug-me
+User=_debug-me
+Group=_debug-me
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

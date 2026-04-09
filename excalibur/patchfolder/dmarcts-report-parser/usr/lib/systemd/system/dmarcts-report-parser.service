@@ -1,0 +1,7 @@
+[Unit]
+Description=Run dmarcts-report-parser once.
+Documentation=man:dmarcts-report-parser(8)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/dmarcts-report-parser.cronjob

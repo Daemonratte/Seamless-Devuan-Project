@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/needrestart/conf.d/no-opensnitch-restart.conf 1.6.8-9 opensnitch -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/opensnitch" ] ; then
+	chmod +x "/etc/init.d/opensnitch" >/dev/null || true
+fi
+# End automatically added section

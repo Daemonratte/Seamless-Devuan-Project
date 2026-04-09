@@ -1,0 +1,325 @@
+#! /bin/bash
+#
+# console-log   init script for console-log
+
+### BEGIN INIT INFO
+# Provides:          console-log
+# Required-Start:    $local_fs $remote_fs $syslog
+# Required-Stop:     $local_fs $remote_fs $syslog
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Puts a logfile pager on virtual consoles
+# Description:       console-log keeps logfile pagers open on virtual consoles.
+### END INIT INFO
+
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DESC="console-log"
+DEFAULTPAGER="less"
+LOGPAGER="/usr/share/console-log/logpager"
+PIDFILEDEFDIR="/run/console-log"
+CONFIGFILE="/etc/console-log.conf"
+USERNAME="Debian-console-log"
+MAXFILESIZE="7000000"
+
+set -e
+
+if [ -r "/lib/lsb/init-functions" ]; then
+  . /lib/lsb/init-functions
+else
+  echo "E: /lib/lsb/init-functions not found, lsb-base (>= 3.0-6) needed"
+  exit 1
+fi
+
+if [ -n "$CONLoGDEBUG" ]; then
+  echo "now debugging $0 $@"
+  set -x
+fi
+
+
+mkdir -p $PIDFILEDEFDIR
+
+# this is from madduck on IRC, 2006-07-06
+# There should be a better possibility to give daemon error messages
+# and/or to log things
+log()
+{
+  case "$1" in
+    [[:digit:]]*) success=$1; shift;;
+    *) :;;
+  esac
+  log_action_begin_msg "$1"; shift
+  log_action_end_msg ${success:-0} "$*"
+}
+
+
+# WARNING! The pager might be run as root. /usr/share/console-log/logpager
+# is a wrapper for the actual pager that is supposed to configure the pager
+# in a secure way to not allow shell escapes. If you have extended the
+# pager wrapper to support other pagers, please submit your patches via
+# the BTS.
+
+start_pager()
+{
+TTY="$1"
+CHVT="$2"
+FILE="$3"
+USER="$4"
+GROUP="$5"
+MAXFILESIZE="$6"
+PAGER="$7"
+LOCSCRIPT="$8"
+
+if echo $TTY | grep "[[:digit:]]\+" >/dev/null; then
+  PIDFILEDIR="$PIDFILEDEFDIR"
+  DAEMONUSER=""
+  if [ -n "$USER" ]; then
+    DAEMONUSER="--user $USER"
+    mkdir -p $PIDFILEDEFDIR/$USER
+    chown $USER $PIDFILEDEFDIR/$USER
+    PIDFILEDIR="$PIDFILEDEFDIR/$USER"
+    if [ -n "$GROUP" ]; then
+      DAEMONUSER="$DAEMONUSER.$GROUP"
+    fi
+  fi
+  unset found
+  for file in $FILE; do
+    if [ -f "$file" ] || [ -L "$file" ]; then
+      # check if file is readable by the given user
+      if su --shell=$SHELL --command="head -n 1 $file" $USER > /dev/null 2>&1; then
+        FILENAME="$TTY-${file//\//_-_}"
+	if [ -f "$PIDFILEDIR/$FILENAME" ]; then
+	  log_progress_msg "$file (already running)"
+	else
+          if [ -x "$LOCSCRIPT" ]; then
+            . $LOCSCRIPT $file
+          fi
+          if [ -x "$LOGPAGER" ]; then
+	    RET=0
+	    (ulimit -S -v $(( $MAXFILESIZE / 1000 * 2 + 10000 ))
+            openvt -f -c $TTY -- \
+                 daemon --foreground --respawn --attempts=20 --delay=10 \
+                         --name=$FILENAME --pidfile=$PIDFILEDIR/$FILENAME \
+                         $DAEMONUSER $LOGPAGER -- $PAGER $file $MAXFILESIZE) || RET=$?
+	    if [ "$RET" = 2 ]; then
+	      log 1 "E: openvt failed. headless system?"
+	      exit 1
+	    fi
+            if [ -f /etc/console.noblank ]; then
+              setterm -blank 0 > /dev/tty$TTY
+            fi
+            [ "$CHVT" == "yes" ] && chvt $TTY
+            log_progress_msg "$file"
+          else
+            log 1 "W: $LOGPAGER is not executeable."
+          fi
+	fi
+      else
+        log 1 "W: $file not readable by $USER"
+      fi
+      found="1"
+      break
+    fi
+    if [ -z "found" ]; then
+      log 1 "W: no files in $FILE do exist"
+    fi
+  done
+else
+  log 1 "E: illegal tty $TTY."
+  exit 1
+fi
+}
+
+check_pager()
+{
+  USER="$1"
+  shift
+  TTY="$1"
+  shift
+  FILELIST="$@"
+  cd $PIDFILEDEFDIR
+
+  PIDFILEDIR="$PIDFILEDEFDIR"
+  if [ -n "$USER" ]; then
+    PIDFILEDIR="$PIDFILEDEFDIR/$USER"
+  fi
+
+  unset found
+  CHECKRET=0
+  for FILE in $FILELIST; do
+    if [ -f "$FILE" ] || [ -L "$FILE" ]; then
+      log_progress_msg "$FILE"
+      FILENAME="$TTY-${FILE//\//_-_}"
+      if daemon --running $USER --name=$FILENAME --pidfile=$PIDFILEDIR/$FILENAME; then
+        log_progress_msg "(running)"
+      else
+        log_progress_msg "(not running)"
+        CHECKRET=3
+      fi
+      found="1"
+      break
+    fi
+  done
+  if [ -z "found" ]; then
+    log 1 "W: no files in $FILE do exist"
+  fi
+  return $CHECKRET
+}
+
+
+do_from_config()
+{
+mkdir -p $PIDFILEDEFDIR
+cd $PIDFILEDEFDIR
+ACTION="$1"
+(
+while true; do
+  unset tty
+  chvt="no"
+  unset file
+  user="$USERNAME"
+  unset group
+  group="$USERNAME"
+  unset locscript
+  pager="$DEFAULTPAGER"
+  unset maxfilesize
+  maxfilesize="$MAXFILESIZE"
+  
+  # these variables need to be kept in sync with the ones the are used
+  # in the logpager script: Unset them here before parsing config
+  unset less_lesssecure
+  unset less_opts
+  unset less_lesskey
+  unset less_term
+  unset logpager_path
+  COUNTER=""
+  ELINE=0
+  while read KEY VALUE; do
+    case "$KEY" in
+      "#" | \#* )
+	continue
+        ;; # comment
+      "" )
+        ELINE=1
+        break
+        ;;
+      tty|chvt|file|user|group|pager|locscript|maxfilesize|logpager_*|less_*)
+        eval $KEY=\"$VALUE\"
+	export $KEY
+        COUNTER=".$COUNTER"
+        ;;
+      *)
+        log 1 "ERR: illegal key $KEY"
+	exit 1
+	;;
+    esac
+  done
+  # do things only if configuration was read
+  RET=0
+  if [ -n "$COUNTER" ]; then
+    case "$ACTION" in
+      start) start_pager "$tty" "$chvt" "$file" "$user" "$group" "$maxfilesize" "$pager" "$locscript"
+             ;;
+      check) check_pager "$user" "$tty" "$file"
+      	     RET=$?
+             ;;
+      *) log 1 "E: illegal action to do_from_config"
+         ;;
+    esac
+  fi
+  # break out of loop if eof
+  # if we get here without eof, then ELINE==1
+  [ "$ELINE" != "1" ] && break
+done
+) < $CONFIGFILE
+return $RET
+}
+
+do_from_running()
+{
+  ACTION="$1"
+  cd $PIDFILEDEFDIR
+  if [ "$ACTION" = "check" ]; then
+    log_action_begin_msg "checking console-log"
+  fi
+  CHECKRET=0
+  for PIDPATH in $(find . -maxdepth 2 -type f); do
+    FILENAME=$(echo $PIDPATH | sed -n 's/.*\/\(.*\)/\1/p')
+    PIDFILEDIR=$(echo $PIDPATH | sed -n 's/^.*\/\(.*\)\/.*/\1/p')
+    if [ -z "$PIDFILEDIR" ]; then
+      USER=""
+      PIDFILEDIR="$PWD"
+    else
+      USER="--user $PIDFILEDIR"
+      PIDFILEDIR="$PWD/$PIDFILEDIR"
+    fi
+    OUTPUT="${FILENAME#*-}"
+    OUTPUT="${OUTPUT//_-_//}"
+    TTY=${FILENAME%%-*}
+    RUNNING="no"
+    if daemon --running $USER --name=$FILENAME --pidfile=$PIDFILEDIR/$FILENAME; then
+      if [ "$ACTION" = "stop" ]; then
+        daemon --stop $USER --name=$FILENAME --pidfile=$PIDFILEDIR/$FILENAME
+        TERM=vt100 tput clear > /dev/tty$TTY
+      fi
+      RUNNING="yes"
+    else
+      CHECKRET=3
+    fi
+    if [ -d $PIDFILEDIR ]; then
+      rmdir --ignore-fail-on-non-empty $PIDFILEDIR
+    fi
+	  
+    # BUGS: This creates weird output if the log file name contains
+    # the string "_-_". Go figure.
+	  
+    log_progress_msg "$OUTPUT"
+    if [ "$ACTION" = "check" ]; then
+      if [ "$RUNNING" = "no" ]; then
+        log_progress_msg "(not running)"
+      else
+        log_progress_msg "(running)"
+      fi
+    fi
+  done
+  if [ "$ACTION" = "check" ]; then
+    log_end_msg 0
+    return $CHECKRET
+  fi
+}
+
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting $DESC"
+        do_from_config start
+	log_end_msg 0
+	;;
+  stop)
+	log_daemon_msg "Stopping $DESC"
+  	do_from_running stop
+	log_end_msg 0
+	;;
+  reload|force-reload|restart)
+        log_daemon_msg "Stopping $DESC for restart"
+        do_from_running stop
+	log_end_msg 0
+	log_daemon_msg "Restarting $DESC"
+	do_from_config start
+	log_end_msg 0
+	;;
+  status)
+        log_daemon_msg "Checking $DESC processes"
+  	do_from_config check
+	log_end_msg 0
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo >&2 "Usage: $N {start|stop|restart|reload|force-reload|status}"
+	exit 1
+	;;
+esac
+
+exit 0

@@ -1,0 +1,12 @@
+[Unit]
+Description=Monitor and gateway radio amateur APRS radio network datagrams
+After=network.target
+
+[Service]
+Type=forking
+PIDFile=/run/aprx.pid
+EnvironmentFile=-/etc/default/aprx
+ExecStart=/usr/sbin/aprx $DAEMON_OPTS
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,72 @@
+#!/bin/sh
+# kFreeBSD do not accept scripts as interpreters, using #!/bin/sh and sourcing.
+if [ true != "$INIT_D_SCRIPT_SOURCED" ] ; then
+    set "$0" "$@"; INIT_D_SCRIPT_SOURCED=true . /lib/init/init-d-script
+fi
+### BEGIN INIT INFO
+# Provides:          prometheus-postfix-exporter
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Prometheus exporter for Postfix
+# Description:       Prometheus exporter for Postfix
+### END INIT INFO
+
+# Author: Martina Ferrari <tina@debian.org>
+
+DESC="Prometheus exporter for Postfix"
+DAEMON=/usr/bin/prometheus-postfix-exporter
+NAME=prometheus-postfix-exporter
+USER=prometheus
+GROUP=prometheus
+EXTRA_GROUPS="adm,postdrop"
+PIDFILE=/run/prometheus/prometheus-postfix-exporter.pid
+LOGFILE=/var/log/prometheus/prometheus-postfix-exporter.log
+
+HELPER=/usr/bin/daemon
+HELPER_ARGS="--name=$NAME --output=$LOGFILE --pidfile=$PIDFILE --safe"
+
+
+ARGS=""
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+
+chuser()
+{
+    setpriv --reuid $USER --regid $GROUP --groups $EXTRA_GROUPS -- "$@"
+}
+
+do_start_prepare()
+{
+    mkdir -p `dirname $PIDFILE` || true
+    chown $USER: `dirname $LOGFILE`
+    chown $USER: `dirname $PIDFILE`
+}
+
+do_start_cmd_override()
+{
+    # Return
+    #   0 if daemon has been started or already running
+    #   2 if daemon could not be started
+    chuser $HELPER $HELPER_ARGS --running && return 0
+    chuser $HELPER $HELPER_ARGS -- $DAEMON $ARGS || return 2
+    return 0
+}
+
+do_stop_cmd_override()
+{
+    # Return
+    #   0 if daemon has been stopped or already stopped
+    #   2 if daemon could not be stopped
+    #   other if a failure occurred
+    chuser $HELPER $HELPER_ARGS --running || return 0
+    chuser $HELPER $HELPER_ARGS --stop || return 2
+    # wait for the process to really terminate
+    for n in 1 2 3 4 5; do
+        sleep $n
+        chuser $HELPER $HELPER_ARGS --running || break
+    done
+    chuser $HELPER $HELPER_ARGS --running || return 0
+    return 2
+}

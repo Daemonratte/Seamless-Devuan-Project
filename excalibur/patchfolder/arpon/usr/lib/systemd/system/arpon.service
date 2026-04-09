@@ -1,0 +1,13 @@
+[Unit]
+Description=Anti ARP poisoning daemon
+Documentation=man:arpon(8)
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecReload=/bin/true
+
+[Install]
+WantedBy=multi-user.target

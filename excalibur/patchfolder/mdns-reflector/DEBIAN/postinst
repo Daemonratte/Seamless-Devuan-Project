@@ -1,0 +1,87 @@
+#!/bin/sh
+# postinst script for mdns-reflector
+#
+# see: dh_installdeb(1)
+
+set -e
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <postinst> `abort-remove'
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see https://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+case "${1}" in
+        'configure')
+
+                # setup mDNS Reflector system user account
+                if ! getent 'passwd' '_mdns.reflector' >'/dev/null'; then
+                        echo 'Creating _mdns.reflector system user.' >&2
+                        # if adduser >= 3.122; then use --allow-bad-names
+                        # if not; then use --force-badname
+                        badname_option="--allow-bad-names"
+                        version=`dpkg-query --show --showformat='${Version}' adduser`
+                        if dpkg --compare-versions "$version" "lt" "3.122"; then
+                            badname_option="--force-badname"
+                        fi
+
+                        adduser --system --no-create-home \
+                                --disabled-password --disabled-login \
+                                --shell /bin/false --group --home /dev/null \
+                                "$badname_option" _mdns.reflector
+                fi
+
+                # Enable cap_net_raw+ep for the mdns-reflector binary
+                setcap cap_net_raw+ep /usr/bin/mdns-reflector
+
+                ;;
+        'abort-upgrade'|'abort-remove'|'abort-deconfigure')
+                ;;
+        *)
+                echo "postinst called with unknown argument '${1}'" >&2
+                exit 1
+                ;;
+esac
+
+# Automatically added by dh_installdeb/13.15.3
+dpkg-maintscript-helper rm_conffile /etc/default/mdns-reflector 0.0.1\+git20210821.44a4a43-2 -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'mdns-reflector.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'mdns-reflector.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'mdns-reflector.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'mdns-reflector.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.15.3
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'mdns-reflector.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

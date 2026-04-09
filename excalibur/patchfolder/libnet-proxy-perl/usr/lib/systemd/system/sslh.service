@@ -1,0 +1,12 @@
+[Unit]
+Description=SSH/HTTPS service multiplexer
+After=network.target
+
+[Service]
+#Type=simple
+EnvironmentFile=-/etc/default/sslh
+ExecStart=/usr/bin/sslh $SSLH_OPTIONS
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,22 @@
+[Unit]
+Description=SNMP trap translator
+After=network.target
+
+[Service]
+Type=forking
+PIDFile=/run/snmptt.pid
+Environment=DAEMON_ARGS="--daemon"
+EnvironmentFile=-/etc/default/snmptt
+ExecStart=/usr/sbin/snmptt $DAEMON_ARGS
+# Note: signals are async, but ExecReload command should block until
+# reloading is finished.
+ExecReload=/bin/kill -HUP $MAINPID
+ExecReload=/bin/sleep 2
+# Daemon will drop privilegies on its own. Will use privilegied mode for
+# dealing with pidfile. Might be better to try to start it unprivilegied
+# instead at some point....
+#User=snmptt
+#Group=snmptt
+
+[Install]
+WantedBy=multi-user.target

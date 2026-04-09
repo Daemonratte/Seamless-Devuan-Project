@@ -1,0 +1,13 @@
+[Unit]
+Description=Fetch Debian Edu rootCA certificate from the main server
+After=remote-fs.target network-online.target
+Before=nslcd.service
+Wants=remote-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/debian-edu-config/tools/fetch-rootca-cert
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=tmate-ssh-server service
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/default/tmate-ssh-server
+ExecStart=/usr/bin/tmate-ssh-server $OPTS
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

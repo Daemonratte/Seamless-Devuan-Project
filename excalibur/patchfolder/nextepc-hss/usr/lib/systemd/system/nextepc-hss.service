@@ -1,0 +1,11 @@
+[Unit]
+Description=Home Subscriber Server (EPC / LTE)
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/nextepc-hssd -f /etc/nextepc/hss.conf
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

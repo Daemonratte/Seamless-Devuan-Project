@@ -1,0 +1,23 @@
+#!/bin/bash -e
+
+if [ -d /usr/share/doc/hylafax-server ]; then
+        echo >&2
+        echo "WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!" >&2
+        echo "You have HylaFAX installed!" >&2
+        echo "HylaFAX+ CAN NOT BE INSTALLED over HylaFAX." >&2
+        echo >&2
+        echo "Back up your '/etc/hylafax' and '/var/spool/hylafax'" >&2
+        echo "directories NOW! You will need them after the installation." >&2
+        echo >&2
+        echo "Then purge HylaFAX from your machine, remove the" >&2
+        echo "directories you have just backed up, by hand and" >&2
+        echo "install HylaFAX+ from scratch." >&2
+        echo "Then read the documentation in '/usr/share/doc/hylafaxplus-server'." >&2
+        echo "WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!" >&2
+        echo >&2
+        exit 1
+fi
+exit 0
+
+
+

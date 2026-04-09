@@ -1,0 +1,10 @@
+[Unit]
+Description=IP over IP encapsulation daemon
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/ipip
+
+[Install]
+WantedBy=multi-user.target
+

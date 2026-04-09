@@ -1,0 +1,62 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_runit/2.16.4
+# Unfortunately, we can not assume, that bin:runit-helper package
+# is installed at postrm stage.
+#
+# The only other option is embed whole runit-helper script here,
+# into postrm script of -run package, but it would be like static
+# linking, requiring rebuild of all reverse dependencies on every
+# change of dh-runit.
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ] ; then
+   NAME='socklog-unix' ENABLE='yes' ONUPGRADE='restart' /usr/lib/runit-helper/runit-helper postrm "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unfortunately, we can not assume, that bin:runit-helper package
+# is installed at postrm stage.
+#
+# The only other option is embed whole runit-helper script here,
+# into postrm script of -run package, but it would be like static
+# linking, requiring rebuild of all reverse dependencies on every
+# change of dh-runit.
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ] ; then
+   NAME='socklog-ucspi-tcp' ENABLE='no' ONUPGRADE='restart' /usr/lib/runit-helper/runit-helper postrm "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unfortunately, we can not assume, that bin:runit-helper package
+# is installed at postrm stage.
+#
+# The only other option is embed whole runit-helper script here,
+# into postrm script of -run package, but it would be like static
+# linking, requiring rebuild of all reverse dependencies on every
+# change of dh-runit.
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ] ; then
+   NAME='socklog-notify' ENABLE='no' ONUPGRADE='restart' /usr/lib/runit-helper/runit-helper postrm "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unfortunately, we can not assume, that bin:runit-helper package
+# is installed at postrm stage.
+#
+# The only other option is embed whole runit-helper script here,
+# into postrm script of -run package, but it would be like static
+# linking, requiring rebuild of all reverse dependencies on every
+# change of dh-runit.
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ] ; then
+   NAME='socklog-klog' ENABLE='yes' ONUPGRADE='restart' /usr/lib/runit-helper/runit-helper postrm "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unfortunately, we can not assume, that bin:runit-helper package
+# is installed at postrm stage.
+#
+# The only other option is embed whole runit-helper script here,
+# into postrm script of -run package, but it would be like static
+# linking, requiring rebuild of all reverse dependencies on every
+# change of dh-runit.
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ] ; then
+   NAME='socklog-inet' ENABLE='no' ONUPGRADE='restart' /usr/lib/runit-helper/runit-helper postrm "$@"
+fi
+# End automatically added section

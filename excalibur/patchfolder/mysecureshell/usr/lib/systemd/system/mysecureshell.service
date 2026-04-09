@@ -1,0 +1,10 @@
+[Unit]
+Description=MySecureShell SFTP Server
+
+[Service]
+RemainAfterExit=yes
+ExecStart=/usr/bin/sftp-state start
+ExecStop=/usr/bin/sftp-state fullstop
+
+[Install]
+WantedBy=multi-user.target

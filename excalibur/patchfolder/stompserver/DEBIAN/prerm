@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installinit/13.13
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = remove ] && [ -x "/etc/init.d/stompserver" ] ; then
+	invoke-rc.d --skip-systemd-native stompserver stop || exit 1
+fi
+# End automatically added section

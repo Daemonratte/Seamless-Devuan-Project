@@ -1,0 +1,14 @@
+[Unit]
+Documentation=man:imapproxyd(8)
+Description=IMAP proxy
+After=network-online.target courier-imap.service cyrus-imapd.service dovecot.service
+Wants=network-online.target courier-imap.service cyrus-imapd.service dovecot.service
+
+[Service]
+Type=forking
+ExecStartPre=/usr/share/imapproxy/prepare-chroot
+ExecStart=/usr/sbin/imapproxyd -f /etc/imapproxy.conf
+PIDFile=/run/imapproxy.pid
+
+[Install]
+WantedBy=multi-user.target

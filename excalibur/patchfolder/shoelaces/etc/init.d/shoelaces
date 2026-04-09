@@ -1,0 +1,93 @@
+#! /bin/bash
+#
+# This initscript was created by Ulises Vitulli <dererk@debian.org> for shoelaces
+#
+# Start/stop the shoelaces daemon
+### BEGIN INIT INFO
+# Provides:          shoelaces
+# Required-Start:    $syslog $remote_fs $time
+# Required-Stop:     $syslog $remote_fs $time
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: shoelaces: painless server bootstrapping
+# Description:       This daemon handles the status of the shoelaces daemon
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/shoelaces
+NAME=shoelaces
+DESC=shoelaces
+USER=shoelaces
+
+
+if [ -f /etc/default/shoelaces ] ; then
+    . /etc/default/shoelaces
+fi
+
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+daemon_status () {
+	# This returns 0 if the daemon is running, returns 1 otherwise.
+	start-stop-daemon --start --test --exec $DAEMON -- $ARGS >/dev/null 2>&1
+}
+
+case "$1" in
+    start)
+	log_begin_msg "Starting $NAME daemon..."
+
+
+	if [ ! -d "/run/$NAME" ]; then
+		mkdir -p /run/$NAME
+		chown $USER:nogroup /run/$NAME
+	fi
+
+	start-stop-daemon --start --oknodo --background --pidfile /run/$NAME/$NAME.pid --exec $DAEMON -- $ARGS
+    sleep 1
+
+	if ! pidof $DAEMON > /run/$NAME/$NAME.pid; then
+		log_begin_msg "Oops, something went wront. CHECK SYSLOG!"
+		exit 1
+	fi
+	log_end_msg $?
+	;;
+    stop)
+	log_begin_msg "Stopping $NAME daemon..."
+	start-stop-daemon --stop --oknodo --pidfile /run/$NAME/$NAME.pid --exec $DAEMON
+	log_end_msg $?
+	rm /run/$NAME/$NAME.pid >/dev/null 2>&1
+	;;
+
+    status)
+    	if ! daemon_status; then
+		log_begin_msg "$NAME is RUNNING using process id `cat /run/$NAME/$NAME.pid`."
+		log_end_msg 0
+	else
+		log_failure_msg "$NAME is STOPPED!"
+	fi
+	;;
+    force-reload|reload)
+    	if ! daemon_status; then
+		log_begin_msg "Reloading $NAME configuration..."
+		start-stop-daemon --stop --signal HUP --pidfile /run/$NAME/$NAME.pid --exec $DAEMON -- $ARGS && \
+		log_end_msg 0 && echo "done." || log_end_msg 3
+
+	else
+		log_failure_msg "$NAME is STOPPED!"
+		log_end_msg 3
+	fi
+	;;
+    restart)
+	$0 stop
+	$0 start
+	;;
+
+    *)
+	log_success_msg "Usage: /etc/init.d/$NAME {start|stop|status|force-reload|restart}"
+	exit 1
+	;;
+esac
+
+exit 0

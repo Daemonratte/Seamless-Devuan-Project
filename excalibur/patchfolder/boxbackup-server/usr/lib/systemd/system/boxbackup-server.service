@@ -1,0 +1,14 @@
+[Unit]
+Description=Box Backup Server
+Documentation=man:bbstored(8)
+ConditionPathExists=/etc/boxbackup/bbstored.conf
+Wants=network.target
+After=network.target
+
+[Service]
+ExecStart=/usr/sbin/bbstored -F -c /etc/boxbackup/bbstored.conf
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

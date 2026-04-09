@@ -1,0 +1,15 @@
+[Unit]
+Description=Gerbera Media Server
+Documentation=man:gerbera(1) https://gerbera.io/
+After=mysql.target network.target
+
+[Service]
+Type=simple
+User=gerbera
+Group=gerbera
+ExecStart=/usr/bin/gerbera -c /etc/gerbera/config.xml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

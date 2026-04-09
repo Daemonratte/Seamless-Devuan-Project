@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+# Automatically added by dh_installsystemd/13.11.9
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.11.9
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'diffmon.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+case "$1" in
+       purge)
+                echo -n "Removing diffmon cache... "
+                echo -n "/var/cache/diffmon"
+                rm -rf /var/cache/diffmon
+		echo -n ", config file directory"
+		rmdir --ignore-fail-on-non-empty /etc/diffmon
+                echo ". Done."
+esac
+
+

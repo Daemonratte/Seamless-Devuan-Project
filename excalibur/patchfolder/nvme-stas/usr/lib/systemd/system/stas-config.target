@@ -1,0 +1,13 @@
+# Copyright (c) 2022, Dell Inc. or its subsidiaries.  All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# See the LICENSE file for details.
+#
+# This file is part of NVMe STorage Appliance Services (nvme-stas).
+#
+[Unit]
+Description=Configuration generator for stacd.service and stafd.service
+Documentation=man:stas-config.target(8)
+Wants=stas-config@hostnqn.service
+Wants=stas-config@hostid.service
+PartOf=stacd.service
+PartOf=stafd.service

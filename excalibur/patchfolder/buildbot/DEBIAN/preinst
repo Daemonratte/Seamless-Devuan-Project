@@ -1,0 +1,28 @@
+#! /bin/sh
+# ex: et sw=4 ts=4 sts=4
+
+set -e
+
+if [ "$1" = install ] || [ "$1" = upgrade ]; then
+    case "$2" in
+    0.*)
+        if [ -f /etc/init.d/buildmaster ]; then
+            # remove and unregister the old init script
+            rm -f /etc/init.d/buildmaster
+            update-rc.d buildmaster remove >/dev/null || true
+        fi
+
+        # Automatic upgrade from 0.8.x is not possible.
+        # Identify all instances in /var/lib/buildbot/masters accordingly
+        for instance in /var/lib/buildbot/masters/*; do
+            if ! [ -d "$instance" ]; then
+                continue
+            fi
+            touch "$instance/.no-auto-upgrade"
+        done
+    esac
+fi
+
+
+
+exit 0

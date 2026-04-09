@@ -1,0 +1,11 @@
+[Unit]
+Description=Set Bluetooth Mac Address
+PartOf=bluetooth.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/bootmac --bluetooth
+
+[Install]
+WantedBy=bluetooth.target

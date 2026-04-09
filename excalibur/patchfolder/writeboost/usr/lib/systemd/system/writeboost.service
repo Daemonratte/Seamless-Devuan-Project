@@ -1,0 +1,33 @@
+[Unit]
+Description=(dm-)writeboost mapper
+Documentation=man:writeboost
+DefaultDependencies=false
+Conflicts=shutdown.target
+
+## "Before=local-fs-pre" is significant as it influences correct order
+## of stopping (after unmount).
+Before=shutdown.target cryptsetup.target local-fs-pre.target
+
+[Service]
+Type=oneshot
+
+## Must remain after exit to prevent stopping right after start
+## and to stop on shutdown.
+RemainAfterExit=yes
+
+## Scannong caching devices may take long time after unclean shutdown.
+TimeoutStartSec=999
+
+ExecStart=/usr/sbin/writeboost
+ExecStop=/usr/sbin/writeboost -u
+
+## Long "TimeoutStop" is essential as deadlock may happen if writeboost
+## is killed during flushing of caches on shutdown, etc.
+TimeoutStopSec=1111
+
+StandardOutput=syslog+console
+
+[Install]
+WantedBy=cryptsetup.target
+WantedBy=local-fs.target
+#Alias=dm-writeboost.service

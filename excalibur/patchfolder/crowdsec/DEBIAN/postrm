@@ -1,0 +1,60 @@
+#!/bin/sh
+set -e
+
+CAPI=/etc/crowdsec/online_api_credentials.yaml
+LAPI=/etc/crowdsec/local_api_credentials.yaml
+
+if [ "$1" = purge ]; then
+  # The CAPI config file might have been created by the postinst during CAPI
+  # registration, or created by the admin to prevent CAPI registration. Make
+  # sure to keep it in the latter case.
+  #
+  # Also, don't touch the bouncers directory, it's perfectly fine to install
+  # bouncers without crowdsec.
+  find /etc/crowdsec -mindepth 1 -maxdepth 1 | sort | while read path; do
+    if [ "$path" = "$CAPI" ]; then
+      if ! grep -qs '^url: https://api.crowdsec.net/$' "$CAPI"; then
+        echo "W: not purging $path" >&2
+        continue
+      fi
+    elif [ "$path" = /etc/crowdsec/bouncers ]; then
+      echo "W: not purging $path" >&2
+      continue
+    fi
+    rm -rf "$path"
+  done
+  rmdir --ignore-fail-on-non-empty /etc/crowdsec
+
+  # Local config and hub:
+  rm -rf /var/lib/crowdsec/data
+  rm -rf /var/lib/crowdsec/hub
+
+  # Logs:
+  #  - main logs and possible logrotate-generated logs (obsolete starting
+  #    with 1.4.6-2 but files might have been created before):
+  rm -f /var/log/crowdsec.log*
+  rm -f /var/log/crowdsec_api.log*
+  #  - internal rotation (lumberjack.Logger), not matching the following
+  #    format exactly to avoid an extra long pattern, but matching what
+  #    looks like a date and a time to avoid removing bouncer logs (as
+  #    crowdsec-{firewall,custom}-bouncer.log would match crowdsec-*.log):
+  #
+  #        backupTimeFormat = "2006-01-02T15-04-05.000"
+  for prefix in crowdsec crowdsec_api; do
+    find /var/log/ -name "${prefix}-[0-9-]*T[0-9.-]*.log*" -delete
+  done
+fi
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'crowdsec.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

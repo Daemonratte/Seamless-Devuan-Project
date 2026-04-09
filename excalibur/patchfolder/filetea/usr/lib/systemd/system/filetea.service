@@ -1,0 +1,12 @@
+[Unit]
+Description=FileTea file sharing daemon
+Documentation=man:filetea(8)
+After=network.target
+
+[Service]
+ExecStart=/usr/sbin/filetea
+Restart=on-failure
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

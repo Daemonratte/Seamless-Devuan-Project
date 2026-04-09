@@ -1,0 +1,12 @@
+[Unit]
+Description=dhcp-probe daemon to survey DHCP/BootP server on LAN
+Documentation=man:dhcp-probe(8)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for config_file in /etc/dhcp-probe/*; do { . "$config_file"; set -x; exec systemctl start "dhcp-probe@$INTERFACE.service"; } & :; done; wait'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

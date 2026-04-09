@@ -1,0 +1,16 @@
+[Unit]
+Description=Tinyproxy lightweight HTTP Proxy
+After=network.target
+Documentation=man:tinyproxy(8) man:tinyproxy.conf(5)
+
+[Service]
+EnvironmentFile=-/etc/default/tinyproxy
+ExecStart=/usr/bin/tinyproxy -d $FLAGS
+ExecReload=/bin/kill -USR1 $MAINPID
+PrivateDevices=yes
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

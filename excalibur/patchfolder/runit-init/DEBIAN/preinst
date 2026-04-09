@@ -1,0 +1,35 @@
+#!/bin/sh
+
+set -e
+
+#make sure that a copy of invoke-rc.d and service helper exists:
+# they need to be restored in postrm when the diversion is removed
+for f in invoke-rc.d service; do
+    if [ -e /usr/sbin/"$f" ] && [ ! -e /usr/sbin/"$f".real ]; then
+      echo " copying $f into $f.real"
+      cp /usr/sbin/"$f" /usr/sbin/"$f".real
+    fi
+done
+for f in invoke-rc.d.8.gz service.8.gz ; do
+    if [ -e /usr/share/man/man8/"$f" ] && [ ! -e /usr/share/man/man8/"$f".real ]; then
+      echo " copying $f into $f.real"
+      cp /usr/share/man/man8/"$f" /usr/share/man/man8/"$f".real
+    fi
+done
+
+# install helpers with runit support; alternative way to address #924132
+if [ upgrade = "$1" ] || [ install = "$1" ]; then
+    dpkg-divert --package runit-init --no-rename \
+        --divert /usr/sbin/invoke-rc.d.real --add /usr/sbin/invoke-rc.d
+    dpkg-divert --package runit-init  --no-rename \
+        --divert /usr/sbin/service.real --add /usr/sbin/service
+    # install helpers manpages edited with runit support;
+    dpkg-divert --package runit-init --no-rename \
+        --divert /usr/share/man/man8/invoke-rc.d.8.gz.real --add /usr/share/man/man8/invoke-rc.d.8.gz
+    dpkg-divert --package runit-init  --no-rename \
+        --divert /usr/share/man/man8/service.8.gz.real --add /usr/share/man/man8/service.8.gz
+fi
+
+
+
+exit 0

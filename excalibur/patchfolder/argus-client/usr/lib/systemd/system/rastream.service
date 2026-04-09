@@ -1,0 +1,11 @@
+[Unit]
+Description=rastream daemon
+Documentation=man:rastream(8)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/rastream
+
+[Install]
+WantedBy=multi-user.target
+

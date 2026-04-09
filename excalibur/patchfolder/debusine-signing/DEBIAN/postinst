@@ -1,0 +1,123 @@
+#!/bin/sh
+
+set -e
+
+# shellcheck disable=SC2034
+case "$1" in
+	configure)
+		user="debusine-signing"
+		group="$user"
+		home="/var/lib/debusine/signing"
+
+		# Create debusine-signing user
+		if ! getent passwd "$user" > /dev/null 2>&1
+		then
+			useradd --system \
+				--comment "Debusine Signing System user" \
+				--home-dir "$home" \
+				--create-home \
+				"$user"
+		fi
+    
+		# Create directories
+		directories="/etc/debusine/signing $home /var/log/debusine/signing"
+
+		# shellcheck disable=SC2086
+		mkdir -p $directories
+
+		# Change directory permissions
+		# shellcheck disable=SC2086
+		chown "$user:$group" $directories
+
+		# shellcheck source=/dev/null
+		. /usr/share/debconf/confmodule
+		# shellcheck source=/dev/null
+		. /usr/share/dbconfig-common/dpkg/postinst.pgsql
+
+		if [ -e /etc/debusine/signing/db_postgresql.py ]; then
+			chown "$user:$group" /etc/debusine/signing/db_postgresql.py
+			chmod 600 /etc/debusine/signing/db_postgresql.py
+		fi
+
+		dbc_first_version="0.4.2~1"
+		dbc_generate_include="template:/etc/debusine/signing/db_postgresql.py"
+		dbc_generate_include_args="-U -o template_infile=/etc/debusine/signing/db_postgresql.py.template"
+		dbc_generate_include_owner="$user:$group"
+		dbc_generate_include_perms=600
+		dbc_go debusine-signing "$@"
+
+		# workaround dbconfig replacing the empty string with localhost (#429841)
+		if ! dbc_no_thanks ; then
+			db_get debusine-signing/remote/host && host="$RET"
+			db_get debusine-signing/pgsql/method
+			if [ "$RET" = "Unix socket" ] ; then
+				host=""
+			fi
+			sed -i "s/_DBC_HOST_/$host/" /etc/debusine/signing/db_postgresql.py
+		fi
+	;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'debusine-signing.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'debusine-signing.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'debusine-signing.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'debusine-signing.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'debusine-signing.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'debusine-signing-migrate.service' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'debusine-signing-migrate.service'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'debusine-signing-migrate.service' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'debusine-signing-migrate.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'debusine-signing-migrate.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+exit 0

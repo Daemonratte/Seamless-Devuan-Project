@@ -1,0 +1,199 @@
+#!/bin/sh 
+
+set -e
+
+# we need the debconf library
+. /usr/share/debconf/confmodule
+
+CONFIG=/etc/news/leafnode/config
+SAMPLE=/usr/share/leafnode/config.example
+FETCHNEWS=/usr/sbin/fetchnews
+DEBIAN_CONFIG=/etc/news/leafnode/debian-config
+
+# If we saved the config file, restore it.
+if [ -e /etc/news/leafnode/config.save-upgrade ]; then
+	if [ ! -e /etc/news/leafnode/config ]; then
+		mv /etc/news/leafnode/config.save-upgrade /etc/news/leafnode/config
+	else
+		rm -f /etc/news/leafnode/config.save-upgrade
+	fi
+fi
+
+if [ ! -e ${DEBIAN_CONFIG} ]; then
+	cp -p /usr/share/leafnode/debian-config ${DEBIAN_CONFIG}
+fi
+
+########################################################################
+#
+# User configuration
+#
+########################################################################
+
+if [ "$1" = "configure" ]; then
+# Server - keep as many settings we don't know about as possible
+    db_get leafnode/server || true
+    server=$RET
+ 
+    # Is this a fresh configuration?
+    if [ -e $CONFIG ]; then
+        cp $CONFIG ${CONFIG}.new
+	cp $CONFIG ${CONFIG}.0
+    else
+        # Debhelper may decide to compress the sample file, so we
+        # handle either case.
+        if [ -f ${SAMPLE}.gz ] ; then
+           gunzip -c ${SAMPLE}.gz > ${CONFIG}.new
+        else
+           cp $SAMPLE ${CONFIG}.new
+        fi
+
+	touch ${CONFIG}
+	chown root ${CONFIG}
+	chgrp news ${CONFIG}
+	chmod 640 ${CONFIG}
+    fi
+
+    # Do the substitution (once only - can have multiple server = lines)
+awk '/^server.*=/ { if (x == foo) { print "server = '${server}'"; x= "foo"} else print }
+!/^server.*=/ { print }' < ${CONFIG}.new > ${CONFIG}
+
+    # Perhaps there was no server line?
+    if ! grep "server.*=" ${CONFIG} > /dev/null ; then
+        echo server = $server > ${CONFIG}.tmp
+        cat ${CONFIG}.tmp ${CONFIG}.new > ${CONFIG}
+        rm -f ${CONFIG}.tmp
+    fi
+    rm -f ${CONFIG}.new
+    # Glad that's over...
+fi
+
+# Old versions had this line wrong in the config file. Correct.
+if grep -q maxcount /etc/news/leafnode/config; then
+	cp /etc/news/leafnode/config /etc/news/leafnode/config.new
+	sed -e "s/maxcount/maxfetch/" < /etc/news/leafnode/config.new > /etc/news/leafnode/config
+	rm -f /etc/news/leafnode/config.new
+fi
+
+cd /var/spool/news/message.id
+for a in 0 1 2 3 4 5 6 7 8 9 ; do for b in 0 1 2 3 4 5 6 7 8 9 ; do \
+install -g news -o news -d ${a}${b}0 ${a}${b}1 ${a}${b}2 ${a}${b}3 ${a}${b}4 \
+	${a}${b}5 ${a}${b}6 ${a}${b}7 ${a}${b}8 ${a}${b}9 ; \
+done ; done
+
+if [ "$1" = "purge" ]; then
+   db_purge || true
+fi
+
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	# The following line should be removed in trixie or trixie+1
+	deb-systemd-helper unmask 'leafnode.socket' >/dev/null || true
+
+	# was-enabled defaults to true, so new installations run enable.
+	if deb-systemd-helper --quiet was-enabled 'leafnode.socket'; then
+		# Enables the unit on first installation, creates new
+		# symlinks on upgrades if the unit file has changed.
+		deb-systemd-helper enable 'leafnode.socket' >/dev/null || true
+	else
+		# Update the statefile to add new symlinks (if any), which need to be
+		# cleaned up on purge. Also remove old symlinks.
+		deb-systemd-helper update-state 'leafnode.socket' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'leafnode.socket' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'leafnode.socket'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'leafnode.socket' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'leafnode.socket'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'leafnode.socket' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'leafnode.socket' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'leafnode.socket' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'leafnode-fetchnews.timer'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'leafnode-fetchnews.timer' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'leafnode-fetchnews.timer'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'leafnode-fetchnews.timer' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'leafnode-fetchnews.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.23
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'leafnode-fetchnews.service' 'leafnode-fetchnews.timer' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+########################################################################
+#
+# Configuration reprise
+#
+########################################################################
+
+if [ "$1" = "configure" ]; then
+   # Update list of groups if the user decided to do that
+   db_get leafnode/update-groups || true
+   if [ "$RET" = "true" ]; then
+       echo -n "Updating list of active groups... "
+       if ${FETCHNEWS} -f >/dev/null ; then
+          echo done
+       else
+          echo failed
+       fi
+       
+       # But don't do it again unless the user asks for it
+       db_set leafnode/update-groups false
+   fi
+fi

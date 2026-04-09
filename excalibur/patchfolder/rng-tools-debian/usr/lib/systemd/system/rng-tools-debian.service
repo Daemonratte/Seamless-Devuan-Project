@@ -1,0 +1,16 @@
+[Unit]
+Description=Hardware RNG entropy gatherer daemon (Debian variant)
+Documentation=man:rngd(8)
+Before=multi-user.target
+After=remote-fs.target
+
+[Service]
+Type=exec
+ExecCondition=/usr/share/rng-tools-debian/rngd-systemd-helper check
+ExecStart=/usr/share/rng-tools-debian/rngd-systemd-helper start
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+Alias=rng-tools.service
+WantedBy=multi-user.target

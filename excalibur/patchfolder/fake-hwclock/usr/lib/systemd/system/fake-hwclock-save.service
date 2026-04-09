@@ -1,0 +1,12 @@
+[Unit]
+Description=Save the current clock
+Documentation=man:fake-hwclock(8)
+DefaultDependencies=no
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/fake-hwclock save
+
+[Install]
+WantedBy=shutdown.target

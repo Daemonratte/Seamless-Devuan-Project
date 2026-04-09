@@ -1,0 +1,23 @@
+[Unit]
+Description=reverse DNS wall
+Documentation=man:walldns.8
+After=network.target
+
+[Service]
+WorkingDirectory=/etc/sv/walldns
+ExecStart=/usr/bin/chpst -e conf /bin/sh run
+SyslogIdentifier=walldns
+
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectSystem=strict
+PrivateDevices=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+
+[Install]
+WantedBy=multi-user.target

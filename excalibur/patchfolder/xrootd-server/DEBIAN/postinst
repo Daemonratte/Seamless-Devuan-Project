@@ -1,0 +1,25 @@
+#!/bin/sh
+
+set -e
+
+# Automatically added by dh_installsysusers/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+   systemd-sysusers ${DPKG_ROOT:+--root="$DPKG_ROOT"} xrootd.conf
+fi
+# End automatically added section
+# Automatically added by dh_installtmpfiles/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create xrootd.conf || true
+	fi
+fi
+# End automatically added section
+
+
+if test "$1" = "configure" -o "$1" = "reconfigure" ; then
+
+    chown xrootd:xrootd /etc/xrootd/*.cfg
+    chown xrootd:xrootd /var/log/xrootd
+    chown xrootd:xrootd /var/spool/xrootd
+
+fi

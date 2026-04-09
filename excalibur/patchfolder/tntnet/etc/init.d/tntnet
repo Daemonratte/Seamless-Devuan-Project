@@ -1,0 +1,65 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          tntnet.org
+# Required-Start:    $local_fs $remote_fs $time $network
+# Required-Stop:     $local_fs $remote_fs $time $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: modular, multithreaded web application server for C++
+# Description:       web server in which dynamic content can be written in
+#                    ecpp, where C++ code can be embedded in HTML layout.
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/tntnet
+NAME=tntnet
+DESC=tntnet
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+# Include tntnet defaults if available
+if [ -f /etc/default/tntnet ] ; then
+	. /etc/default/tntnet
+fi
+
+set -e
+
+do_start() {
+	if [ "$NO_PORT_CHECK" != true ] && netstat -ln --tcp | grep -c ':80 ' > /dev/null ; then
+		log_failure_msg "failed, socket in use."
+	else
+		start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid --exec $DAEMON -- $DAEMON_OPTS >/dev/null
+		log_end_msg 0
+	fi
+}
+
+case "$1" in
+  start)
+	log_daemon_msg "Starting web server" "$DESC"
+	do_start
+	;;
+  stop)
+	log_daemon_msg "Stopping web server" "$DESC"
+	start-stop-daemon --stop --oknodo --pidfile /var/run/$NAME.pid --retry 20 --quiet --exec $DAEMON
+	log_end_msg 0
+	;;
+  reload|force-reload)
+	log_daemon_msg "Reloading configuration files" "$DESC"
+	start-stop-daemon --stop --signal 1 --pidfile /var/run/$NAME.pid --quiet --exec $DAEMON
+	log_end_msg 0
+	;;
+  restart)
+	log_daemon_msg "Restarting web server" "$DESC"
+	start-stop-daemon --stop --oknodo --pidfile /var/run/$NAME.pid --quiet --retry 20 --exec $DAEMON
+	do_start
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

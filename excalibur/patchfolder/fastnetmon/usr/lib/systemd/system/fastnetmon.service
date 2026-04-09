@@ -1,0 +1,18 @@
+[Unit]
+Description=FastNetMon - DoS/DDoS analyzer with sFlow/Netflow/mirror support
+Documentation=man:fastnetmon(8)
+After=network.target remote-fs.target
+ 
+[Service]
+Type=simple
+ExecStart=/usr/sbin/fastnetmon --log_to_console
+User=fastnetmon
+Group=fastnetmon
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+# We need it to use AF_PACKET and AF_XDP when run under non root user
+AmbientCapabilities=CAP_NET_RAW CAP_IPC_LOCK
+
+[Install]
+WantedBy=multi-user.target

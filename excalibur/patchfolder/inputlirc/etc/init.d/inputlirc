@@ -1,0 +1,46 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          inputlirc
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Should-Start:      $syslog udev lirc
+# Should-Stop:       $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start inputlirc daemon
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+DAEMON="/usr/sbin/inputlircd"
+NAME="inputlirc"
+DESC="inputlirc"
+
+test -x $DAEMON || exit 0
+
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+case "$1" in
+  start)
+    mkdir -p /var/run/lirc
+    echo "Starting $DESC"
+    start-stop-daemon --exec $DAEMON --start -- $OPTIONS $EVENTS
+    # retain compatibility with old clients
+    [ -S /var/run/lirc/lircd ] && ln -sf /var/run/lirc/lircd /dev/lircd
+  ;;
+  stop)
+    echo "Stopping $DESC"
+    start-stop-daemon --exec $DAEMON --stop
+  ;;
+  restart|reload|force-reload)
+    echo "Restarting $DESC configuration"
+    start-stop-daemon --exec $DAEMON --stop 
+    start-stop-daemon --exec $DAEMON --start -- $OPTIONS $EVENTS
+  ;;
+  *)
+    echo "Usage: invoke-rc.d $NAME {start|stop|reload|restart|force-reload}"
+    exit 1
+  ;;
+esac
+
+exit 0

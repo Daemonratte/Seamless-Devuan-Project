@@ -1,0 +1,28 @@
+#!/bin/sh
+
+set -e
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'fsidd.service' 'nfs-mountd.service' 'nfs-server.service' 'nfsdcld.service' >/dev/null || true
+fi
+# End automatically added section
+
+
+case "$1" in
+    remove|purge)
+	[ -x /etc/init.d/nfs-kernel-server ] &&
+	    invoke-rc.d nfs-kernel-server stop
+	;;
+esac
+
+case "$1" in
+    upgrade|failed-upgrade)
+        ;;
+    *)
+	rm -f /var/lib/nfs/etab   \
+	      /var/lib/nfs/rmtab
+	;;
+esac
+
+exit 0

@@ -1,0 +1,13 @@
+[Unit]
+Description=Firewall Knock Operator Daemon
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/fwknopd
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

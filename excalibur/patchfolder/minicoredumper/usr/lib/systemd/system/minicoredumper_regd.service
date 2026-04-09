@@ -1,0 +1,12 @@
+[Unit]
+Description=Minicoredumper registration daemon
+Documentation=man:minicoredumper_regd(1)
+
+[Service]
+ExecStart=/usr/sbin/minicoredumper_regd
+User=mcd
+Group=mcd
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

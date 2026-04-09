@@ -1,0 +1,72 @@
+#!/bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+if [ "$1" = configure ]; then
+
+    if [ ! -d /etc/ircd-hybrid/key ]; then
+        mkdir /etc/ircd-hybrid/key;
+    fi
+
+    if [ -f /etc/ircd-hybrid/key/ircd.key ]; then
+        echo "You already have an SSL private key"
+    else
+        echo "ircd.key not found in /etc/ircd-hybrid!"
+        echo "Generating SSL private key ..."
+        openssl genrsa -out /etc/ircd-hybrid/key/ircd.key 2048
+        chown irc:irc /etc/ircd-hybrid/key/ircd.key
+        echo "Correcting permissions..." 
+        chmod 0600 /etc/ircd-hybrid/key/ircd.key
+        echo "ircd.key generated in /etc/ircd-hybrid/key/"
+    fi
+
+    if [ ! -f /etc/ircd-hybrid/key/ircd.pem ]; then
+        echo "Generating ircd.pem for SSL client connections... (365 days)"
+        openssl req -config /etc/ircd-hybrid/cert.cnf -new -x509 -key /etc/ircd-hybrid/key/ircd.key -out /etc/ircd-hybrid/key/ircd.pem -days 365
+        echo "See README.Debian about personalizing the data in ircd.pem."
+    fi
+
+    if [ ! -f /etc/ircd-hybrid/key/dhparam.pem ]; then
+        echo "Generating dhparam.pem ..."
+        openssl dhparam -out /etc/ircd-hybrid/key/dhparam.pem 2048
+    fi
+
+    # Initialise correct permissions/ownerships
+    mkdir -p /var/lib/ircd-hybrid
+    chown irc:irc /var/log/ircd /var/lib/ircd-hybrid
+    chown root:irc /etc/ircd-hybrid
+    chmod 750 /etc/ircd-hybrid
+    chmod 770 /var/lib/ircd-hybrid
+    chown root:irc /etc/ircd-hybrid/ircd.conf
+    chmod 640 /etc/ircd-hybrid/ircd.conf
+
+    db_get ircd-hybrid/automatically_fix_config
+    if [ "$RET" = "true" ]; then
+        /usr/share/ircd-hybrid/scripts/ssl-to-tls-config \
+            /etc/ircd-hybrid/ircd.conf
+        /usr/share/ircd-hybrid/scripts/upgrade-8.2.36 \
+            /etc/ircd-hybrid/ircd.conf
+        /usr/share/ircd-hybrid/scripts/upgrade-8.2.38 \
+            /etc/ircd-hybrid/ircd.conf
+    fi
+
+    if [ -x "/etc/init.d/ircd-hybrid" ]; then
+        update-rc.d ircd-hybrid defaults >/dev/null
+    fi
+
+    db_get ircd-hybrid/restart_on_upgrade
+    if [ "$RET" = "true" ]; then
+        invoke-rc.d ircd-hybrid start || exit $?
+    else
+        echo "I have not stopped or restarted the ircd-hybrid daemon."
+        echo "You should do this yourself whenever you're ready."
+        echo "Type \`\`invoke-rc.d ircd-hybrid restart''."
+    fi
+fi
+
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper rm_conffile /etc/default/ircd-hybrid 1:8.2.30\+dfsg.1-1\~ ircd-hybrid -- "$@"
+# End automatically added section
+

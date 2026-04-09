@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly painintheapt
+
+[Timer]
+OnCalendar=Sun
+AccuracySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

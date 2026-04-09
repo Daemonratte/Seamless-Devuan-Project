@@ -1,0 +1,33 @@
+#! /bin/sh
+set -e
+
+stop_dachs()
+{
+	# stop the "dachs" server
+	if [ -x "/etc/init.d/dachs" ]; then
+		if [ -x "`which invoke-rc.d 2>/dev/null`" ]; then
+			invoke-rc.d dachs stop || exit $?
+		else
+			/etc/init.d/dachs stop || exit $?
+		fi
+	fi
+}
+
+case "$1" in
+	remove)
+		stop_dachs
+	;;
+	upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+	;;
+	*)
+		echo "postrm called with unknown argument \`$1'" >&2
+		exit 1
+	;;
+esac
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'dachs.service' >/dev/null || true
+fi
+# End automatically added section
+

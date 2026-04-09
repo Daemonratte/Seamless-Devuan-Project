@@ -1,0 +1,81 @@
+#!/bin/sh
+# kFreeBSD do not accept scripts as interpreters, using #!/bin/sh and sourcing.
+#if [ true != "$INIT_D_SCRIPT_SOURCED" ] ; then
+#    set "$0" "$@"; INIT_D_SCRIPT_SOURCED=true . /lib/init/init-d-script
+#fi
+### BEGIN INIT INFO
+# Provides:          lsm
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Monitor Link connection.
+# Description:
+#                    <...>
+#                    <...>
+### END INIT INFO
+
+# Author: Lucas de Castro Borges <lucascastroborges@gmail.com>
+NAME=foolsm
+DESC="Link Status Monitor"
+DAEMON=/usr/sbin/foolsm
+PIDFILE=/var/run/$NAME.pid
+CONFIG=/etc/foolsm/foolsm.conf
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+. /lib/lsb/init-functions
+
+if [ ! -x $DAEMON ]; then
+  log_daemon_msg "foolsm" "exectuble missing"
+  log_progress_msg "not starting"
+  log_end_msg 0
+fi
+
+if [ ! -r $CONFIG ]; then
+  log_daemon_msg "config file missing - not starting"
+  log_end_msg 1
+fi
+
+do_start() {
+	start-stop-daemon --start --quiet -p $PIDFILE -x $DAEMON -- --config $CONFIG
+}
+do_stop() {
+	start-stop-daemon --stop --quiet -p $PIDFILE -x $DAEMON -- --config $CONFIG
+}
+
+case "$1" in
+  start)
+    log_daemon_msg "Starting Link Status Monitor." "foolsm"
+    do_start
+    case "$?" in 
+	0) log_end_msg 0 ;;
+	1) log_progress_msg "Already started"
+	   log_end_msg 0 ;;
+	*) log_end_msg 1 ;;
+    esac
+  ;;
+  stop)
+    log_daemon_msg "Stopping Link Status Monitor." "foolsm"
+    do_stop
+    case "$?" in 
+	0) rm $PIDFILE
+	   log_end_msg 0 ;;
+	1) log_progress_msg "Already stopped"
+	   log_end_msg 0 ;;
+	*) log_end_msg 1 ;;
+    esac
+
+  ;;
+  restart)
+	$0 stop
+	$0 start
+  ;;
+  status)
+    status_of_proc -p  $PIDFILE $DAEMON $NAME  && exit 0 || exit $?
+  ;;
+  *)
+    program_name=$0
+    echo "Usage: ${program_name} {start|stop|status|restart}"
+  ;;
+esac

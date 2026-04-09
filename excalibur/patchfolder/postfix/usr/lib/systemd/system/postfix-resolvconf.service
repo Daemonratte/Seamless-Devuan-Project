@@ -1,0 +1,12 @@
+# Update postfix in-chroot copy of /etc/resolv.conf
+# Works for main/default postfix instance only
+[Unit]
+Description=Updates postfix copy of resolv.conf
+Documentation=man:postfix(1)
+Documentation=file:/usr/share/doc/postfix/README.Debian.gz
+ConditionPathExists=/etc/resolv.conf
+ConditionPathIsDirectory=/var/spool/postfix/etc
+
+[Service]
+Type=oneshot
+ExecStart=cp -pLu /etc/resolv.conf /var/spool/postfix/etc/resolv.conf

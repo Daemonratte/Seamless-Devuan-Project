@@ -1,0 +1,24 @@
+[Unit]
+Description=irtt server
+After=network.target
+Documentation=man:irtt(1)
+Documentation=man:irtt-server(1)
+
+[Service]
+ExecStart=/usr/bin/irtt server
+User=nobody
+Restart=on-failure
+
+# Sandboxing
+# Some of these are not present in old versions of systemd.
+# Comment out as appropriate.
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectControlGroups=yes
+ProtectKernelTunables=yes
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

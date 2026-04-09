@@ -1,0 +1,35 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          fetch-rootca-cert
+# Required-Start:    $local_fs $remote_fs
+# Required-Stop:     $local_fs $remote_fs
+# Should-Start:      $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: Fetch Debian-Edu_rootCA.crt
+# Description:
+#   Fetch Debian Edu rootCA certificate from the main server
+# X-Start-Before:    nslcd
+### END INIT INFO
+#
+# Author: Wolfgang Schweer, <wschweer@arcor.de>
+# Date:   2020-02-14
+
+set -e
+
+. /lib/lsb/init-functions
+
+case "$1" in
+	start)
+		/usr/share/debian-edu-config/tools/fetch-rootca-cert
+		exit $?
+		;;
+	stop)
+		;;
+	restart|force-reload)
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|force-reload}"
+		exit 2
+esac
+exit 0

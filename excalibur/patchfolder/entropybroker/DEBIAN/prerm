@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installsystemd/13.15.3
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'eb_client_egd.service' 'eb_client_file.service' 'eb_client_kernel_generic.service' 'eb_client_linux_kernel.service' 'eb_proxy_knuth_b.service' 'eb_proxy_knuth_m.service' 'eb_server_Araneus_Alea.service' 'eb_server_ComScire_R2000KU.service' 'eb_server_audio.service' 'eb_server_egd.service' 'eb_server_ext_proc.service' 'eb_server_linux_kernel.service' 'eb_server_push_file.service' 'eb_server_smartcard.service' 'eb_server_stream.service' 'eb_server_timers.service' 'eb_server_usb.service' 'eb_server_v4l.service' 'entropybroker.service' >/dev/null || true
+fi
+# End automatically added section

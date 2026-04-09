@@ -1,0 +1,24 @@
+# unit description file for openQA worker processes
+# start using e.g.
+# systemctl start openqa-worker@1.service
+# replace '1' with the instance number you want
+[Unit]
+Description=openQA Worker #%i
+After=openqa-slirpvde.service network.target nss-lookup.target remote-fs.target time-sync.target
+PartOf=openqa-worker.target
+Documentation=https://open.qa/docs/#_run_openqa_workers
+Conflicts=openqa-worker-plain@.service
+
+[Service]
+Type=simple
+PermissionsStartOnly=True
+ExecStartPre=/usr/bin/install -d -m 0755 -o _openqa-worker /var/lib/openqa/pool/%i
+ExecStart=/usr/share/openqa/script/worker --no-cleanup --instance %i
+User=_openqa-worker
+KillMode=mixed
+Restart=on-failure
+Delegate=yes
+Slice=openqa-worker.slice
+
+[Install]
+WantedBy=multi-user.target

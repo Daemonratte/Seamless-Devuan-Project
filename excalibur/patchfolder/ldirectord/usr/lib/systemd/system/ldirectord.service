@@ -1,0 +1,16 @@
+[Unit]
+Description=Monitor and administer real servers in a LVS cluster of load balanced virtual servers
+Documentation=man:ldirectord(8)
+
+[Service]
+ExecStart=/usr/sbin/ldirectord start
+ExecStartPost=/usr/bin/touch /var/lock/subsys/ldirectord
+ExecStop=/usr/sbin/ldirectord stop
+ExecStopPost=/bin/rm -f /var/lock/subsys/ldirectord
+ExecReload=/usr/sbin/ldirectord reload
+PIDFile=/run/ldirectord.ldirectord.pid
+Type=forking
+KillMode=none
+
+[Install]
+WantedBy=multi-user.target

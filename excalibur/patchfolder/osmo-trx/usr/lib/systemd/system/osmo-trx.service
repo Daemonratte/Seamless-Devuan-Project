@@ -1,0 +1,14 @@
+[Unit]
+Description=Osmocom SDR BTS L1 Transceiver (UHD Backend)
+Documentation=https://projects.osmocom.org/projects/osmotrx
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/osmo-trx-uhd -C /etc/osmocom/osmo-trx-uhd.cfg
+RestartSec=2
+PrivateTmp=true
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

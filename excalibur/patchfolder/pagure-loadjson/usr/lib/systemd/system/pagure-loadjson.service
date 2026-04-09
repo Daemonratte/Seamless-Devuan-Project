@@ -1,0 +1,19 @@
+# This is a systemd's service file for the loadjson service, if you change
+# the default value of the LOADJSON_CELERY_QUEUE configuration key, do not
+# forget to edit it in the ExecStart line below
+
+[Unit]
+Description=Pagure service loading JSON files into the DB
+After=redis.target
+Documentation=https://pagure.io/pagure
+
+[Service]
+ExecStart=/usr/bin/celery -A pagure.lib.tasks_services worker --loglevel=INFO -Q pagure_loadjson -n load_json
+Environment="PAGURE_CONFIG=/etc/pagure/pagure.cfg"
+Type=simple
+User=_pagure
+Group=_pagure
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

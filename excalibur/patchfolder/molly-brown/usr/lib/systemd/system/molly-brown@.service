@@ -1,0 +1,33 @@
+[Unit]
+Description=Molly Brown gemini server for %I
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+User=molly-brown
+Group=ssl-cert
+ExecStart=/usr/bin/molly-brown -c /etc/molly-brown/%i.conf
+ConfigurationDirectory=molly-brown
+DynamicUser=yes
+LockPersonality=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=read-only
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+StateDirectory=molly-brown
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

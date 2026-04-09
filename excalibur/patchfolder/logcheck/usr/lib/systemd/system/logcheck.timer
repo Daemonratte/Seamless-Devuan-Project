@@ -1,0 +1,15 @@
+[Unit]
+Description=logcheck timer
+Documentation=man:logcheck(8)
+After=systemd-journald.service syslog.service
+
+[Timer]
+# 2 min past the hour
+OnCalendar=*-*-* *:02
+# but run on resume/boot if we missed a slot
+Persistent=true
+# and can vary time a bit to align with other timers
+AccuracySec=5min
+
+[Install]
+WantedBy=timers.target

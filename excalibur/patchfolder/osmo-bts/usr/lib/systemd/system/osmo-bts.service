@@ -1,0 +1,18 @@
+[Unit]
+Description=Osmocom osmo-bts for osmo-trx
+Documentation=https://osmocom.org/projects/osmobts/
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/osmo-bts-trx -s -c /etc/osmocom/osmo-bts.cfg
+Restart=always
+RestartSec=2
+PrivateTmp=true
+ProtectHome=read-only
+
+# Let it process messages quickly enough
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority=1
+
+[Install]
+WantedBy=multi-user.target

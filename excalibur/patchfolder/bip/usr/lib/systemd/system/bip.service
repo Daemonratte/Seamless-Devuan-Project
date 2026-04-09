@@ -1,0 +1,24 @@
+[Unit]
+Description=Bip IRC Proxy
+Documentation=man:bip(1) man:bip.conf(5)
+Requires=network.target
+
+Wants=bip-config.service
+After=bip-config.service
+
+[Service]
+EnvironmentFile=/run/sysconfig/bip
+
+Type=forking
+User=bip
+Group=bip
+ExecStartPre=/bin/sh -c '[ ${ENABLED:-1} != 0 ]'
+ExecStart=/usr/bin/bip $DAEMON_ARGS
+ExecReload=/bin/kill -HUP $MAINPID
+RuntimeDirectory=bip
+RuntimeDirectoryMode=0750
+KillMode=process
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target

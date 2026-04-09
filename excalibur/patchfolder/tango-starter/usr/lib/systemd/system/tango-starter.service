@@ -1,0 +1,25 @@
+# based on https://tango-controls.readthedocs.io/en/9.3.5/tutorials-and-howtos/how-tos/how-to-integrate-with-systemd.html
+# and on tango-starter.init.d
+[Unit]
+Description=Tango Control System - Starter
+After=tango-accesscontrol.service
+Requires=tango-db.service
+ConditionPathExists=/etc/tangorc
+
+[Service]
+Restart=always
+RestartSec=10
+User=tango
+Group=tango
+Type=simple
+# PermissionsStartOnly=true required to expand and pass variables to ExecStart
+# (being unable to use those variables in ExecStartPre, even with
+# systemctl --user set-environment)
+PermissionsStartOnly=true
+EnvironmentFile=/etc/tangorc
+ExecStartPre=/usr/lib/tango/tango-starter-register-helper
+ExecStartPre=/usr/bin/sh -c "/usr/bin/systemctl set-environment TANGO_HOSTNAME=$(hostname)"
+ExecStart=/usr/lib/tango/Starter "${TANGO_HOSTNAME}"
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Entropy Broker
+Documentation=man:entropy_broker(1)
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/entropybroker/entropy_broker.config
+ExecStart=/usr/bin/entropy_broker ${ARG01} ${ARG02} ${ARG03} ${ARG04} ${ARG05} ${ARG06} ${ARG07} ${ARG08} ${ARG09} ${ARG10} ${ARG11} ${ARG12} ${ARG13} ${ARG14} ${ARG15} ${ARG16}
+
+[Install]
+WantedBy=multi-user.target

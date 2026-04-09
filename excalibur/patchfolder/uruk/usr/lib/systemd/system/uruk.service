@@ -1,0 +1,21 @@
+# uruk.service - uruk systemd service file
+# to be installed as /lib/systemd/system/uruk.service
+
+# see systemd.service(5) and https://wiki.debian.org/Teams/pkg-systemd/rcSMigration
+
+[Unit]
+Description=Uruk firewall service
+Wants=network-pre.target
+Before=network-pre.target shutdown.target
+Conflicts=shutdown.target
+
+# act sane on "systemctl disable uruk" and "systemctl enable uruk"
+[Install]
+WantedBy=multi-user.target
+
+# FIXME  how do we handle network interfaces getting assigned IPs? ifupdown?
+# shouldn't we load the block-all-traffic ruleset here?
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/urukctl start

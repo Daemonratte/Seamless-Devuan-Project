@@ -1,0 +1,22 @@
+[Unit]
+Description=SABnzbd+ binary newsreader
+Documentation=man:sabnzbdplus(1)
+Documentation=https://sabnzbd.org/wiki/
+After=remote-fs.target network-online.target nss-lookup.target
+Wants=network-online.target
+ConditionPathExists=/etc/default/sabnzbdplus
+ConditionPathExists=/usr/lib/sabnzbdplus/service_functions.sh
+
+[Service]
+Type=oneshot
+RemainAfterExit=on
+# these are only accepted from the settings file
+Environment=USER= CONFIG= HOST= PORT= EXTRAOPTS=
+EnvironmentFile=/etc/default/sabnzbdplus
+ExecCondition=/bin/sh -c 'test "${USER%:*}" || { echo "Service not configured, edit /etc/default/sabnzbdplus"; exit 42; }'
+ExecStartPre=/bin/sh -e -c '. /usr/lib/sabnzbdplus/service_functions.sh; parse_settings; /usr/bin/systemctl set-environment SABNZBD_OPTIONS="$OPTIONS"'
+ExecStart=/bin/sh -c 'echo "Starting SABnzbd+ for user ${USER%:*}"; systemctl start sabnzbdplus@${USER%:*}.service'
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

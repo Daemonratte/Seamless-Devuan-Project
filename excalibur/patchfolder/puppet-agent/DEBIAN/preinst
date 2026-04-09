@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_installdeb/13.24.2
+dpkg-maintscript-helper mv_conffile /etc/default/puppet-agent /etc/default/puppet 7.23.0-1\~ -- "$@"
+dpkg-maintscript-helper mv_conffile /etc/init.d/puppet-agent /etc/init.d/puppet 7.23.0-1\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/puppet" ] ; then
+	chmod +x "/etc/init.d/puppet" >/dev/null || true
+fi
+# End automatically added section

@@ -1,0 +1,9 @@
+#!/usr/bin/env /lib/runit/invoke-run
+#Copyright: 2022 Lorenzo Puliti <plorenzo@disroot.org>
+#License: CC0-1.0
+
+[ ! -d /run/proftpd ] && mkdir /run/proftpd
+exec 2>&1
+/usr/sbin/proftpd --configtest || exit 162
+
+exec /usr/sbin/proftpd -n 

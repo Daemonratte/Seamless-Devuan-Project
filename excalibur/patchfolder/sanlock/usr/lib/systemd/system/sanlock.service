@@ -1,0 +1,16 @@
+[Unit]
+Description=Shared Storage Lease Manager
+Documentation=man:sanlock(8)
+After=syslog.socket
+Wants=wdmd.service
+
+[Service]
+Type=forking
+EnvironmentFile=-/etc/default/sanlock
+ExecStart=/usr/sbin/sanlock daemon $sanlock_opts
+SendSIGKILL=no
+LimitNOFILE=2048
+
+[Install]
+WantedBy=multi-user.target
+

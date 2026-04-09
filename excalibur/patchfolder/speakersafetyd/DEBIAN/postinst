@@ -1,0 +1,64 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "configure" ]; then
+  if [ -z "$2" ]; then
+    # debhelper does not start disabled, non-running services
+    # use udevadm to start speakersafetyd on install if/when the
+    # hardware allows it
+    if command -v udevadm >/dev/null 2>&1; then
+      udevadm trigger --action=change --subsystem-match=sound || true
+    fi
+  elif dpkg --compare-versions -- "$2" le-nl "0.1.9-2~"; then
+    # previous version mistakenly enabled speakersafetyd.service on install
+    # This can be dropped in trixie+1
+    if deb-systemd-helper --quiet was-enabled 'speakersafetyd.service'; then
+      deb-systemd-helper disable 'speakersafetyd.service' >/dev/null || true
+    fi
+  fi
+fi
+
+
+# Automatically added by dh_installsysusers/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+   systemd-sysusers ${DPKG_ROOT:+--root="$DPKG_ROOT"} speakersafetyd.conf
+fi
+# End automatically added section
+# Automatically added by dh_installtmpfiles/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -x "$(command -v systemd-tmpfiles)" ]; then
+		systemd-tmpfiles ${DPKG_ROOT:+--root="$DPKG_ROOT"} --create speakersafetyd.conf || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'speakersafetyd.service'; then
+		# The following line should be removed in trixie or trixie+1
+		deb-systemd-helper unmask 'speakersafetyd.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'speakersafetyd.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'speakersafetyd.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'speakersafetyd.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			_dh_action=restart
+		else
+			_dh_action=start
+		fi
+		deb-systemd-invoke $_dh_action 'speakersafetyd.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+

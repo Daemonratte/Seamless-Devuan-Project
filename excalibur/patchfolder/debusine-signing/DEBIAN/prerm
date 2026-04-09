@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e
+
+# shellcheck source=/dev/null
+. /usr/share/debconf/confmodule
+# shellcheck source=/dev/null
+. /usr/share/dbconfig-common/dpkg/prerm.pgsql
+dbc_go debusine-signing "$@"
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'debusine-signing-migrate.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ -z "$DPKG_ROOT" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'debusine-signing.service' >/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0

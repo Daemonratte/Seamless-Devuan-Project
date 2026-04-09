@@ -1,0 +1,91 @@
+# Templated service file for valkey-sentinel(1)
+#
+# Each instance of valkey-sentinel requires its own configuration file:
+#
+#   $ cp /etc/valkey/sentinel.conf /etc/valkey/sentinel-myname.conf
+#   $ chown valkey:valkey /etc/valkey/sentinel-myname.conf
+#
+# Ensure each instance is using their own database:
+#
+#   $ sed -i -e 's@^dbfilename .*@dbfilename dump-myname.rdb@' /etc/valkey/sentinel-myname.conf
+#
+# We then listen exlusively on UNIX sockets to avoid TCP port collisions:
+#
+#   $ sed -i -e 's@^port .*@port 0@' /etc/valkey/sentinel-myname.conf
+#   $ sed -i -e 's@^\(# \)\{0,1\}unixsocket .*@unixsocket /run/sentinel-myname/valkey-sentinel.sock@' /etc/valkey/sentinel-myname.conf
+#
+# ... and ensure we are logging, etc. in a unique location:
+#
+#   $ sed -i -e 's@^logfile .*@logfile /var/log/valkey/valkey-sentinel-myname.log@' /etc/valkey/sentinel-myname.conf
+#   $ sed -i -e 's@^pidfile .*@pidfile /run/valkey-myname/valkey-sentinel.pid@' /etc/valkey/sentinel-myname.conf
+#
+# We can then start the service as follows, validating we are using our own
+# configuration:
+#
+#   $ systemctl start valkey-sentinel@myname.service
+#   $ valkey-cli -s /run/sentinel-myname/valkey-sentinel.sock info | grep config_file
+#
+#  -- Lucas Kanashiro <kanashiro@debian.org>  Wed, 26 Jun 2024 18:17:24 -0300
+[Unit]
+Description=Advanced key-value store (%I)
+After=network.target
+Documentation=https://valkey.io/docs/, man:valkey-sentinel(1)
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/valkey-sentinel /etc/valkey/sentinel-%i.conf --supervised systemd --daemonize no
+PIDFile=/run/sentinel-%i/valkey-sentinel.pid
+TimeoutStopSec=0
+Restart=always
+User=valkey
+Group=valkey
+RuntimeDirectory=sentinel-%i
+RuntimeDirectoryMode=2755
+
+UMask=007
+PrivateTmp=true
+LimitNOFILE=65535
+PrivateDevices=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=-/var/lib/valkey
+ReadWritePaths=-/var/log/valkey
+ReadWritePaths=-/var/run/sentinel-%i
+
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+NoNewPrivileges=true
+PrivateUsers=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+RemoveIPC=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~ @privileged @resources
+
+# valkey-sentinel can write to its own config file when in cluster mode so we
+# permit writing there by default. If you are not using this feature, it is
+# recommended that you remove this line.
+ReadWriteDirectories=-/etc/valkey
+
+# This restricts this service from executing binaries other than valkey-sentinel
+# itself. This is really effective at e.g. making it impossible to an
+# attacker to spawn a shell on the system, but might be more restrictive
+# than desired. If you need to, you can permit the execution of extra
+# binaries by adding an extra ExecPaths= directive with the command
+# systemctl edit valkey-sentinel.service
+NoExecPaths=/
+ExecPaths=/usr/bin/valkey-sentinel /usr/lib /lib
+
+[Install]
+WantedBy=multi-user.target

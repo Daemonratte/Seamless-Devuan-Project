@@ -1,0 +1,12 @@
+[Unit]
+Description=Jabber IM Session Manager
+After=network.target
+BindsTo=jabberd.service
+
+[Service]
+User=jabber
+ExecStart=/usr/sbin/jabberd2-sm -c /etc/jabberd2/sm.xml
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

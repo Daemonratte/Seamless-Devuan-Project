@@ -1,0 +1,23 @@
+[Unit]
+Description=OpenStack Neutron L3 agent (neutron-l3-agent)
+After=mysql.service postgresql.service rabbitmq-server.service keystone.service openvswitch-switch.service network-online.target local-fs.target remote-fs.target 
+Wants=mysql.service postgresql.service rabbitmq-server.service keystone.service openvswitch-switch.service network-online.target 
+
+Documentation=man:neutron-l3-agent(1)
+
+[Service]
+User=neutron
+Group=neutron
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=neutron lock/neutron
+CacheDirectory=neutron
+ExecStart=/etc/init.d/neutron-l3-agent systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

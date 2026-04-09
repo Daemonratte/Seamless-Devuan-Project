@@ -1,0 +1,16 @@
+[Unit]
+Description=UFO Alien Invasion dedicated server
+Documentation=man:ufoai-server(6)
+After=network.target
+RequiresMountsFor=/var/games/ufoai-server
+
+[Service]
+Restart=on-failure
+User=Debian-ufoai
+Group=games
+WorkingDirectory=/usr/lib/ufoai-server
+ExecStart=/usr/lib/ufoai-server/ufoded +exec debian_server.cfg
+
+[Install]
+WantedBy=multi-user.target
+

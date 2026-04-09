@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Magnum Conductor (magnum-conductor)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:magnum-conductor(1)
+
+[Service]
+User=magnum
+Group=magnum
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=magnum lock/magnum
+CacheDirectory=magnum
+ExecStart=/etc/init.d/magnum-conductor systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

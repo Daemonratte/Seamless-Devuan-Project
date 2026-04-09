@@ -1,0 +1,108 @@
+#!/bin/sh
+set -e
+
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/incus-startup" ] ; then
+	chmod -x "/etc/init.d/incus-startup" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d incus-startup remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/incus-user" ] ; then
+	chmod -x "/etc/init.d/incus-user" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d incus-user remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_installinit/13.24.2
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/incus" ] ; then
+	chmod -x "/etc/init.d/incus" >/dev/null || true
+fi
+if [ -z "$DPKG_ROOT" ] && [ "$1" = "purge" ] ; then
+	update-rc.d incus remove >/dev/null
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unfortunately, we can not assume, that bin:runit-helper package
+# is installed at postrm stage.
+#
+# The only other option is embed whole runit-helper script here,
+# into postrm script of -run package, but it would be like static
+# linking, requiring rebuild of all reverse dependencies on every
+# change of dh-runit.
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ] ; then
+   NAME='incus-user' ENABLE='no' ONUPGRADE='stop' /usr/lib/runit-helper/runit-helper postrm "$@"
+fi
+# End automatically added section
+# Automatically added by dh_runit/2.16.4
+# Unfortunately, we can not assume, that bin:runit-helper package
+# is installed at postrm stage.
+#
+# The only other option is embed whole runit-helper script here,
+# into postrm script of -run package, but it would be like static
+# linking, requiring rebuild of all reverse dependencies on every
+# change of dh-runit.
+if [ -z "${DPKG_ROOT:-}" ] && [ -x /usr/lib/runit-helper/runit-helper ] ; then
+   NAME='incus' ENABLE='yes' ONUPGRADE='stop' /usr/lib/runit-helper/runit-helper postrm "$@"
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'incus-user.service' 'incus-user.socket' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'incus-startup.service' 'incus.service' 'incus.socket' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'incus-startup.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+# Package removal
+if [ "$1" = "remove" ]; then
+    # dnsmasq config handling
+    if [ -L /etc/dnsmasq.d/incus ]; then
+        echo "Removing incus dnsmasq configuration"
+        rm -f /etc/dnsmasq.d/incus 2>/dev/null || true
+
+        # Try to restart a potential system wide dnsmasq
+        invoke-rc.d dnsmasq restart 2>/dev/null || true
+    fi
+fi
+
+# Purge
+if [ "$1" = "purge" ]; then
+    # clean all the things
+    rm --one-file-system -Rf /var/cache/incus /var/lib/incus /var/log/incus || true
+fi
+
+exit 0

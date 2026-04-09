@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Designate DNSaaS API (designate-api)
+After=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target local-fs.target remote-fs.target 
+Wants=postgresql.service mysql.service keystone.service rabbitmq-server.service ntp.service network-online.target 
+
+Documentation=man:designate-api(1)
+
+[Service]
+User=designate
+Group=designate
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=designate lock/designate
+CacheDirectory=designate
+ExecStart=/etc/init.d/designate-api systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "purge" ]; then
+	if getent passwd gkrellmd >/dev/null; then
+		userdel gkrellmd
+	fi
+fi
+
+# Automatically added by dh_installinit/13.14.1
+if [ "$1" = "remove" ] && [ -x "/etc/init.d/gkrellmd" ] ; then
+	chmod -x "/etc/init.d/gkrellmd" >/dev/null || true
+fi
+if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = "purge" ] ; then
+	update-rc.d gkrellmd remove >/dev/null
+fi
+# End automatically added section
+
+
+exit 0

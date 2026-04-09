@@ -1,0 +1,7 @@
+[Unit]
+Description=History service to store messages and calls
+
+[Service]
+Type=dbus
+BusName=com.lomiri.HistoryService
+ExecStart=/usr/libexec/lomiri-history-daemon

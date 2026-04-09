@@ -1,0 +1,20 @@
+#! /bin/sh
+# ex: et sw=4 ts=4 sts=4
+
+set -e
+
+if [ "$1" = install ] || [ "$1" = upgrade ]; then
+    case "$2" in
+    0.*)
+        # Automatic upgrade from 0.8.x is not possible.
+        if [ -f /etc/init.d/buildslave ]; then
+            # remove and unregister the old init script
+            rm -f /etc/init.d/buildslave
+            update-rc.d buildslave remove >/dev/null || true
+        fi
+    esac
+fi
+
+
+
+exit 0

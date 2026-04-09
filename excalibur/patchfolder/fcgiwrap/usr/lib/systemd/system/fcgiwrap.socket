@@ -1,0 +1,11 @@
+[Unit]
+Description=fcgiwrap Socket
+
+[Socket]
+ListenStream=/run/fcgiwrap.socket
+SocketMode=0660
+SocketUser=www-data
+SocketGroup=www-data
+
+[Install]
+WantedBy=sockets.target

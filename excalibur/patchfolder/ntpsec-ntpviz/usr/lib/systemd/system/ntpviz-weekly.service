@@ -1,0 +1,10 @@
+[Unit]
+Documentation=man:ntpviz(1)
+Description=Graph weekly information for NTP
+Requisite=ntpsec.service
+
+[Service]
+Type=oneshot
+IOSchedulingClass=idle
+ExecStart=/usr/bin/ntpviz -p 7 -d /var/log/ntpsec -o /var/lib/ntpsec/ntpviz/week @/etc/ntpviz/options
+ExecStartPost=/usr/bin/find /var/lib/ntpsec/ntpviz/week -type f -mtime +7 -delete

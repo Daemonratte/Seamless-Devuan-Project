@@ -1,0 +1,8 @@
+[Unit]
+Description=NNTP server for small sites
+Documentation=man:leafnode(8)
+
+[Service]
+ExecStart=/usr/sbin/leafnode
+StandardInput=socket
+

@@ -1,0 +1,6 @@
+[Unit]
+Description=Run fsautoresize regularly on hosts configured via the fsautoresize-hosts netgroup.
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/debian-edu-config/debian-edu-fsautoresize-for-netgroup-hosts

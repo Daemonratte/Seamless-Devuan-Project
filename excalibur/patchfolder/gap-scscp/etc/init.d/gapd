@@ -1,0 +1,215 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          gapd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: GAP SCSCP server
+# Description:       SCSCP server for the GAP Computer Algebraic System
+### END INIT INFO
+
+#
+# Author: Jerome Benoit <calculus@rezozer.net>
+#
+
+# Do NOT "set -e"
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="GAP SCSCP server"
+NAME=gapd
+REALNAME=gap
+DAEMON=/usr/sbin/gapd
+DAEMONUSER=_gapd
+DAEMONARGS="-t log"
+RUNDIR=/run/gapd
+LOCKFILE=$RUNDIR/gapd.lock
+PIDFILE=$RUNDIR/gapd.pid
+WKSFILE=$RUNDIR/gapd.wks
+LOGDIR=/var/log/gapd
+LOGFILE=$LOGDIR/gapd.log
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Exit if the DAEMONUSER does not exist
+if ! getent passwd | grep -q "^$DAEMONUSER:"; then exit 0 ; fi
+
+# Cleanup enviroment
+unset TMPDIR TMP TEMPDIR TEMP LANG LANGUAGE
+
+# Read configuration variable file if it is present
+GAPD_OPTIONS=""
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+DAEMONARGS="$DAEMONARGS $GAPD_OPTIONS"
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+. /lib/lsb/init-functions
+
+# START_GAPD meant to be set up in /etc/default/$NAME
+case "$START_GAPD" in
+  NO|no)
+    START_GAPD=NO
+  ;;
+  *)
+    START_GAPD=YES
+  ;;
+esac
+
+daemon_mkdir()
+{
+	local dmod=$1
+	local ddir=$2
+	mkdir --parents $ddir
+	chmod $dmod $ddir
+	chown $DAEMONUSER $ddir
+	chgrp $DAEMONUSER $ddir
+}
+
+daemon_touch_log()
+{
+	touch $LOGFILE
+	chmod 0640 $LOGFILE
+	chown $DAEMONUSER $LOGFILE
+	chgrp $DAEMONUSER $LOGFILE
+}
+
+daemon_tmpdir()
+{
+	if [ -z "$TMPDIR" ]; then
+		if [ -r /etc/security/tmpdir.conf ]; then
+			unset tmpdir
+			. /etc/security/tmpdir.conf
+			TMPDIR=${tmpdir:-/tmp}/$(id -u $DAEMONUSER)
+		else
+			TMPDIR=/tmp/$DAEMONUSER
+		fi
+	fi
+	if [ ! -d $TMPDIR ]; then
+			mkdir --parents $TMPDIR
+			chmod 0700 $TMPDIR
+			chown $DAEMONUSER $TMPDIR
+	fi
+	export TMPDIR
+}
+
+do_start()
+{
+	# Return
+	#   0 if daemon has been started
+	#   1 if daemon was already running
+	#   2 if daemon could not be started
+	#   4 if daemon is disabled
+
+	[ "$START_GAPD" = "NO"  ] && return 4
+
+	local counter=60
+	local WORKSPACE
+
+	daemon_mkdir 0700 $RUNDIR
+	daemon_mkdir 0750 $LOGDIR
+
+	daemon_touch_log
+
+	start-stop-daemon --start --quiet --chuid $DAEMONUSER --pidfile $PIDFILE --startas $DAEMON --test > /dev/null 2>&1 || return 1
+
+	daemon_tmpdir
+
+	WORKSPACE=$(mktemp --quiet --tmpdir --directory gapd-XXXXXXXXXXX) > /dev/null 2>&1 || return 2
+	chown $DAEMONUSER $WORKSPACE
+	chgrp $DAEMONUSER $WORKSPACE
+	export TMPDIR=$WORKSPACE
+	echo $WORKSPACE > $WKSFILE
+
+	start-stop-daemon --start --quiet --chuid $DAEMONUSER --chdir $WORKSPACE --pidfile $PIDFILE --startas $DAEMON -- $DAEMONARGS > /dev/null 2>&1 || return 2
+
+	while [ -f ${LOCKFILE} -a 0 -lt $counter ]; do
+		sleep 0.5
+		counter=$((counter - 1))
+	done
+
+	return 0
+}
+
+do_stop()
+{
+	# Return
+	#   0 if daemon has been stopped
+	#   1 if daemon was already stopped
+	#   2 if daemon could not be stopped
+	#   other if a failure occurred
+
+	local WORKSPACE
+
+	start-stop-daemon --stop --quiet --user $DAEMONUSER --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $REALNAME
+	RETVAL="$?"
+	[ "$RETVAL" = 2 ] && return 2
+
+	sleep 0.25
+
+	start-stop-daemon --stop --quiet --user $DAEMONUSER --oknodo --retry=0/30/KILL/5 --exec $DAEMON
+	[ "$?" = 2 ] && return 2
+
+	if [ -f $WKSFILE ]; then
+		WORKSPACE=$(cat $WKSFILE)
+		if [ -d $WORKSPACE ]; then
+			rm -rf $WORKSPACE
+		fi
+		rm -f $WKSFILE
+	fi
+	rm -f $PIDFILE
+
+	return "$RETVAL"
+}
+
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	do_start
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+		4) [ "$VERBOSE" != no ] && { log_progress_msg "disabled, see /etc/default/gapd" ; log_end_msg 255 ; } ;;
+	esac
+	;;
+  stop)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+	do_stop
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  status)
+	status_of_proc -p $PIDFILE "$DAEMON" "$NAME" && exit 0 || exit $?
+	;;
+  restart|force-reload)
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_end_msg 0 ;;
+			1) log_end_msg 1 ;; # Old process is still running
+			*) log_end_msg 1 ;; # Failed to start
+		esac
+		;;
+	  *)
+		# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+	exit 3
+	;;
+esac
+
+:

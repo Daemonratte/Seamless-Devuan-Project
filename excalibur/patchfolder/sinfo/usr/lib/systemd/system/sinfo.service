@@ -1,0 +1,14 @@
+[Unit]
+Description=Daemon for monitoring computer clusters using broadcasts
+Documentation=man:sinfod
+After=network.target
+
+[Service]
+ExecStart=/usr/sbin/sinfod --quiet --foreground
+Type=simple
+Restart=on-failure
+User=daemon
+
+[Install]
+WantedBy=multi-user.target
+Alias=sinfod.service

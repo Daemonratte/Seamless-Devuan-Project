@@ -1,0 +1,14 @@
+#!/usr/bin/env /lib/runit/invoke-run
+#Copyright: 2022 Lorenzo Puliti <plorenzo@disroot.org>
+#License: CC0-1.0
+
+exec 2>&1
+
+[ -f /etc/postfix/main.cf ] || exit 162
+/usr/sbin/postfix check || exit 162
+
+#main.cf: log to stdout
+postconf maillog_file=/dev/stdout
+postconf postlog_service_name=postlog
+
+exec /usr/sbin/postfix start-fg

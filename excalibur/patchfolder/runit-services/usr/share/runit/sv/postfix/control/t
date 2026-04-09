@@ -1,0 +1,4 @@
+#!/bin/sh
+
+/usr/sbin/postfix stop && exit 0
+exit 1

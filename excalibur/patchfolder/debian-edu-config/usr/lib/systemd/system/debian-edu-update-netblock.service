@@ -1,0 +1,6 @@
+[Unit]
+Description=Update netblock according to netblock-hosts netgroup configuration.
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/debian-edu-update-netblock auto

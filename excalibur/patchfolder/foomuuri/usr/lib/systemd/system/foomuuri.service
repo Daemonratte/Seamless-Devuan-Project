@@ -1,0 +1,22 @@
+[Unit]
+Description=Multizone bidirectional nftables firewall
+Documentation=https://github.com/FoobarOy/foomuuri/wiki
+After=local-fs.target
+After=foomuuri-boot.service
+Before=network-pre.target
+Wants=network-pre.target
+Wants=foomuuri-boot.service
+Wants=foomuuri-dbus.service
+Wants=foomuuri-iplist.timer
+Wants=foomuuri-monitor.service
+Wants=foomuuri-resolve.timer
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=foomuuri start
+ExecReload=foomuuri reload
+ExecStop=foomuuri stop
+
+[Install]
+WantedBy=multi-user.target

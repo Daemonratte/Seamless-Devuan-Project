@@ -1,0 +1,10 @@
+[Unit]
+Description=Qualcomm modem setup
+Before=ModemManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/qcom-modem-setup
+
+[Install]
+WantedBy=ModemManager.service

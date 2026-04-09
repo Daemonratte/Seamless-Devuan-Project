@@ -1,0 +1,46 @@
+#! /bin/sh
+set -e
+
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.2
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'dachs.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+
+
+remove_database()
+{
+	# TODO: Users have requested that this should show something like
+	# "DaCHS removed, database unchanged.  Use dropdb <database> to
+	# reclaim the disk space."  May we do something like this in postrm?
+	true  # (some shells apparently scoff on empty functions
+}
+
+unregister_dachs()
+{
+	# unregister the "dachs" init script
+	update-rc.d dachs remove >/dev/null
+	
+}
+
+case "$1" in
+	purge)
+		## remove config files
+		#remove_database
+		rm -f /etc/gavo.rc
+		unregister_dachs
+	;;
+	remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+	;;
+	*)
+		echo "postrm called with unknown argument \`$1'" >&2
+		exit 1
+	;;
+esac

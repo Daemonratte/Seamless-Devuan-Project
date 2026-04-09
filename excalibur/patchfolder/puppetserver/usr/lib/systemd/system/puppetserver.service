@@ -1,0 +1,41 @@
+[Unit]
+Description=Puppet Server
+Documentation=https://puppet.com/docs/puppet/latest/server/about_server.html
+After=network.target nss-lookup.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/default/puppetserver
+User=puppet
+TimeoutStartSec=300
+TimeoutStopSec=60
+Restart=on-abnormal
+StartLimitBurst=5
+RuntimeDirectory=puppetserver
+
+UMask=027
+
+# the startup and reload commands rely on the trapperkeeper
+# restartfile to sync with the process' internal readiness
+# if the mainpid dies while loading, it will abort
+
+ExecStartPre=sh -c "echo -n 0 > ${RUNTIME_DIRECTORY}/restart"
+ExecStart=/usr/bin/java $JAVA_ARGS \
+    -Djruby.lib=/usr/share/jruby/lib \
+    -XX:+CrashOnOutOfMemoryError \
+    -XX:ErrorFile="/var/log/puppetserver/puppetserver_err_pid%%p.log" \
+    -jar /usr/share/puppetserver/puppetserver.jar \
+    --config /etc/puppet/puppetserver/conf.d \
+    --bootstrap-config /etc/puppet/puppetserver/services.d \
+    --restart-file ${RUNTIME_DIRECTORY}/restart \
+    $TK_ARGS
+ExecStartPost=sh -c "sleep 1; while ! head -c1 ${RUNTIME_DIRECTORY}/restart | grep -q '^1'; do kill -0 $MAINPID && sleep 1 || exit 1; done"
+
+ExecReload=sh -c "echo -n 0 > ${RUNTIME_DIRECTORY}/restart"
+ExecReload=kill -HUP $MAINPID
+ExecReload=sh -c "while ! head -c1 ${RUNTIME_DIRECTORY}/restart | grep -q '^1'; do kill -0 $MAINPID && sleep 1 || exit 1; done"
+
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

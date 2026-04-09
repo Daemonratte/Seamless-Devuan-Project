@@ -1,0 +1,55 @@
+#!/bin/sh
+
+set -e
+
+# with --no-rename the *.real diverted files will not be back and the system is left without helpers!
+# dpkg-divert --rename would do the job but then piuparts throws errors like
+# debsums: missing file /usr/sbin/invoke-rc.d.real (from init-system-helpers package)
+# so we use --no-rename and restore essential files manually; here, ; *.real files are created in prerm
+if [ "$1" = "remove" ] || [ "$1" = "abort-install" ] || [ "$1" = "disappear" ] ; then
+	dpkg-divert --package runit-init  --no-rename \
+          --divert /usr/sbin/invoke-rc.d.real --remove /usr/sbin/invoke-rc.d
+        dpkg-divert --package runit-init  --no-rename \
+          --divert /usr/sbin/service.real --remove /usr/sbin/service
+        dpkg-divert --package runit-init  --no-rename \
+          --divert /usr/share/man/man8/invoke-rc.d.8.gz.real --remove /usr/share/man/man8/invoke-rc.d.8.gz
+        dpkg-divert --package runit-init  --no-rename \
+          --divert /usr/share/man/man8/service.8.gz.real --remove /usr/share/man/man8/service.8.gz
+fi
+
+#the following can be removed in after trixie +1 release (2.1.2-61 out of oldstable)
+if [ "abort-upgrade" = "$1" ] && dpkg --compare-versions "$2" lt 2.1.2-61; then
+	dpkg-divert --package runit-init  --no-rename \
+          --divert /usr/sbin/invoke-rc.d.real --remove /usr/sbin/invoke-rc.d
+        dpkg-divert --package runit-init  --no-rename \
+          --divert /usr/sbin/service.real --remove /usr/sbin/service
+        dpkg-divert --package runit-init  --no-rename \
+          --divert /usr/share/man/man8/invoke-rc.d.8.gz.real --remove /usr/share/man/man8/invoke-rc.d.8.gz
+        dpkg-divert --package runit-init  --no-rename \
+          --divert /usr/share/man/man8/service.8.gz.real --remove /usr/share/man/man8/service.8.gz
+fi
+
+# dpkg-divert --no-rename does not restore files until i-s-h package is upgraded/reinstalled
+# so we are restoring files here
+for f in invoke-rc.d service; do
+    if [ ! -e /usr/sbin/"$f" ]; then
+      echo " $f not restored by dpkg-divert"
+    fi
+    if [ ! -e /usr/sbin/"$f" ] && [ -e /usr/sbin/"$f".real ]; then
+      echo " restoring $f.real into $f"
+      mv /usr/sbin/"$f.real" /usr/sbin/"$f"
+    fi
+    if [ ! -e /usr/sbin/"$f" ]; then
+      echo " no $f found! system will be broken: to fix it, please do"
+      echo " 'apt-get install --reinstall init-system-helpers' as soon as possbile!'"
+    fi
+done
+for f in invoke-rc.d.8.gz service.8.gz; do
+    if [ ! -e /usr/share/man/man8/"$f" ] && [ -e /usr/share/man/man8/"$f".real ]; then
+      echo " restoring $f.real into $f"
+      mv /usr/share/man/man8/"$f.real" /usr/share/man/man8/"$f"
+    fi
+done
+
+
+exit 0

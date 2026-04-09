@@ -1,0 +1,18 @@
+[Unit]
+Description=Rinetd Internet TCP/UDP redirection server
+Documentation=man:rinetd(8)
+Wants=network-online.target
+After=network-online.target local-fs.target remote-fs.target
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/rinetd
+ExecReload=/bin/kill -HUP $MAINPID
+PIDFile=/run/rinetd.pid
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target

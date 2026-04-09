@@ -1,0 +1,15 @@
+[Unit]
+Description=Osmocom GTP hub
+Documentation=https://projects.osmocom.org/projects/osmosgsn
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/osmo-gtphub -c /etc/osmocom/osmo-gtphub.cfg
+Restart=always
+RestartSec=2
+RestartPreventExitStatus=1
+PrivateTmp=true
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,101 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          twms
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: twms server
+# Description:       twms web map service
+### END INIT INFO
+
+# Author: Andrej Shadura <andrewsh@debian.org>
+
+# Do NOT "set -e"
+
+# Read configuration variable file if it is present
+[ -r /etc/default/twms ] && . /etc/default/twms
+
+command=/usr/bin/python3
+command_args="/usr/bin/twms ${PORT:-8080}"
+command_background=yes
+pidfile=/run/twms.pid
+name="twms server"
+description="twms web map service"
+user=twms:twms
+start_stop_daemon_args="-c $user"
+
+if [ ! -d /run/openrc ]
+then
+    # PATH should only include /usr/* if it runs after the mountnfs.sh script
+    PATH=/sbin:/usr/sbin:/bin:/usr/bin
+    procname=twms
+
+    # Exit if the package is not installed
+    [ -x "$command" ] || exit 0
+
+    # Load the VERBOSE setting and other rcS variables
+    . /lib/init/vars.sh
+
+    # Define LSB log_* functions.
+    # Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+    # and status_of_proc is working.
+    . /lib/lsb/init-functions
+
+
+    # Function that starts the daemon/service
+    #
+    start()
+    {
+        # Return
+        #   0 if daemon has been started
+        #   1 if daemon was already running
+        #   2 if daemon could not be started
+        start-stop-daemon --start --quiet --pidfile $pidfile \
+            -b -m $start_stop_daemon_args \
+            --exec $command --test -- $command_args > /dev/null \
+            || return 1
+        start-stop-daemon --start --quiet --pidfile $pidfile \
+            -b -m $start_stop_daemon_args \
+            --exec $command -- $command_args > /dev/null \
+            || return 2
+    }
+
+    case "$1" in
+        start)
+            [ "${RUN:-yes}" = yes ] || log_warning_msg "RUN variable in /etc/default/twms ignored, use update-rc.d ${0##*/} disable instead"
+            log_daemon_msg "Starting $name" "$procname"
+            start
+            log_end_msg $?
+            ;;
+        stop)
+            log_daemon_msg "Stopping $name" "$procname"
+            killproc -p $pidfile $command
+            log_end_msg $?
+            rm -f $pidfile
+            ;;
+        status)
+            status_of_proc -p $pidfile $command $procname && exit 0 || exit $?
+            ;;
+        restart|force-reload)
+            log_daemon_msg "Restarting $name" "$procname"
+            $0 stop
+            sleep 1
+            $0 start
+            ;;
+        *)
+            echo "Usage: ${0##*/} {start|stop|status|restart|force-reload}" >&2
+            exit 3
+            ;;
+    esac
+
+else
+    if [ -z "$RC_SERVICE" ]
+    then
+        /sbin/openrc-run "$0" "$@"
+    else
+        "$@"
+    fi
+fi
+
+:

@@ -1,0 +1,24 @@
+#!/bin/sh -e
+set -e
+
+case "$1" in
+    install)
+        # Copy /etc/default/vdradmin to /etc/default/vdradmin-am
+        if [ ! -f /etc/default/vdradmin-am ] && [ -f /etc/default/vdradmin ]; then
+           cp /etc/default/vdradmin /etc/default/vdradmin-am
+        fi
+    ;;
+    upgrade|abort-upgrade)
+    ;;
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+## Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/vdradmin-am" ] ; then
+	chmod +x "/etc/init.d/vdradmin-am" >/dev/null || true
+fi
+# End automatically added section
+#

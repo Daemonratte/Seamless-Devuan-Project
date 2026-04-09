@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenStack Nova SPICE HTML5 Proxy (nova-spicehtml5proxy)
+After=nova-consoleauth.service network-online.target local-fs.target remote-fs.target 
+Wants=nova-consoleauth.service network-online.target 
+
+Documentation=man:nova-spicehtml5proxy(1)
+
+[Service]
+User=nova
+Group=nova
+Type=simple
+WorkingDirectory=~
+RuntimeDirectory=nova lock/nova
+CacheDirectory=nova
+ExecStart=/etc/init.d/nova-spicehtml5proxy systemd-start
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

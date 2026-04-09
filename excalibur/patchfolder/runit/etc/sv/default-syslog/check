@@ -1,0 +1,14 @@
+#!/bin/sh
+# try socklog, ucspi-unix, fuser; if all fail fallback to the old code
+socklog-check && exit 0
+
+unixclient /dev/log /bin/true 2>&1 | grep -q '^connect: Protocol wrong type for socket' && exit 0
+
+fuser /dev/log >/dev/null 2>/dev/null && exit 0 # psmisc is not essential+not available on Hurd
+
+# note: only socklog exists as runit service in Debian right now
+for service in rsyslog socklog-unix syslog-ng busybox-syslogd inetutils-syslogd ; do
+	sv u $service && sv check $service && exit 0
+done
+
+exit 1

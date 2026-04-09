@@ -1,0 +1,13 @@
+[Unit]
+Description=Prometheus style "smokeping" prober
+Documentation=https://github.com/SuperQ/smokeping_prober man:prometheus-smokeping-prober(1)
+After=network.target
+
+[Service]
+User=prometheus
+Restart=on-failure
+EnvironmentFile=/etc/default/prometheus-smokeping-prober
+ExecStart=/usr/bin/prometheus-smokeping-prober $ARGS
+
+[Install]
+WantedBy=multi-user.target

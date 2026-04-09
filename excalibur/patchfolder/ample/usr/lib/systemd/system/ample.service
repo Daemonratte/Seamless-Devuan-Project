@@ -1,0 +1,15 @@
+[Unit]
+Description=AMPLE mp3 server
+Documentation=man:ample
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/default/ample
+ExecStart=/usr/bin/ample -c 10 -f /etc/ample/ample.conf -i /run/ample.pid
+ExecReload=/bin/kill -HUP $MAINPID
+Type=forking
+PIDFile=/run/ample.pid
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

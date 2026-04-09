@@ -1,0 +1,13 @@
+#!/bin/sh
+MAILTO=root
+PIPE=/var/log/socklog/.notify
+
+if [ ! -p "$PIPE" ]; then
+    mkfifo -m0620 "$PIPE"
+    chown _runit-log:adm "$PIPE"
+fi
+
+exec <> "$PIPE"
+exec chpst -u _socklog-notify uncat -s 49999 -t 180		\
+     env MAILUSER=_socklog-notify MAILNAME='socklog notify'	\
+     mail -s _socklog-notify "$MAILTO"

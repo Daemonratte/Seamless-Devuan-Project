@@ -1,0 +1,21 @@
+[Unit]
+Description="GNB NAT Traversal P2P VPN -- default"
+Documentation=https://github.com/gnbdev/opengnb/blob/master/README_EN.md \
+https://github.com/gnbdev/opengnb/blob/master/README_RU.md \
+https://github.com/gnbdev/opengnb/blob/master/README.md \
+https://github.com/gnbdev/opengnb/blob/master/docs/gnb_user_manual_en.md \
+https://github.com/gnbdev/opengnb/blob/master/docs/gnb_user_manual_ru.md \
+https://github.com/gnbdev/opengnb/blob/master/docs/gnb_user_manual_cn.md
+Wants=network-online.target
+After=network-online.target
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/run/opengnb-default.pid
+ExecStartPre=/bin/mkdir -p /var/log/opengnb/default
+ExecStart=/usr/sbin/gnb --systemd --conf=/etc/opengnb/default --pid-file=/run/opengnb-default.pid --ctl-block=/var/cache/opengnb/default.map --node-cache-file=/var/cache/opengnb/default.dump --log-file-path=/var/log/opengnb/default --ifname=gnb_tun_default
+CapabilityBoundingSet=~CAP_SYS_PTRACE
+
+[Install]
+WantedBy=multi-user.target

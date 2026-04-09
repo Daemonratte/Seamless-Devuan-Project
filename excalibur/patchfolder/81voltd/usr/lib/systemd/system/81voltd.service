@@ -1,0 +1,26 @@
+[Unit]
+Description=81voltd QMI IMS daemon
+Documentation=man:81voltd(1)
+After=ModemManager.service
+
+[Service]
+Type=simple
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX AF_QIPCRTR
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+ExecStart=/usr/bin/81voltd
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Execute diffmon once a daily
+Documentation=file:/usr/share/doc/diffmon/README
+
+[Timer]
+OnCalendar=daily
+AccuracySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

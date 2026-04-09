@@ -1,0 +1,33 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+     upgrade)
+        # during upgrades, if /etc/init.d/xdebian-edu-firstboot is
+        # still a symlink to /usr/lib/debian-edu-install/firstboot,
+        # move it away to ensure the conffile provided in this package
+        # now is installed and replaces the symlink as it should.
+	if [ "$(readlink /etc/init.d/xdebian-edu-firstboot)" = \
+	    /usr/lib/debian-edu-install/firstboot ] ; then
+	    mv /etc/init.d/xdebian-edu-firstboot /etc/init.d/xdebian-edu-firstboot.dpkg-old
+	fi
+	;;
+esac
+
+# Automatically added by dh_installinit/13.24.1
+if [ "$1" = "install" ] && [ -n "$2" ] && [ -e "/etc/init.d/xdebian-edu-firstboot" ] ; then
+	chmod +x "/etc/init.d/xdebian-edu-firstboot" >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'xdebian-edu-firstboot.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/13.24.1
+if [ -z "$DPKG_ROOT" ] && [ "$1" = upgrade ] && [ -d /run/systemd/system ] ; then
+	deb-systemd-invoke stop 'debian-edu-testsuite.service' >/dev/null || true
+fi
+# End automatically added section
+
